@@ -1,3 +1,4 @@
-git add .
-git commit -m "update"
-git push
+git status             # See what’s changed
+git add .              # Stage all new/modified files
+git commit -m "Describe your changes"
+git push               # Upload to GitHub
