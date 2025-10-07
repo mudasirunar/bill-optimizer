@@ -1,0 +1,20 @@
+# Ignore virtual environments
+venv/
+.venv/
+
+# Ignore large data files
+backend/*.csv
+*.pkl
+*.db
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore environment and secret files
+.env
+.env.local
+
+# Ignore IDE/project files
+.vscode/
+.idea/

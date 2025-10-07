@@ -1,0 +1,108 @@
+:root {
+    --primary-color: #059669;
+    --secondary-color: #047857;
+    --accent-color: #10b981;
+}
+
+.gradient-bg {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.card-hover {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.loading-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #059669;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.progress-bar {
+    transition: width 0.5s ease-in-out;
+}
+
+.appliance-card {
+    transition: all 0.3s ease;
+}
+
+.appliance-card.active {
+    border-color: #059669;
+    background-color: #f0fdf4;
+}
+
+.unit-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+}
+
+.unit-badge.low {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.unit-badge.medium {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.unit-badge.high {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Tariff color classes */
+.tariff-low { color: #059669; }
+.tariff-medium { color: #d97706; }
+.tariff-high { color: #dc2626; }
+.tariff-highest { color: #7c2d12; }
+
+/* Animation classes */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Print styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+}
