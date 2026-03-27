@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Bill Optimizer</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png?v=1">
+    <link rel="apple-touch-icon" href="assets/favicon.png?v=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <style>
+        :root {
+            --g1: #059669; --g2: #10b981; --g3: #34d399; --g4: #6ee7b7;
+            --dark: #030a06; --surface: #0d1a12; --surface2: #122018;
+            --border: rgba(52,211,153,0.12); --border-hover: rgba(52,211,153,0.35);
+            --text: #f0fdf4; --text-muted: #86efac; --text-dim: #4b7a5e;
+            --glow: rgba(16,185,129,0.2); --glow-strong: rgba(16,185,129,0.45);
+            --card-bg: rgba(13,26,18,0.85);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--dark); color: var(--text);
+            min-height: 100vh; overflow-x: hidden;
+        }
+        body::before {
+            content: ''; position: fixed; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 10% 10%, rgba(5,150,105,0.18) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 80% at 90% 80%, rgba(16,185,129,0.12) 0%, transparent 55%),
+                radial-gradient(ellipse 40% 40% at 50% 50%, rgba(52,211,153,0.05) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        body::after {
+            content: ''; position: fixed; inset: 0; z-index: 0;
+            background-image:
+                linear-gradient(rgba(52,211,153,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(52,211,153,0.025) 1px, transparent 1px);
+            background-size: 48px 48px; pointer-events: none;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            position: sticky; top: 0; z-index: 1000; height: 68px;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 5%; background: rgba(3,10,6,0.75);
+            backdrop-filter: blur(20px) saturate(180%); border-bottom: 1px solid var(--border);
+        }
+        .nav-logo {
+            font-family: 'Syne', sans-serif; font-size: 1.35rem; font-weight: 800;
+            color: var(--text); display: flex; align-items: center; gap: 10px;
+            cursor: pointer; text-decoration: none; transition: opacity 0.2s;
+        }
+        .nav-logo:hover { opacity: 0.85; }
+        .nav-logo i {
+            width: 34px; height: 34px; background: linear-gradient(135deg, var(--g1), var(--g3));
+            border-radius: 9px; display: flex; align-items: center; justify-content: center;
+            font-size: 0.9rem; color: #fff; box-shadow: 0 0 14px var(--glow);
+        }
+        .nav-logo span.ai-tag {
+            font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em;
+            background: linear-gradient(90deg, var(--g1), var(--g3));
+            padding: 3px 8px; border-radius: 20px; color: #fff;
+        }
+        .nav-user-area { display: flex; align-items: center; gap: 14px; }
+        .user-info { text-align: right; line-height: 1.2; }
+        .user-info span { font-weight: 600; font-size: 0.9rem; display: block; color: var(--text); }
+        .user-info small { font-size: 0.72rem; color: var(--text-muted); }
+        .profile-dropdown { position: relative; }
+        .profile-dropdown::after {
+            content: ''; position: absolute; top: 100%; right: 0;
+            width: 100%; height: 16px; background: transparent;
+        }
+        .user-avatar {
+            width: 40px; height: 40px; border-radius: 50%; object-fit: cover; cursor: pointer;
+            border: 2px solid var(--border);
+            transition: border-color 0.3s, box-shadow 0.3s, transform 0.2s;
+        }
+        .user-avatar:hover { border-color: var(--g2); box-shadow: 0 0 16px var(--glow); transform: scale(1.06); }
+        .dropdown-menu {
+            position: absolute; top: calc(100% + 8px); right: 0; width: 210px;
+            background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 8px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px var(--glow);
+            opacity: 0; visibility: hidden; pointer-events: none;
+            transform: translateY(-8px) scale(0.97);
+            transition: opacity 0.22s ease, transform 0.22s ease, visibility 0s linear 0.22s; z-index: 999;
+        }
+        .profile-dropdown:hover .dropdown-menu, .profile-dropdown:focus-within .dropdown-menu {
+            opacity: 1; visibility: visible; pointer-events: all; transform: translateY(0) scale(1);
+            transition: opacity 0.22s ease, transform 0.22s ease, visibility 0s linear 0s;
+        }
+        .dropdown-menu a {
+            display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 9px;
+            color: var(--text-muted); font-size: 0.875rem; font-weight: 500; text-decoration: none;
+            transition: background 0.18s, color 0.18s;
+        }
+        .dropdown-menu a:hover { background: rgba(52,211,153,0.1); color: var(--g3); }
+        .dropdown-menu a i { width: 16px; text-align: center; opacity: 0.7; }
+        .dropdown-menu hr { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
+        .logout-link { color: #f87171 !important; }
+        .logout-link:hover { background: rgba(239,68,68,0.1) !important; }
+
+        /* HERO */
+        .hero-section {
+            position: relative; z-index: 1; min-height: 420px;
+            display: flex; align-items: center; justify-content: center;
+            text-align: center; overflow: hidden; padding: 60px 20px;
+        }
+        .hero-orb {
+            position: absolute; width: 600px; height: 600px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(5,150,105,0.22) 0%, transparent 70%);
+            top: 50%; left: 50%; transform: translate(-50%,-50%);
+            animation: orb-pulse 5s ease-in-out infinite; pointer-events: none;
+        }
+        @keyframes orb-pulse {
+            0%,100% { transform: translate(-50%,-50%) scale(1); opacity: 0.8; }
+            50%      { transform: translate(-50%,-50%) scale(1.12); opacity: 1; }
+        }
+        .hero-content {
+            position: relative; z-index: 2; max-width: 720px;
+            animation: fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(28px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .welcome-tag {
+            display: inline-block; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.12em;
+            text-transform: uppercase; color: var(--g3); border: 1px solid var(--border-hover);
+            background: rgba(52,211,153,0.07); padding: 6px 16px; border-radius: 30px;
+            margin-bottom: 22px; animation: fadeUp 0.8s 0.1s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        .hero-content h1 {
+            font-family: 'Syne', sans-serif; font-size: clamp(2.6rem,6vw,4rem);
+            font-weight: 800; line-height: 1.05; letter-spacing: -0.03em; margin-bottom: 18px;
+            animation: fadeUp 0.8s 0.18s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        .hero-content h1 .highlight {
+            background: linear-gradient(120deg, var(--g3) 0%, var(--g2) 50%, var(--g4) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .hero-content p {
+            font-size: 1.05rem; line-height: 1.65; color: var(--text-muted);
+            max-width: 520px; margin: 0 auto 30px;
+            animation: fadeUp 0.8s 0.26s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        .hero-stats {
+            display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+            animation: fadeUp 0.8s 0.34s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        .hero-stats span {
+            display: flex; align-items: center; gap: 8px; font-size: 0.82rem; font-weight: 600;
+            padding: 9px 18px; border-radius: 10px; background: rgba(52,211,153,0.07);
+            border: 1px solid var(--border); color: var(--g3); transition: background 0.2s, border-color 0.2s;
+        }
+        .hero-stats span:hover { background: rgba(52,211,153,0.14); border-color: var(--g2); }
+        .hero-stats span i { color: var(--g2); }
+
+        /* MAIN */
+        .main-container { position: relative; z-index: 1; max-width: 1160px; margin: 0 auto; padding: 50px 5% 80px; }
+        .section-header { margin-bottom: 36px; animation: fadeUp 0.7s 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+        .section-header h2 { font-family: 'Syne', sans-serif; font-size: 1.85rem; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+        .section-header p { color: var(--text-dim); font-size: 0.95rem; }
+
+        /* MODULE CARDS */
+        .grid-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap: 22px; }
+        .card {
+            position: relative; overflow: hidden; background: var(--card-bg);
+            border: 1px solid var(--border); border-radius: 20px; padding: 36px 32px;
+            cursor: pointer;
+            transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), border-color 0.3s, box-shadow 0.35s;
+            backdrop-filter: blur(14px);
+        }
+        .card:nth-child(1) { animation: fadeUp 0.7s 0.45s cubic-bezier(0.16,1,0.3,1) both; }
+        .card:nth-child(2) { animation: fadeUp 0.7s 0.55s cubic-bezier(0.16,1,0.3,1) both; }
+        .card:nth-child(3) { animation: fadeUp 0.7s 0.65s cubic-bezier(0.16,1,0.3,1) both; }
+        .card::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(110deg, transparent 30%, rgba(52,211,153,0.06) 50%, transparent 70%);
+            transform: translateX(-100%); transition: transform 0.55s ease; pointer-events: none;
+        }
+        .card:hover::before { transform: translateX(100%); }
+        .card:hover {
+            transform: translateY(-9px) scale(1.01); border-color: var(--border-hover);
+            box-shadow: 0 22px 50px rgba(0,0,0,0.45), 0 0 40px var(--glow), inset 0 1px 0 rgba(52,211,153,0.15);
+        }
+        .card::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--g2), transparent);
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .card:hover::after { opacity: 1; }
+        .card-status {
+            position: absolute; top: 18px; right: 18px;
+            font-size: 0.65rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+            padding: 4px 11px; border-radius: 6px;
+        }
+        .status-live { background: rgba(16,185,129,0.15); color: var(--g3); border: 1px solid rgba(16,185,129,0.3); }
+        .status-neural { background: rgba(6, 182, 212, 0.12); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.25); }
+        .status-beta { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.25); }
+        .status-info { background: rgba(99,102,241,0.12); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.25); }
+        .card-icon {
+            width: 54px; height: 54px; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.18);
+            border-radius: 14px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.35rem; color: var(--g3); margin-bottom: 24px;
+            transition: background 0.3s, box-shadow 0.3s, transform 0.3s;
+        }
+        .card:hover .card-icon { background: rgba(52,211,153,0.18); box-shadow: 0 0 20px var(--glow); transform: scale(1.08) rotate(-2deg); }
+        .card h3 { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+        .card p { color: var(--text-dim); font-size: 0.92rem; line-height: 1.6; }
+        .card-action {
+            margin-top: 26px; display: flex; align-items: center; gap: 8px;
+            font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--g2);
+            transition: gap 0.25s, color 0.2s;
+        }
+        .card:hover .card-action { gap: 14px; color: var(--g3); }
+        .card-action i { transition: transform 0.25s; }
+        .card:hover .card-action i { transform: translateX(4px); }
+
+        /* ─── TIP CARD ─── */
+        .static-card {
+            margin-top: 44px; border-radius: 18px; padding: 24px 28px;
+            display: flex; align-items: flex-start; gap: 20px;
+            animation: fadeUp 0.7s 0.75s cubic-bezier(0.16,1,0.3,1) both;
+            /* Card shell transitions independently of inner content */
+            background: rgba(5,150,105,0.07);
+            border: 1px solid rgba(52,211,153,0.2);
+            transition: border-color 0.7s ease, background 0.7s ease, box-shadow 0.7s ease;
+        }
+        .tip-icon {
+            flex-shrink: 0; width: 50px; height: 50px;
+            background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.2);
+            border-radius: 13px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; color: var(--g3); margin-top: 2px;
+            transition: background 0.6s ease, box-shadow 0.6s ease;
+        }
+        .tip-body { flex: 1; min-width: 0; }
+
+        #tip-inner {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.4,0,0.2,1);
+        }
+        #tip-inner.fading {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        .tip-ai-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 0.6rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+            color: var(--g3); background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.2);
+            padding: 2px 8px; border-radius: 20px; margin-bottom: 6px;
+        }
+        .tip-heading {
+            font-family: 'Syne', sans-serif; font-size: 0.98rem; font-weight: 700;
+            color: var(--text); margin-bottom: 5px;
+        }
+        .tip-text { color: var(--text-dim); font-size: 0.86rem; line-height: 1.6; }
+
+        /* Progress dots */
+        .tip-dots { display: flex; gap: 5px; margin-top: 10px; }
+        .tip-dot {
+            width: 5px; height: 5px; border-radius: 50%;
+            background: rgba(52,211,153,0.2);
+            transition: background 0.35s, transform 0.35s;
+        }
+        .tip-dot.active { background: var(--g2); transform: scale(1.5); }
+
+        /* FOOTER */
+        .footer {
+            position: relative; z-index: 1; background: rgba(3,10,6,0.8);
+            border-top: 1px solid var(--border); padding: 44px 20px;
+            text-align: center; backdrop-filter: blur(10px);
+        }
+        .footer-brand { font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px; }
+        .footer-brand i { color: var(--g2); margin-right: 6px; }
+        .footer-sub { color: var(--text-dim); font-size: 0.82rem; margin-bottom: 12px; }
+        .footer-sub i { color: var(--g1); margin-right: 5px; }
+        .footer-tag {
+            display: inline-block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
+            text-transform: uppercase; color: var(--g3); border: 1px solid var(--border);
+            padding: 5px 14px; border-radius: 20px; background: rgba(52,211,153,0.06);
+        }
+        .scroll-top {
+            position: fixed; bottom: 28px; right: 28px; z-index: 500;
+            width: 42px; height: 42px; background: var(--g1); border: none; border-radius: 12px;
+            color: #fff; font-size: 1rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 6px 20px var(--glow); opacity: 0; pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .scroll-top.visible { opacity: 1; pointer-events: all; }
+        .scroll-top:hover { transform: translateY(-3px); background: var(--g2); }
+
+        @keyframes pulse-dot {
+            0%,100% { box-shadow: 0 0 0 0 var(--glow-strong); }
+            50%      { box-shadow: 0 0 0 6px transparent; }
+        }
+        .pulse-dot {
+            display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+            background: var(--g3); animation: pulse-dot 2s infinite;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-logo" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+            <i class="fa fa-leaf"></i> Bill Optimizer <span class="ai-tag">AI</span>
+        </div>
+        <div class="nav-user-area">
+            <div class="user-info">
+                <span id="user-name-display">User</span>
+                <small>Home Owner</small>
+            </div>
+            <div class="profile-dropdown">
+                <img id="user-pfp" class="user-avatar"
+                     src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile">
+                <div class="dropdown-menu">
+                    <a href="setup-profile.html"><i class="fa fa-cog"></i> Setup Profile</a>
+                    <a href="ai-memory.html"><i class="fa fa-brain"></i> AI Memory</a>
+                    <hr>
+                    <a href="#" onclick="logout()" class="logout-link"><i class="fa fa-sign-out-alt"></i> Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero-section">
+        <div class="hero-orb"></div>
+        <div class="hero-content">
+            <span class="welcome-tag"><span class="pulse-dot"></span>&nbsp; Welcome back</span>
+            <h1>Smart Power for<br><span class="highlight">Pakistan</span></h1>
+            <p>Predict, Simulate, and Optimize. Your AI companion for navigating NEPRA 2026 tariffs.</p>
+            <div class="hero-stats">
+                <span><i class="fa fa-check-circle"></i> RF Model Active</span>
+                <span><i class="fa fa-bolt"></i> LSTM Verified</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <div class="section-header">
+            <h2>Management Hub</h2>
+            <p>Select a module to begin optimization</p>
+        </div>
+
+        <div class="grid-layout">
+            <div class="card" onclick="window.location.href='prediction-hub.html'">
+                <div class="card-status status-live">● Live</div>
+                <div class="card-icon"><i class="fa fa-chart-line"></i></div>
+                <h3>Bill Prediction</h3>
+                <p>AI-driven estimates based on your household consumption patterns using ML models.</p>
+                <div class="card-action">Launch Hub <i class="fa fa-arrow-right"></i></div>
+            </div>
+            <div class="card" onclick="window.location.href='load-forecaster.html'">
+                <div class="card-status status-neural">Neural</div>
+                <div class="card-icon"><i class="fa fa-wave-square"></i></div>
+                <h3>Load Forecaster</h3>
+                <p>Visualize your 24-hour power usage pattern. See exactly when your home hits peak demand.</p>
+                <div class="card-action">View Forecast <i class="fa fa-arrow-right"></i></div>
+            </div>
+            <div class="card" onclick="window.location.href='appliance-simulator.html'">
+                <div class="card-status status-beta">New</div>
+                <div class="card-icon"><i class="fa fa-plug"></i></div>
+                <h3>Optimization Simulator</h3>
+                <p>Simulate individual appliances and find hidden savings in your daily usage.</p>
+                <div class="card-action">Try Simulator <i class="fa fa-arrow-right"></i></div>
+            </div>
+            <div class="card" onclick="window.location.href='nepra-info.html'">
+                <div class="card-status status-info">Manual</div>
+                <div class="card-icon"><i class="fa fa-landmark"></i></div>
+                <h3>NEPRA Info</h3>
+                <p>Official 2026 tariff structures, slabs, and rebased rates at a glance.</p>
+                <div class="card-action">View Rates <i class="fa fa-arrow-right"></i></div>
+            </div>
+        </div>
+
+        <!-- TIP CARD — shell transitions separately from inner content -->
+        <div class="static-card" id="tip-card">
+            <div class="tip-icon" id="tip-icon"><i class="fa fa-brain"></i></div>
+            <div class="tip-body">
+                <!-- Only this div fades — no outer elements flicker -->
+                <div id="tip-inner">
+                    <div id="tip-badge"></div>
+                    <div class="tip-heading" id="tip-heading">Neural Engine Active</div>
+                    <div class="tip-text" id="tip-text">Loading your personalised energy insights...</div>
+                    <div class="tip-dots" id="tip-dots"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-brand">
+            <i class="fa fa-graduation-cap"></i> Sir Syed University of Engineering and Technology
+        </div>
+        <p class="footer-sub"><i class="fa fa-map-marker-alt"></i> Gulshan-e-Iqbal, Karachi, Pakistan</p>
+        <div class="footer-tag">FYP 2026 · Smart Energy Management System</div>
+    </footer>
+
+    <button class="scroll-top" id="scrollBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+        <i class="fa fa-chevron-up"></i>
+    </button>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+    /* ════════════════════════════════════════════════════
+       TIP ENGINE  — smooth fade-out → swap → fade-in
+       Key principle: we NEVER remove+re-add a CSS class
+       to restart an animation. We use a single opacity
+       transition that goes 1→0, we swap text, then 0→1.
+    ════════════════════════════════════════════════════ */
+
+    const GENERAL_TIPS = [
+        { ai:false, h:"Peak Hour Alert",     t:"NEPRA peak hours are 6 PM–10 PM. Unit rates are up to 25% higher. Shift laundry and heavy appliances to mornings." },
+        { ai:false, h:"Fridge Maintenance",  t:"Cleaning refrigerator coils every 6 months improves efficiency by up to 15% — that's 5–8 free units per month." },
+        { ai:false, h:"Vampire Power",       t:"Electronics on standby still draw current. Turning off your router and TV box at night can save ~2 units per month." },
+        { ai:false, h:"AC Temperature Tip",  t:"Every 1°C above 24°C on your AC saves 3–5% of its energy. 26°C feels comfortable and meaningfully cuts costs." },
+        { ai:false, h:"Ironing Strategy",    t:"Iron all clothes in one session — the highest draw is during the cold-start heat-up phase, not continuous running." },
+        { ai:false, h:"Natural Light Hours", t:"Pakistan averages 8–10 hours of sunlight daily. Open curtains during the day to eliminate daytime lighting load entirely." },
+        { ai:false, h:"Motor Scheduling",    t:"Run water pumps before 7 AM or after 10 PM to stay outside NEPRA's peak-hour window and avoid surcharges." },
+    ];
+
+    /* ── Data-sufficiency thresholds ──
+       A personalised tip is only added to the pool if
+       the underlying data signal is strong enough to be
+       meaningful — not just "a field exists".             */
+    function buildPersonalisedPool(d) {
+        const pool = [];
+        const histMonths = (d.bill_history || []).length;
+        // Need ≥2 months for a reliable average
+        const avgUnits = histMonths >= 2 ? (d.historical_avg_units || 0) : 0;
+        const hasHistory = histMonths >= 2 && avgUnits > 0;
+
+        // 1. Protected status boundary (needs history + protected flag set)
+        if (hasHistory && d.is_protected && avgUnits > 170 && avgUnits <= 200) {
+            pool.push({ ai:true,
+                h:"Slab Protection Alert",
+                t:`Your average is ${Math.round(avgUnits)} units — just ${Math.round(200 - avgUnits)} away from losing Protected status. A small reduction this month keeps your subsidised rate.`
+            });
+        }
+
+        // 2. Lifeline boundary warning
+        if (hasHistory && avgUnits > 80 && avgUnits <= 100) {
+            pool.push({ ai:true,
+                h:"Lifeline Boundary",
+                t:`You're averaging ${Math.round(avgUnits)} units — close to the 100-unit Lifeline ceiling. Crossing it will nearly triple your effective per-unit rate.`
+            });
+        }
+
+        // 3. Unprotected high-consumption bracket
+        if (hasHistory && !d.is_protected && avgUnits > 350) {
+            pool.push({ ai:true,
+                h:"High Usage Pattern",
+                t:`Averaging ${Math.round(avgUnits)} units puts you in the Rs. 39–47/kWh slab. Shifting peak-hour appliances could reduce your bill by 12–18%.`
+            });
+        }
+
+        // 4. Fixed-speed AC detected (needs qty > 0 AND type confirmed)
+        if ((d.ac_qty || 0) > 0 && d.ac_type === 'standard') {
+            pool.push({ ai:true,
+                h:"Inverter Upgrade ROI",
+                t:`Your ${d.ac_qty} fixed-speed AC${d.ac_qty > 1 ? 's' : ''} cost ~40% more to run than DC-Inverter models. At current NEPRA rates the upgrade pays back in under 2 years.`
+            });
+        }
+
+        // 5. High base load (needs a meaningful mean_hourly reading)
+        if ((d.mean_hourly || 0) > 1.0) {
+            pool.push({ ai:true,
+                h:"High Base Load",
+                t:`Your average draw is ${d.mean_hourly.toFixed(2)} kW/hr. Check for ageing compressors or UPS trickle-charging during daytime hours.`
+            });
+        }
+
+        // 6. Old fridge model
+        if ((d.f_qty || 0) > 0 && d.f_type === 'old') {
+            pool.push({ ai:true,
+                h:"Fridge Efficiency Gap",
+                t:"Old-model refrigerators consume up to 2× the units of inverter-series models. Consider replacing the oldest unit first for the fastest return."
+            });
+        }
+
+        // 7. Routine-based LSTM insight (New for Load Forecaster)
+        if (d.user_routine && d.user_routine !== 'standard') {
+            const routineNames = {
+                'morning_active': 'Morning Heavy',
+                'evening_active': 'Evening Heavy',
+                'all_day': 'Always Active'
+            };
+            pool.push({ 
+                ai: true,
+                h: "Pattern Recognition",
+                t: `Your '${routineNames[d.user_routine]}' routine is now being used by the LSTM model to forecast today's 24-hour load curve.`
+            });
+        }
+
+        return pool;
+    }
+
+    /* ── Engine state ── */
+    let tipPool    = [];
+    let tipIndex   = 0;
+    let tipTimer   = null;
+    const DURATION = 6200; // ms each tip is shown
+
+    function startTipEngine(userData) {
+        if (tipTimer) { clearInterval(tipTimer); tipTimer = null; }
+
+        const personalised = userData ? buildPersonalisedPool(userData) : [];
+
+        tipPool = personalised.length > 0
+            ? [...personalised, ...GENERAL_TIPS.slice(0, 3)] // personal leads, 3 generals trail
+            : [...GENERAL_TIPS];
+
+        tipIndex = 0;
+        applyTip(tipPool[0], /*immediate*/ true);
+        buildDots();
+        tipTimer = setInterval(advance, DURATION);
+    }
+
+    function advance() {
+        tipIndex = (tipIndex + 1) % tipPool.length;
+        const inner = document.getElementById('tip-inner');
+
+        // Step 1 — fade out
+        inner.classList.add('fading');
+
+        // Step 2 — after CSS transition ends (400ms), swap text and fade back in
+        setTimeout(() => {
+            applyTip(tipPool[tipIndex], false);
+            inner.classList.remove('fading');
+            updateDots();
+        }, 420); // slightly longer than the 0.4s transition so it finishes cleanly
+    }
+
+    function applyTip(tip, immediate) {
+        const card = document.getElementById('tip-card');
+        const icon = document.getElementById('tip-icon');
+        const badge   = document.getElementById('tip-badge');
+        const heading = document.getElementById('tip-heading');
+        const text    = document.getElementById('tip-text');
+
+        // Update content
+        heading.textContent = tip.h;
+        text.textContent    = tip.t;
+
+        if (tip.ai) {
+            badge.innerHTML = `<div class="tip-ai-badge"><i class="fa fa-circle-nodes"></i> AI Insight</div>`;
+            card.style.borderColor = 'rgba(52,211,153,0.4)';
+            card.style.background  = 'rgba(16,185,129,0.1)';
+            card.style.boxShadow   = '0 0 30px rgba(16,185,129,0.06)';
+            icon.style.background  = 'rgba(52,211,153,0.18)';
+            icon.style.boxShadow   = '0 0 14px rgba(16,185,129,0.25)';
+        } else {
+            badge.innerHTML = '';
+            card.style.borderColor = 'rgba(52,211,153,0.2)';
+            card.style.background  = 'rgba(5,150,105,0.07)';
+            card.style.boxShadow   = 'none';
+            icon.style.background  = 'rgba(52,211,153,0.12)';
+            icon.style.boxShadow   = 'none';
+        }
+    }
+
+    function buildDots() {
+        const container = document.getElementById('tip-dots');
+        container.innerHTML = '';
+        if (tipPool.length <= 1) return;
+        const count = Math.min(tipPool.length, 8);
+        for (let i = 0; i < count; i++) {
+            const d = document.createElement('div');
+            d.className = 'tip-dot' + (i === 0 ? ' active' : '');
+            container.appendChild(d);
+        }
+    }
+
+    function updateDots() {
+        const dots = document.querySelectorAll('.tip-dot');
+        if (!dots.length) return;
+        dots.forEach((d, i) => d.classList.toggle('active', i === tipIndex % dots.length));
+    }
+
+    /* ── Auth ── */
+    firebase.auth().onAuthStateChanged(user => {
+        if (!user) { window.location.href = "index.html"; return; }
+
+        document.getElementById('user-name-display').innerText =
+            user.displayName || user.email.split('@')[0];
+        if (user.photoURL) document.getElementById('user-pfp').src = user.photoURL;
+
+        // Show general tips immediately — no spinner, no delay
+        startTipEngine(null);
+
+        // Upgrade to personalised once Firestore resolves
+        const db = firebase.firestore();
+        db.collection('users').doc(user.uid).get().then(doc => {
+            if (!doc.exists) return;
+            const d = doc.data();
+            // Only upgrade if the user has put in at least something useful
+            const hasData = (d.sanctioned_load > 0) || ((d.bill_history || []).length > 0) || ((d.ac_qty || 0) > 0);
+            if (hasData) startTipEngine(d);
+        }).catch(() => { /* offline — keep general tips */ });
+    });
+
+    function logout() {
+        firebase.auth().signOut().then(() => { window.location.href = "index.html"; });
+    }
+
+    window.addEventListener('scroll', () => {
+        document.getElementById('scrollBtn').classList.toggle('visible', window.scrollY > 300);
+    });
+    </script>
+</body>
+</html>

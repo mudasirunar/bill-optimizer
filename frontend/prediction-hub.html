@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Hub | Bill Optimizer</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png?v=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --g1: #059669; --g2: #10b981; --g3: #34d399; --g4: #6ee7b7;
+            --dark: #030a06; --surface: #0d1a12; --surface2: #122018;
+            --border: rgba(52,211,153,0.12); --border-hover: rgba(52,211,153,0.35);
+            --text: #f0fdf4; --text-muted: #86efac; --text-dim: #4b7a5e;
+            --glow: rgba(16,185,129,0.2); --glow-strong: rgba(16,185,129,0.45);
+            --card-bg: rgba(13,26,18,0.85);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+        /* Ambient BG */
+        body::before { content: ''; position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse 80% 60% at 10% 10%, rgba(5,150,105,0.18) 0%, transparent 60%), radial-gradient(ellipse 60% 80% at 90% 80%, rgba(16,185,129,0.12) 0%, transparent 55%); pointer-events: none; }
+        body::after { content: ''; position: fixed; inset: 0; z-index: 0; background-image: linear-gradient(rgba(52,211,153,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(52,211,153,0.025) 1px, transparent 1px); background-size: 48px 48px; pointer-events: none; }
+
+        /* ─── NAVBAR ─── */
+        .navbar { position: sticky; top: 0; z-index: 1000; height: 68px; display: flex; align-items: center; justify-content: space-between; padding: 0 5%; background: rgba(3,10,6,0.75); backdrop-filter: blur(20px) saturate(180%); border-bottom: 1px solid var(--border); }
+        .nav-logo { font-family: 'Syne', sans-serif; font-size: 1.35rem; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 10px; cursor: pointer; text-decoration: none; }
+        .nav-logo i { width: 34px; height: 34px; background: linear-gradient(135deg, var(--g1), var(--g3)); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; color: #fff; box-shadow: 0 0 14px var(--glow); }
+        .ai-tag { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; background: linear-gradient(90deg, var(--g1), var(--g3)); padding: 3px 8px; border-radius: 20px; color: #fff; }
+
+        .nav-user-area { display: flex; align-items: center; gap: 14px; }
+        .user-info { text-align: right; line-height: 1.2; }
+        .user-info span { font-weight: 600; font-size: 0.9rem; display: block; color: var(--text); }
+        .user-info small { font-size: 0.72rem; color: var(--text-muted); }
+
+        .profile-dropdown { position: relative; }
+        .profile-dropdown::after { content: ''; position: absolute; top: 100%; right: 0; width: 100%; height: 16px; background: transparent; }
+        .user-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 2px solid var(--border); transition: 0.3s; }
+        .user-avatar:hover { border-color: var(--g2); box-shadow: 0 0 16px var(--glow); transform: scale(1.06); }
+
+        .dropdown-menu { position: absolute; top: calc(100% + 8px); right: 0; width: 210px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 8px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-8px); transition: 0.22s; z-index: 999; }
+        .profile-dropdown:hover .dropdown-menu { opacity: 1; visibility: visible; pointer-events: all; transform: translateY(0); }
+        .dropdown-menu a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 9px; color: var(--text-muted); font-size: 0.875rem; text-decoration: none; transition: 0.18s; }
+        .dropdown-menu a:hover { background: rgba(52,211,153,0.1); color: var(--g3); }
+        .dropdown-menu hr { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
+        .logout-link { color: #f87171 !important; }
+        .logout-link:hover { background: rgba(239,68,68,0.1) !important; }
+
+        /* ─── PAGE HEADER ─── */
+        .page-header { position: relative; z-index: 1; padding: 44px 5% 36px; border-bottom: 1px solid var(--border); animation: fadeUp 0.7s both; }
+        .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--text-dim); margin-bottom: 14px; }
+        .breadcrumb a { color: var(--g3); text-decoration: none; transition: opacity 0.2s; }
+        .breadcrumb a:hover { opacity: 0.7; }
+        .page-header h1 { font-family: 'Syne', sans-serif; font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 6px; }
+        .highlight { background: linear-gradient(120deg, var(--g3), var(--g2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .page-header p { color: var(--text-dim); font-size: 0.92rem; max-width: 480px; }
+
+        .model-badge {
+            display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px;
+            background: rgba(52,211,153,0.07); border: 1px solid var(--border);
+            border-radius: 20px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--g3);
+        }
+
+        /* ─── MAIN LAYOUT ─── */
+        .main-container { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 40px 5%; display: grid; grid-template-columns: 1fr 350px; gap: 30px; }
+        .section-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 24px; padding: 32px; backdrop-filter: blur(14px); margin-bottom: 24px; animation: fadeUp 0.7s 0.2s both; }
+
+        /* PREDICTION DISPLAY */
+        .bill-display { text-align: center; padding: 20px 0; }
+        .currency { font-size: 1.5rem; color: var(--g3); font-weight: 700; vertical-align: super; margin-right: 5px; }
+        .amount { font-family: 'Syne', sans-serif; font-size: 5rem; font-weight: 800; letter-spacing: -3px; }
+        .units-badge { display: inline-block; padding: 6px 16px; background: rgba(52,211,153,0.1); border: 1px solid var(--g1); border-radius: 30px; color: var(--g3); font-weight: 700; margin-top: 15px; }
+
+        /* ACTIONS */
+        .btn-predict { width: 100%; padding: 18px; background: linear-gradient(135deg, var(--g1), var(--g2)); border: none; border-radius: 16px; color: #fff; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 30px rgba(5, 150, 105, 0.3); display: flex; align-items: center; justify-content: center; gap: 12px; }
+        .btn-predict:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(5, 150, 105, 0.5); }
+        .btn-predict:disabled { background: #1a2e23; cursor: not-allowed; opacity: 0.7; }
+
+        .btn-outline {
+            display: inline-flex; align-items: center; gap: 12px;
+            padding: 14px 24px; border-radius: 14px;
+            border: 1px solid var(--border-hover); background: rgba(52,211,153,0.07);
+            color: var(--g3); font-weight: 700; font-size: 0.9rem;
+            text-decoration: none; transition: 0.25s;
+        }
+        .btn-outline:hover {
+            background: rgba(52,211,153,0.14); border-color: var(--g2);
+            box-shadow: 0 0 28px var(--glow); transform: translateY(-2px);
+        }
+
+        /* SIDEBAR / STATUS */
+        .status-item { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        .status-val { font-weight: 700; color: var(--g3); }
+
+        /* LOADER */
+        .loader { 
+            width: 26px; 
+            height: 26px; 
+            border: 3px solid rgba(16, 185, 129, 0.1); 
+            border-top-color: var(--g2); 
+            border-radius: 50%; 
+            display: none; 
+            animation: rotation 0.8s cubic-bezier(0.6, 0.2, 0.4, 0.8) infinite; 
+            filter: drop-shadow(0 0 5px var(--glow));
+        }
+        @keyframes rotation { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
+        @keyframes fadeUp { 
+            from { 
+                opacity: 0; 
+                transform: translateY(24px) scale(0.98); 
+            } 
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            } 
+        }
+
+        @media (max-width: 900px) { .main-container { grid-template-columns: 1fr; } }
+
+        /* Break Down Modal */
+        .help-trigger {
+            cursor: pointer;
+            color: var(--g3);
+            font-size: 1.1rem;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            animation: help-pulse 2s infinite;
+        }
+        .help-trigger:hover { color: var(--text); transform: scale(1.1); }
+
+        @keyframes help-pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; filter: drop-shadow(0 0 5px var(--g2)); }
+            100% { opacity: 0.7; }
+        }
+
+        /* Modal Header Spacing Fix */
+        .modal-header { 
+            display: flex; 
+            align-items: center; 
+            justify-content: flex-start; /* Since X is gone, align to left */
+            margin-bottom: 28px; /* Increased space before the calculations start */
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+        }
+
+        .modal-header h3 { 
+            font-family: 'Syne', sans-serif; 
+            color: var(--g3); 
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Modal Table Styling */
+        .calc-table { width: 100%; margin: 15px 0; border-collapse: collapse; }
+        .calc-table td { padding: 8px 0; border-bottom: 1px solid var(--border); }
+        .calc-table .label { color: var(--text-dim); }
+        .calc-table .val { text-align: right; font-weight: 600; color: var(--text); }
+        .step-title { color: var(--g3); font-weight: 700; margin-top: 15px; font-size: 0.9rem; }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+
+        /* Modal Card Style */
+        .modal-card {
+            background: var(--surface);
+            border: 1px solid var(--border-hover);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 550px;
+            padding: 36px; /* Slightly more padding for the premium feel */
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5), 0 0 30px var(--glow);
+            position: relative;
+            max-height: 85vh; /* Slightly shorter to ensure it never touches screen edges */
+            overflow-y: auto;
+            
+            /* HIDE SCROLLBAR LOGIC */
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;     /* Firefox */
+        }
+
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .modal-card::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Prevent background scrolling */
+        .modal-open {
+            overflow: hidden;
+            height: 100vh;
+        }
+
+
+         /* ─── FOOTER ─── */
+        .footer {
+            position: relative; z-index: 1;
+            background: rgba(3,10,6,0.8); border-top: 1px solid var(--border);
+            padding: 40px 20px; text-align: center; backdrop-filter: blur(10px);
+        }
+        .footer-brand {
+            font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700;
+            color: var(--text-muted); margin-bottom: 6px;
+        }
+        .footer-brand i { color: var(--g2); margin-right: 6px; }
+        .footer-sub { color: var(--text-dim); font-size: 0.8rem; margin-bottom: 10px; }
+        .footer-tag {
+            display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
+            text-transform: uppercase; color: var(--g3); border: 1px solid var(--border);
+            padding: 4px 12px; border-radius: 20px; background: rgba(52,211,153,0.06);
+        }
+
+        @media (max-width: 640px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .full-width { grid-column: span 1; }
+            .header-row { flex-direction: column; align-items: flex-start; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-logo" onclick="window.location.href='dashboard.html'"><i class="fa fa-leaf"></i> Bill Optimizer <span class="ai-tag">AI</span></div>
+        <div class="nav-user-area">
+            <div class="user-info">
+                <span id="user-name-display">User</span>
+                <small style="color:var(--g3)">AI Inference Active</small>
+            </div>
+            <div class="profile-dropdown">
+                <img id="user-pfp" class="user-avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+                <div class="dropdown-menu">
+                    <a href="dashboard.html"><i class="fa fa-home"></i> Dashboard</a>
+                    <a href="setup-profile.html"><i class="fa fa-cog"></i> Setup Profile</a>
+                    <a href="ai-memory.html"><i class="fa fa-brain"></i> AI Memory</a>
+                    <hr>
+                    <a href="#" onclick="logout()" class="logout-link"><i class="fa fa-sign-out-alt"></i> Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-header">
+        <div class="breadcrumb">
+            <a href="dashboard.html">Dashboard</a> 
+            <i class="fa fa-chevron-right" style="font-size:0.5rem; margin:0 8px; vertical-align: middle;"></i> 
+            <span>Prediction Hub</span>
+        </div>
+        
+        <div class="page-title-row" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px;">
+            <div style="flex: 1; min-width: 300px;">
+                <h1>Inference <span class="highlight">Engine</span></h1>
+                <p style="color:var(--text-dim); margin-top:8px; max-width: 520px;">
+                    Utilizing Random Forest regression to forecast monthly consumption based on appliance signatures.
+                </p>
+            </div>
+            
+            <div style="margin-bottom: 5px;">
+                <span class="model-badge">
+                    <i class="fa fa-diagram-project"></i> RF Ensemble Engine
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <main class="main-container">
+        <div class="prediction-main">
+            <div class="section-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px">
+                <h3 style="font-family:'Syne'">PKR Cost Forecast</h3>
+                <span id="forecast-date" style="font-size:0.8rem; color:var(--text-dim)">Initializing...</span>
+            </div>
+
+            <div class="bill-display">
+                <span class="currency">Rs.</span>
+                <span class="amount" id="bill-amount">--</span> <br>
+                <div class="units-badge" id="unit-label">
+                    <i class="fa fa-microchip" style="margin-right:8px; opacity:0.7"></i>
+                    -- Predicted Units 
+                </div>
+            </div>
+
+            <div id="inference-msg-area" style="margin-top: 25px; padding: 15px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid transparent; display: none;">
+                <p id="inference-text" style="font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; text-align: center;">
+                    </p>
+            </div>
+
+            <div style="margin-top:25px">
+                <button class="btn-predict" id="predictBtn" onclick="runInference()">
+                    <div class="loader" id="btnLoader"></div>
+                    <span id="btnText"><i class="fa fa-bolt"></i> Generate AI Prediction</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="section-card" style="position: relative;">
+            <h3 style="font-family:'Syne'; margin-bottom:20px">Consumption Signature</h3>
+            
+            <div class="chart-container" style="position: relative; height: 280px; width: 100%;">
+                
+                <div id="chart-loader" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--surface); z-index: 10; border-radius: 12px;">
+                    <div class="loader" style="display: block;"></div>
+                    <p style="font-size: 0.7rem; color: var(--g3); margin-top: 10px; font-weight: 600; letter-spacing: 0.05em;">Syncing Patterns...</p>
+                </div>
+
+                <canvas id="usageChart"></canvas>
+            </div>
+        </div>
+
+        <div class="section-card" id="breakdown-card" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="font-family:'Syne'">Detailed Breakdown</h3>
+                <span class="help-trigger" onclick="openBreakdownModal()">
+                    <i class="fa fa-circle-info"></i>
+                </span>
+            </div>
+            <div class="form-grid">
+                <div class="status-item"><span>Energy Charges</span> <span id="br-energy" class="status-val">Rs. 0</span></div>
+                <div class="status-item"><span>Fixed Charges</span> <span id="br-fixed" class="status-val">Rs. 0</span></div>
+                <div class="status-item"><span>Taxes & FCA</span> <span id="br-taxes" class="status-val">Rs. 0</span></div>
+                <div class="status-item" style="border:none"><span>Applied Slab</span> <span id="br-cat" class="status-val" style="text-transform: uppercase; color: var(--warn);">---</span></div>
+            </div>
+        </div>
+    </div>
+
+        <div class="prediction-side">
+            <div class="section-card">
+                <h4 style="font-family:'Syne'; margin-bottom:15px; font-size:0.9rem; color:var(--g3)">AI Context State</h4>
+                <div class="status-item"><span style="color:var(--text-dim)">Sanctioned Load</span> <span class="status-val" id="st-load">-- kW</span></div>
+                <div class="status-item"><span style="color:var(--text-dim)">Mean Hourly</span> <span class="status-val" id="st-mean">-- kW</span></div>
+                <div class="status-item"><span style="color:var(--text-dim)">Provider</span> <span class="status-val" id="st-disco">--</span></div>
+                <div class="status-item"><span style="color:var(--text-dim)">Billing Category</span> <span class="status-val" id="st-cat" style="text-transform: capitalize;">--</span></div>
+                <div class="status-item" style="border:none"><span style="color:var(--text-dim)">History Avg</span> <span class="status-val" id="st-hist">-- kWh</span></div>
+            </div>
+
+            <div class="section-card" style="background: rgba(16, 185, 129, 0.05); border-color: var(--g1)">
+                <h4 style="color:var(--g3); font-family:'Syne'; font-size:0.8rem">Model Confidence</h4>
+                <div style="font-size:1.8rem; font-weight:800; margin:10px 0">98.2%</div>
+                <p style="font-size:0.72rem; color:var(--text-dim); line-height: 1.4;">Confidence level derived from $R^2$ validation scores against the NEPRA-regulated PRECON dataset archetypes.</p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: -10px; margin-bottom: 20px;">
+                <a href="setup-profile.html" class="btn-outline" style="width: 100%; justify-content: center;">
+                    <i class="fa fa-pen-nib"></i> Update Profile
+                </a>
+                <a href="ai-memory.html" class="btn-outline" style="width: 100%; justify-content: center; border-color: var(--border);">
+                    <i class="fa fa-brain"></i> View AI Memory
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Break Down Modal -->
+    <div id="breakdownModal" class="modal-overlay" onclick="closeBreakdownModal()">
+        <div class="modal-card" style="max-width: 550px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fa fa-calculator"></i> Calculation Logic</h3>
+            </div>
+            
+            <div id="modal-content" style="font-size: 0.88rem; line-height: 1.6; color: var(--text-muted);">
+                </div>
+
+            <div style="margin-top: 20px; padding: 12px; border-radius: 12px; background: rgba(251, 191, 36, 0.05); border: 1px solid rgba(251, 191, 36, 0.2);">
+                <p style="font-size: 0.75rem; color: #fbbf24; line-height: 1.4;">
+                    <i class="fa fa-triangle-exclamation"></i> <strong>Disclaimer:</strong> 
+                    These calculations are based on NEPRA 2026 rebased tariffs. Actual bills may vary by region (K-Electric, LESCO, etc...), fuel price adjustments (FPA), and regional surcharges.
+                </p>
+            </div>
+
+            <button class="btn-predict" style="margin-top: 20px; padding: 12px;" onclick="closeBreakdownModal()">Close Analysis</button>
+        </div>
+    </div>
+
+   <footer class="footer">
+        <div class="footer-brand">
+            <i class="fa fa-graduation-cap"></i> Sir Syed University of Engineering and Technology
+        </div>
+        <p class="footer-sub"><i class="fa fa-map-marker-alt"></i> Gulshan-e-Iqbal, Karachi, Pakistan</p>
+        <div class="footer-tag">FYP 2026 · Smart Energy Management System</div>
+    </footer>
+
+    <script src="js/auth.js"></script>
+    <script>
+        const db = firebase.firestore();
+        let userUid = null;
+        let myChart = null;
+
+        firebase.auth().onAuthStateChanged(user => {
+            if (!user) { window.location.href = "index.html"; }
+            else {
+                userUid = user.uid;
+                document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
+                if (user.photoURL) document.getElementById('user-pfp').src = user.photoURL;
+                loadInferenceData();
+            }
+        });
+
+        async function loadInferenceData() {
+            const doc = await db.collection('users').doc(userUid).get();
+            if(doc.exists) {
+                const d = doc.data();
+                
+                // --- Smart Date Logic ---
+                let displayDate = "";
+                if (d.bill_history && d.bill_history.length > 0) {
+                    // Sort history to find the most recent entry (Format: YYYY-MM)
+                    const sortedHistory = [...d.bill_history].sort((a, b) => b.month.localeCompare(a.month));
+                    const lastMonthStr = sortedHistory[0].month;
+                    const [year, month] = lastMonthStr.split('-').map(Number);
+                    
+                    // Create a date object and add 1 month
+                    const nextDate = new Date(year, month, 1); // JS months are 0-indexed, but since 'month' is 1-indexed from string, this naturally points to the next month
+                    displayDate = "Forecast for: " + nextDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+                } else {
+                    // Fallback if no history exists
+                    displayDate = "Current Cycle: " + new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+                }
+                document.getElementById('forecast-date').innerText = displayDate;
+
+                // --- Fill Sidebar Context ---
+                document.getElementById('st-load').innerText = (d.sanctioned_load || 0) + " kW";
+                document.getElementById('st-mean').innerText = (d.mean_hourly || 0).toFixed(4) + " kW";
+                document.getElementById('st-disco').innerText = d.disco || "---";
+                const catMap = {
+                    'lifeline': 'Lifeline',
+                    'protected': 'Protected',
+                    'non_protected': 'Unprotected'
+                };
+                const rawCat = d.user_category || "---";
+                document.getElementById('st-cat').innerText = catMap[rawCat] || rawCat.replace('_', ' ');
+                document.getElementById('st-hist').innerText = Math.round(d.historical_avg_units || 0) + " kWh";
+                
+                initChart(d);
+
+                // HIDE THE CHART LOADER
+                const chartLoader = document.getElementById('chart-loader');
+                if (chartLoader) {
+                    chartLoader.style.opacity = '0';
+                    setTimeout(() => { chartLoader.style.display = 'none'; }, 300); // Smooth fade out
+                }
+            }
+        }
+
+        async function runInference() {
+            const btn = document.getElementById('predictBtn');
+            const loader = document.getElementById('btnLoader');
+            const btnText = document.getElementById('btnText');
+
+            btn.disabled = true;
+            loader.style.display = 'block';
+            btnText.innerText = "Analyzing Patterns...";
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/predict_bill', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ uid: userUid })
+                });
+                
+                const result = await response.json();
+                
+                if(result.status === "success") {
+
+                    currentPredictionData = result;
+                    // 1. Animate main total
+                    animateValue("bill-amount", 0, Math.round(result.bill.total_bill), 1000);
+                    
+                    // 2. Set the badge with icon (Clean, no extra text)
+                    document.getElementById('unit-label').innerHTML = `
+                        <i class="fa fa-microchip" style="margin-right:8px; opacity:0.7"></i>
+                        ${result.kwh} Predicted Units
+                    `;
+
+                    // 3. Handle Contextual Message with Unified Styling
+                    const msgArea = document.getElementById('inference-msg-area');
+                    const msgText = document.getElementById('inference-text');
+                    const applied = result.bill.applied_category; 
+                    
+                    // Unify naming: non_protected -> Unprotected
+                    let categoryName = applied === 'non_protected' ? 'Unprotected' : (applied.charAt(0).toUpperCase() + applied.slice(1));
+
+                    msgArea.style.display = 'block';
+                    msgArea.style.borderColor = 'rgba(52,211,153,0.15)';
+                    
+                    // Using unified var(--g3) coloring for all categories
+                    msgText.innerHTML = `Based on your consumption pattern, you fall into the 
+                        <strong style="color:var(--g3); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${categoryName}</strong> category. 
+                        Your bill is calculated using verified 2026 tariff slabs. 
+                        Learn more about <a href="nepra-info.html" style="color:var(--g3); text-decoration:none; border-bottom:1px dashed var(--g3); font-weight:600;">NEPRA Categories</a>.`;
+
+                    // 4. Update Detailed Breakdown Card
+                    document.getElementById('breakdown-card').style.display = 'block';
+                    document.getElementById('br-energy').innerText = "Rs. " + result.bill.energy_cost.toLocaleString();
+                    document.getElementById('br-fixed').innerText = "Rs. " + result.bill.fixed_charges.toLocaleString();
+                    document.getElementById('br-taxes').innerText = "Rs. " + result.bill.taxes_and_fca.toLocaleString();
+                    
+                    const slabEl = document.getElementById('br-cat');
+                    slabEl.innerText = categoryName;
+                    slabEl.style.color = "var(--g3)"; // Unified color
+                }else {
+                    alert("AI Error: " + result.error);
+                }
+            } catch (e) {
+                alert("Flask Server Offline! Run py app.py first.");
+            } finally {
+                btn.disabled = false;
+                loader.style.display = 'none';
+                btnText.innerHTML = '<i class="fa fa-bolt"></i> Generate AI Prediction';
+            }
+        }
+
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function initChart(data) {
+            const ctx = document.getElementById('usageChart').getContext('2d');
+            if(myChart) myChart.destroy();
+            
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['AC', 'Fridge', 'Pump', 'Kitchen', 'UPS', 'Base'],
+                    datasets: [{
+                        label: 'Monthly Units (kWh)',
+                        data: [
+                            data.ac_monthly || 0, 
+                            data.refrigerator_monthly || 0, 
+                            data.wp_monthly || 0, 
+                            data.kitchen_monthly || 0, 
+                            data.ups_monthly || 0, 
+                            60 
+                        ],
+                        backgroundColor: '#10b981',
+                        borderRadius: 8, // More rounded for the larger size
+                        barThickness: 35 // Increased from 25 to match bigger scale
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(13, 26, 18, 0.9)',
+                            titleFont: { family: 'Syne', size: 13 },
+                            bodyFont: { family: 'DM Sans', size: 12 },
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                label: (context) => ` ${context.raw.toFixed(1)} kWh`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Units (kWh)',
+                                color: 'rgba(255,255,255,0.6)',
+                                font: { family: 'DM Sans', size: 11, weight: '700' },
+                                padding: { bottom: 10 }
+                            },
+                            grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, 
+                            ticks: { color: '#4b7a5e', font: { size: 11 } } 
+                        },
+                        x: { 
+                            title: {
+                                display: true,
+                                text: 'Appliance Category',
+                                color: 'rgba(255,255,255,0.6)',
+                                font: { family: 'DM Sans', size: 11, weight: '700' },
+                                padding: { top: 10 }
+                            },
+                            grid: { display: false }, 
+                            ticks: { color: '#4b7a5e', font: { size: 11 } } 
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- Modal Controls ---
+        function openBreakdownModal() {
+    if(!currentPredictionData) return;
+    const res = currentPredictionData;
+    const modalContent = document.getElementById('modal-content');
+
+    // 1. Unified Category Mapping
+    const catDisplayName = {
+        'non_protected': 'Un-Protected',
+        'protected': 'Protected',
+        'lifeline': 'Lifeline'
+    };
+    const displayCategory = catDisplayName[res.bill.applied_category] || 'Un-Protected';
+    
+    // 2. Slab Logic (Matches Python NepraEngine)
+    const protectedSlabs = [[1, 100, 10.54], [101, 200, 13.01]];
+    const nonProtectedSlabs = [
+        [1, 100, 22.44], [101, 200, 28.91], [201, 300, 33.10],
+        [301, 400, 36.46], [401, 500, 38.97], [501, 600, 40.22],
+        [601, 700, 41.85], [701, 9999, 47.20]
+    ];
+
+    const slabs = res.bill.applied_category === "protected" ? protectedSlabs : nonProtectedSlabs;
+    
+    let mathRows = "";
+    let tempUnits = res.kwh;
+    let prevLimit = 0;
+
+    for (const [low, high, rate] of slabs) {
+        if (tempUnits <= 0) break;
+        let chunk = Math.min(tempUnits, high - prevLimit);
+        let cost = chunk * rate;
+        
+        mathRows += `
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <span style="color: rgba(255,255,255,0.7);">Slab ${low}-${high === 9999 ? 'Above' : high}: (${chunk.toFixed(1)} units × Rs. ${rate})</span>
+                <span style="color: #ffffff; font-weight: 600;">Rs. ${Math.round(cost).toLocaleString()}</span>
+            </div>`;
+        
+        tempUnits -= chunk;
+        prevLimit = high;
+    }
+
+    // 3. Tax Components (Alignment with card)
+    const fcaRate = 1.64;
+    const tvFee = 35.0;
+    const loadVal = parseFloat(document.getElementById('st-load').innerText) || 1.0;
+    
+    const valFca = Math.round(res.kwh * fcaRate);
+    const valDuty = Math.round(res.bill.energy_cost * 0.015);
+    const valGst = Math.round((res.bill.energy_cost + res.bill.fixed_charges + valFca) * 0.18);
+    
+    // This sum will match the "Taxes & FCA" value on your prediction card
+    const totalTaxesAndFca = valFca + valDuty + valGst + tvFee;
+
+    document.body.classList.add('modal-open');
+    document.getElementById('breakdownModal').style.display = 'flex';
+
+    modalContent.innerHTML = `
+        <div style="margin-bottom:24px; margin-top: 5px;">
+            <p class="step-title" style="margin-top:0; color: var(--g3);"><i class="fa fa-layer-group"></i> 1. Energy Computation (${displayCategory})</p>
+            <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:10px; margin-top:8px; border:1px solid var(--border);">
+                ${mathRows}
+                <div style="border-top:1px solid var(--border); margin-top:8px; padding-top:8px; display:flex; justify-content:space-between; font-weight:700;">
+                    <span style="color: rgba(255,255,255,0.7);">Total Energy Charges:</span>
+                    <span style="color: #ffffff;">Rs. ${res.bill.energy_cost.toLocaleString()}</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-bottom:24px;">
+            <p class="step-title" style="color: var(--g3);"><i class="fa fa-plug"></i> 2. Fixed Charges</p>
+            <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:10px; border:1px solid var(--border);">
+                <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                    <span style="color: rgba(255,255,255,0.7);">Capacity Charges:</span>
+                    <span style="color: #ffffff; font-weight: 700;">Rs. ${res.bill.fixed_charges.toLocaleString()}</span>
+                </div>
+                <p style="font-size:0.7rem; color:var(--text-dim); margin-top:4px;">(Load: ${loadVal} kW × Slab Rate)</p>
+            </div>
+        </div>
+
+        <div style="margin-bottom:15px;">
+            <p class="step-title" style="color: var(--g3);"><i class="fa fa-percent"></i> 3. Taxes & FCA Breakdown</p>
+            <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:10px; border:1px solid var(--border);">
+                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
+                    <span style="color: rgba(255,255,255,0.7);">Fuel Adjustment (FCA):</span>
+                    <span style="color: #ffffff;">Rs. ${valFca.toLocaleString()}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
+                    <span style="color: rgba(255,255,255,0.7);">Electricity Duty (1.5%):</span>
+                    <span style="color: #ffffff;">Rs. ${valDuty.toLocaleString()}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
+                    <span style="color: rgba(255,255,255,0.7);">Pvt. TV Fee:</span>
+                    <span style="color: #ffffff;">Rs. ${tvFee.toLocaleString()}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
+                    <span style="color: rgba(255,255,255,0.7);">GST (18%):</span>
+                    <span style="color: #ffffff;">Rs. ${valGst.toLocaleString()}</span>
+                </div>
+                
+                <div style="border-top:1px solid var(--border); margin-top:8px; padding-top:8px; display:flex; justify-content:space-between; font-weight:700;">
+                    <span style="color: rgba(255,255,255,0.7);">Total Taxes & FCA:</span>
+                    <span style="color: #ffffff;">Rs. ${totalTaxesAndFca.toLocaleString()}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+        function closeBreakdownModal() {
+            document.getElementById('breakdownModal').style.display = 'none';
+            document.body.classList.remove('modal-open');
+        }
+
+        function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }
+    </script>
+</body>
+</html>

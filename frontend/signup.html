@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up | Bill Optimizer</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png?v=1">
+    <link rel="apple-touch-icon" href="assets/favicon.png?v=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --g1: #059669;
+            --g2: #10b981;
+            --g3: #34d399;
+            --g4: #6ee7b7;
+            --dark: #030a06;
+            --surface: #0d1a12;
+            --border: rgba(52, 211, 153, 0.12);
+            --border-hover: rgba(52, 211, 153, 0.35);
+            --text: #f0fdf4;
+            --text-muted: #86efac;
+            --text-dim: #4b7a5e;
+            --glow: rgba(16, 185, 129, 0.2);
+            --card-bg: rgba(13, 26, 18, 0.9);
+            --input-bg: rgba(5, 20, 10, 0.7);
+            --error: #f87171;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--dark);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        /* ── LEFT PANEL ── */
+        .left-panel {
+            flex: 1; 
+            position: relative;
+            display: flex; 
+            flex-direction: column;
+            justify-content: center; 
+            align-items: flex-start;
+            padding: 80px 64px; /* Sufficient padding for top and bottom */
+            overflow-y: auto;   /* Allows scrolling if content is long */
+        }
+
+        .left-panel::before {
+            content: '';
+            position: absolute; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse 90% 70% at 20% 30%, rgba(5,150,105,0.2) 0%, transparent 65%),
+                radial-gradient(ellipse 60% 60% at 80% 70%, rgba(16,185,129,0.1) 0%, transparent 55%);
+            pointer-events: none;
+        }
+        .left-panel::after {
+            content: '';
+            position: absolute; inset: 0; z-index: 0;
+            background-image:
+                linear-gradient(rgba(52,211,153,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(52,211,153,0.03) 1px, transparent 1px);
+            background-size: 48px 48px;
+            pointer-events: none;
+        }
+
+        .left-content { position: relative; z-index: 1; max-width: 440px; }
+
+        .electric-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(52,211,153,0.08);
+            border: 1px solid var(--border-hover);
+            padding: 7px 16px; border-radius: 30px;
+            font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
+            text-transform: uppercase; color: var(--g3);
+            margin-bottom: 28px;
+            animation: fadeUp 0.7s 0.1s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        .electric-badge i { font-size: 0.8rem; color: var(--g2); }
+
+        .left-content h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(2.2rem, 3.2vw, 3rem);
+            font-weight: 800; line-height: 1.1;
+            letter-spacing: -0.03em; margin-bottom: 18px;
+            animation: fadeUp 0.7s 0.18s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        .left-content h1 .highlight {
+            background: linear-gradient(120deg, var(--g3), var(--g2));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+
+        .left-content p {
+            color: var(--text-dim); font-size: 0.95rem; line-height: 1.7;
+            margin-bottom: 32px;
+            animation: fadeUp 0.7s 0.26s cubic-bezier(0.16,1,0.3,1) both;
+        }
+
+        /* Step indicators */
+        .steps {
+            display: flex; flex-direction: column; gap: 16px;
+            animation: fadeUp 0.7s 0.34s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        .step {
+            display: flex; align-items: flex-start; gap: 14px;
+        }
+        .step-num {
+            width: 28px; height: 28px; flex-shrink: 0;
+            border-radius: 50%;
+            background: rgba(52,211,153,0.1);
+            border: 1px solid rgba(52,211,153,0.25);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.72rem; font-weight: 800;
+            color: var(--g3); margin-top: 1px;
+        }
+        .step-text strong {
+            display: block; font-size: 0.88rem; font-weight: 600;
+            color: var(--text-muted); margin-bottom: 2px;
+        }
+        .step-text span { font-size: 0.8rem; color: var(--text-dim); }
+
+        /* Meter animation on left bottom */
+        .meter-deco {
+            position: relative; /* Change from absolute */
+            margin-top: 48px;   /* Firmly pushes it below the 'steps' list */
+            left: 0;            /* Align with the text above */
+            z-index: 1;
+            display: flex; 
+            align-items: center; 
+            gap: 10px;
+            animation: fadeUp 0.7s 0.5s cubic-bezier(0.16,1,0.3,1) both;
+        }
+        .meter-bar {
+            width: 120px; height: 5px;
+            background: var(--border); border-radius: 10px; overflow: hidden;
+        }
+        .meter-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, var(--g1), var(--g3));
+            border-radius: 10px;
+            animation: meter-grow 2.5s 1s ease-out forwards;
+        }
+        @keyframes meter-grow { to { width: 72%; } }
+        .meter-label { font-size: 0.72rem; color: var(--text-dim); }
+
+        .bolt-deco {
+            position: absolute; z-index: 0;
+            opacity: 0.03; color: var(--g3); pointer-events: none;
+        }
+        .bolt-1 { bottom: 12%; right: 6%; font-size: 9rem; transform: rotate(10deg); }
+        .bolt-2 { top: 8%; right: 20%; font-size: 4.5rem; transform: rotate(-15deg); }
+
+        /* ── RIGHT FORM PANEL ── */
+        .right-panel {
+            width: 500px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            padding: 40px 44px;
+            background: var(--card-bg);
+            border-left: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+            overflow-y: auto;
+        }
+
+        .form-wrap {
+            width: 100%; max-width: 380px;
+            animation: fadeUp 0.8s 0.2s cubic-bezier(0.16,1,0.3,1) both;
+        }
+
+        .form-logo {
+            display: flex; align-items: center; gap: 10px;
+            font-family: 'Syne', sans-serif;
+            font-size: 1.25rem; font-weight: 800; margin-bottom: 4px;
+        }
+        .form-logo i {
+            width: 32px; height: 32px;
+            background: linear-gradient(135deg, var(--g1), var(--g3));
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem; color: #fff;
+            box-shadow: 0 0 14px var(--glow);
+        }
+        .form-logo .ai-tag {
+            font-size: 0.58rem; font-weight: 700; letter-spacing: 0.1em;
+            background: linear-gradient(90deg, var(--g1), var(--g3));
+            padding: 2px 7px; border-radius: 20px; color: #fff;
+        }
+
+        .form-subtitle {
+            color: var(--text-dim); font-size: 0.875rem;
+            margin-bottom: 26px; margin-top: 4px;
+        }
+
+        /* Two-col row */
+        .input-row {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+        }
+
+        .error-box {
+            display: none; align-items: center; gap: 10px;
+            background: rgba(248,113,113,0.08);
+            border: 1px solid rgba(248,113,113,0.25);
+            border-radius: 10px; padding: 11px 14px;
+            margin-bottom: 16px; font-size: 0.85rem;
+            color: var(--error);
+        }
+        .error-box i { flex-shrink: 0; }
+
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            20%,60% { transform: translateX(-5px); }
+            40%,80% { transform: translateX(5px); }
+        }
+
+        .input-group { margin-bottom: 14px; }
+        .input-group label {
+            display: block; font-size: 0.75rem; font-weight: 600;
+            letter-spacing: 0.06em; text-transform: uppercase;
+            color: var(--text-dim); margin-bottom: 6px;
+        }
+
+        .field-wrapper { position: relative; }
+
+        input[type="email"],
+        input[type="password"],
+        input[type="text"] {
+            width: 100%; padding: 11px 14px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text); font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem; outline: none;
+            transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+        }
+        input::placeholder { color: var(--text-dim); }
+        input:focus {
+            border-color: var(--g2);
+            background: rgba(5,20,10,0.9);
+            box-shadow: 0 0 0 3px rgba(16,185,129,0.12);
+        }
+        .field-wrapper input { padding-right: 42px; }
+
+        .toggle-password {
+            position: absolute; right: 13px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim); cursor: pointer; font-size: 0.82rem;
+            transition: color 0.2s;
+        }
+        .toggle-password:hover { color: var(--g3); }
+
+        /* Password strength */
+        .strength-bar {
+            display: flex; gap: 4px; margin-top: 7px;
+        }
+        .strength-seg {
+            flex: 1; height: 3px; border-radius: 4px;
+            background: var(--border);
+            transition: background 0.3s;
+        }
+        .strength-seg.weak   { background: #f87171; }
+        .strength-seg.medium { background: var(--warn, #fbbf24); }
+        .strength-seg.strong { background: var(--g2); }
+
+        .btn-primary {
+            width: 100%; padding: 13px;
+            background: linear-gradient(135deg, var(--g1), var(--g2));
+            border: none; border-radius: 11px;
+            color: #fff; font-family: 'Syne', sans-serif;
+            font-size: 0.95rem; font-weight: 700; letter-spacing: 0.03em;
+            cursor: pointer; margin-top: 6px;
+            transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 20px rgba(5,150,105,0.35);
+        }
+        .btn-primary:hover {
+            opacity: 0.9; transform: translateY(-1px);
+            box-shadow: 0 8px 28px rgba(5,150,105,0.5);
+        }
+        .btn-primary:active { transform: translateY(0); }
+
+        .footer-link {
+            text-align: center; margin-top: 20px;
+            font-size: 0.85rem; color: var(--text-dim);
+        }
+        .footer-link a {
+            color: var(--g3); font-weight: 600; text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .footer-link a:hover { opacity: 0.75; }
+
+        .terms-note {
+            text-align: center; margin-top: 12px;
+            font-size: 0.75rem; color: var(--text-dim); line-height: 1.5;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 860px) {
+            .left-panel { display: none; }
+            .right-panel { width: 100%; border-left: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LEFT PANEL -->
+    <div class="left-panel">
+        <i class="fa fa-bolt bolt-deco bolt-1"></i>
+        <i class="fa fa-bolt bolt-deco bolt-2"></i>
+
+        <div class="left-content">
+            <div class="electric-badge">
+                <i class="fa fa-bolt"></i> Join 2026 Energy Platform
+            </div>
+
+            <h1>Start saving on<br>every <span class="highlight">electricity bill</span></h1>
+
+            <p>Create your free account and unlock AI-powered insights tailored to Pakistan's NEPRA tariff structure.</p>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-text">
+                        <strong>Create your account</strong>
+                        <span>Quick sign-up with email or Google</span>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-text">
+                        <strong>Set up your profile</strong>
+                        <span>Enter your city, load, and appliances</span>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-text">
+                        <strong>Get your predictions</strong>
+                        <span>AI model forecasts your next bill instantly</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="meter-deco">
+            <i class="fa fa-gauge" style="color:var(--g3);font-size:0.9rem"></i>
+            <div>
+                <div class="meter-bar"><div class="meter-fill"></div></div>
+                <div class="meter-label" style="margin-top:4px">Avg. 72% savings unlocked</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT FORM PANEL -->
+    <div class="right-panel">
+        <div class="form-wrap">
+
+            <div class="form-logo">
+                <i class="fa fa-leaf"></i>
+                Bill Optimizer
+                <span class="ai-tag">AI</span>
+            </div>
+            <p class="form-subtitle">Create your free account</p>
+
+            <div id="error-message" class="error-box">
+                <i class="fa fa-circle-exclamation"></i>
+                <span id="error-text"></span>
+            </div>
+
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" id="name" placeholder="Ali Hassan"
+                    onkeydown="if(event.key==='Enter') document.getElementById('email').focus()">
+            </div>
+
+            <div class="input-group">
+                <label>Email Address</label>
+                <input type="email" id="email" placeholder="name@email.com"
+                    onkeydown="if(event.key==='Enter') document.getElementById('pass').focus()">
+            </div>
+
+            <div class="input-group">
+                <label>Password</label>
+                <div class="field-wrapper">
+                    <input type="password" id="pass" placeholder="Min. 6 characters"
+                        oninput="checkStrength(this.value)"
+                        onkeydown="if(event.key==='Enter') document.getElementById('confirm-pass').focus()">
+                    <i class="fa fa-eye toggle-password" onclick="togglePass('pass', this)"></i>
+                </div>
+                <div class="strength-bar" id="strength-bar">
+                    <div class="strength-seg" id="s1"></div>
+                    <div class="strength-seg" id="s2"></div>
+                    <div class="strength-seg" id="s3"></div>
+                    <div class="strength-seg" id="s4"></div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Confirm Password</label>
+                <div class="field-wrapper">
+                    <input type="password" id="confirm-pass" placeholder="Repeat password"
+                        onkeydown="if(event.key==='Enter') submitSignup()">
+                    <i class="fa fa-eye toggle-password" onclick="togglePass('confirm-pass', this)"></i>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="submitSignup()">
+                <i class="fa fa-bolt" style="margin-right:6px;font-size:0.85em"></i> Create Account
+            </button>
+
+            <p class="terms-note">By signing up you agree to our Terms of Service and Privacy Policy.</p>
+
+            <p class="footer-link">Already a member? <a href="index.html">Sign In</a></p>
+        </div>
+    </div>
+
+    <script>
+        function togglePass(id, icon) {
+            const input = document.getElementById(id);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        function checkStrength(val) {
+            const segs = [document.getElementById('s1'), document.getElementById('s2'),
+                          document.getElementById('s3'), document.getElementById('s4')];
+            segs.forEach(s => { s.className = 'strength-seg'; });
+            if (!val) return;
+            let score = 0;
+            if (val.length >= 6) score++;
+            if (val.length >= 10) score++;
+            if (/[A-Z]/.test(val) && /[0-9]/.test(val)) score++;
+            if (/[^A-Za-z0-9]/.test(val)) score++;
+            const cls = score <= 1 ? 'weak' : score <= 2 ? 'medium' : 'strong';
+            for (let i = 0; i < score; i++) segs[i].classList.add(cls);
+        }
+
+        function submitSignup() {
+            handleSignUp(
+                document.getElementById('name').value,
+                document.getElementById('email').value,
+                document.getElementById('pass').value,
+                document.getElementById('confirm-pass').value
+            );
+        }
+    </script>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html>

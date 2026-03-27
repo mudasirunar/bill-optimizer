@@ -1,0 +1,18 @@
+# Python local files
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+
+# Data (Ignore massive CSVs)
+data/raw/
+data/processed/*
+
+# BUT DO NOT ignore the models folder inside processed
+!data/processed/models/
+
+# System files
+.DS_Store
+.vscode/
+
+# Firebase private key (IMPORTANT: Never upload this)
+backend/serviceAccountKey.json
