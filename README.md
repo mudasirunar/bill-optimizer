@@ -22,5 +22,3 @@ A sophisticated energy management system tailored for the Pakistani energy lands
 - `/frontend`: Responsive dashboard and AI profile setup.
 - `/data`: (Local only) Raw and processed PRECON dataset files.
 
-## 📝 Note on Data
-The raw PRECON dataset (~1.6GB) is excluded from this repository. To run locally, place the `master_hourly.csv` in the `data/processed/` directory.
