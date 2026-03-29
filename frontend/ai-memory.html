@@ -225,19 +225,19 @@
                     <div class="data-value" id="disp-fridge">--</div>
                 </div>
                 <div class="data-item">
-                    <div class="data-label"><i class="fa fa-fan"></i> Ceiling Fans</div>
-                    <div class="data-value" id="disp-fans">--</div>
+                    <div class="data-label" id="label-fans"><i class="fa fa-fan"></i> Household Fans</div>
+                    <div class="data-value" id="disp-fans" style="display: flex; align-items: center; justify-content: space-between;">--</div>
                 </div>
                 <div class="data-item">
-                    <div class="data-label"><i class="fa fa-tshirt"></i> Washing Machine</div>
+                    <div class="data-label" id="label-wm"><i class="fa fa-tshirt"></i> Washing Machine</div>
                     <div class="data-value" id="disp-wm">--</div>
                 </div>
                 <div class="data-item">
-                    <div class="data-label"><i class="fa fa-water"></i> Water Pump</div>
+                    <div class="data-label" id="label-wp"><i class="fa fa-water"></i> Water Pump</div>
                     <div class="data-value" id="disp-wp">--</div>
                 </div>
                 <div class="data-item">
-                    <div class="data-label"><i class="fa fa-car-battery"></i> UPS Charging</div>
+                    <div class="data-label" id="label-ups"><i class="fa fa-car-battery"></i> UPS Charging</div>
                     <div class="data-value" id="disp-ups">--</div>
                 </div>
                 <div class="data-item" style="border-color: var(--g1); background: rgba(16,185,129,0.05); grid-column: span 1;">
@@ -297,105 +297,163 @@
 
     <script src="js/auth.js"></script>
     <script>
-        const db = firebase.firestore();
+    const db = firebase.firestore();
 
-        firebase.auth().onAuthStateChanged(user => {
-            if (!user) { window.location.href = "index.html"; return; }
+    firebase.auth().onAuthStateChanged(user => {
+        if (!user) { window.location.href = "index.html"; return; }
 
-            document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
-            if (user.photoURL) document.getElementById('user-pfp').src = user.photoURL;
+        document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
+        if (user.photoURL) document.getElementById('user-pfp').src = user.photoURL;
 
-            db.collection('users').doc(user.uid).get().then(doc => {
-                const historyLoader = document.getElementById('history-loader');
-                const historyTable = document.getElementById('history-table');
-                
-                if (!doc.exists) {
-                    historyLoader.innerHTML = "<div class='empty-state'>No profile found. Please complete setup.</div>";
-                    return;
-                }
+        db.collection('users').doc(user.uid).get().then(doc => {
+            const historyLoader = document.getElementById('history-loader');
+            const historyTable = document.getElementById('history-table');
+            
+            if (!doc.exists) {
+                historyLoader.innerHTML = "<div class='empty-state'>No profile data found.</div>";
+                return;
+            }
 
-                const d = doc.data();
+            const d = doc.data();
 
-                // Helper to format values as -- if 0 or missing
-                const fv = (val, suffix = "") => {
-                    if (val === undefined || val === null || val === 0 || val === "0" || val === "") return "--";
-                    return val + (suffix ? ` <small>${suffix}</small>` : "");
+            // ─── 1. CORE UTILITIES ───
+            const formatValue = (val, suffix = "") => {
+                if (val === undefined || val === null || val === "" || val === 0 || val === "0") return "--";
+                return val + (suffix ? ` <small>${suffix}</small>` : "");
+            };
+
+            const formatTechnicalLabel = (val) => {
+                const dictionary = {
+                    'standard': 'Standard', 'inverter': 'Inverter', 'old': 'Standard',
+                    'manual': 'Manual', 'automatic': 'Automatic', 'modified': 'Modified Sine',
+                    'pure': 'Pure Sine', 'lead_acid': 'Lead-Acid', 'lithium': 'Lithium'
                 };
+                return dictionary[val] || val;
+            };
 
-                // 1. System Context
-                document.getElementById('disp-disco').innerText = d.disco || '--';
-                document.getElementById('disp-load').innerHTML = fv(d.sanctioned_load, "kW");
+            const formatFrequencyTag = (val) => {
+                const f = parseFloat(val);
+                if (f >= 28) return "Daily";
+                if (f >= 4 && f <= 5) return "Weekly";
+                if (f === 1) return "Monthly";
+                return "";
+            };
 
-                const protEl = document.getElementById('disp-protected');
-                const cat = d.user_category || 'non_protected';
-                if (cat === 'lifeline') {
-                    protEl.innerHTML = `<span class="status-badge" style="border-color:var(--g1); color:var(--g3)">Lifeline</span>`;
-                } else if (cat === 'protected') {
-                    protEl.innerHTML = `<span class="status-badge">Protected</span>`;
-                } else {
-                    protEl.innerHTML = `<span class="status-badge" style="border-color:var(--warn); color:var(--warn)">Unprotected</span>`;
-                }
+            const createTypeChip = (val) => {
+                if (!val || val === "" || val === 0) return "";
+                return `<span class="data-type-tag">${formatTechnicalLabel(val)}</span>`;
+            };
 
-                // 2. Lifestyle Fingerprint
-                document.getElementById('disp-occupants').innerHTML = fv(d.person_count);
-                document.getElementById('disp-area').innerHTML = fv(d.property_area, "sq.ft");
-                document.getElementById('disp-floors').innerHTML = fv(d.floors);
+            const renderAppliance = (prefix, dataKey, labelText, icon, monthlyVal) => {
+                const qty = d[dataKey + '_qty'] || 0;
+                const hrs = d[dataKey + '_val'] || 0;
+                const freq = d[dataKey + '_freq'] || 0;
+                const dispEl = document.getElementById('disp-' + prefix);
+                const labelEl = document.getElementById('label-' + prefix);
                 
-                const routineMap = {
-                    'standard': 'Standard / Balanced',
-                    'morning_active': 'Morning Heavy',
-                    'evening_active': 'Evening Heavy',
-                    'all_day': 'Always Active'
-                };
-                document.getElementById('disp-routine').innerText = d.user_routine ? routineMap[d.user_routine] : 'Not Set';
+                if (!dispEl || !labelEl) return;
 
-                // 3. Appliance Features
-                document.getElementById('disp-ac').innerHTML = fv(Math.round(d.ac_monthly || 0), "kWh");
-                document.getElementById('label-ac').innerHTML = `<i class="fa fa-snowflake"></i> AC <span class="data-type-tag">${d.ac_type === 'inverter' ? 'Inverter' : 'Fixed'}</span>`;
+                if (qty > 0) {
+                    // 1. Chips
+                    let chips = createTypeChip(d[dataKey + '_type']);
+                    if (dataKey === 'u') chips += createTypeChip(d.u_battery);
+                    if (dataKey === 'wp' && d.wp_type) chips = createTypeChip(d.wp_type + " HP");
+                    labelEl.innerHTML = `<i class="${icon}"></i> ${labelText} ${chips}`;
 
-                document.getElementById('disp-fridge').innerHTML = fv(Math.round(d.refrigerator_monthly || 0), "kWh");
-                document.getElementById('label-fridge').innerHTML = `<i class="fa fa-box"></i> Fridge <span class="data-type-tag">${d.f_type === 'inverter' ? 'Inverter' : 'Old'}</span>`;
+                    // 2. Logic for Displaying "--" instead of 0
+                    const kwhVal = Math.round(monthlyVal || 0);
+                    const kwhDisplay = kwhVal > 0 ? `${kwhVal} <small style="font-size:0.6rem">kWh</small>` : "--";
+                    const hrsDisplay = hrs > 0 ? `${hrs} <small style="font-size:0.6rem">Hrs</small>` : "--";
+                    const freqTag = (hrs > 0) ? `<div style="font-size:0.55rem; color:var(--text-dim); margin-top:-2px; text-transform:uppercase; letter-spacing:0.02em">${formatFrequencyTag(freq)}</div>` : "";
 
-                document.getElementById('disp-fans').innerHTML = fv(d.fan_qty);
-                document.getElementById('disp-wm').innerHTML = fv(d.wm_qty);
-                document.getElementById('disp-wp').innerHTML = fv(Math.round(d.wp_monthly || 0), "kWh");
-                document.getElementById('disp-ups').innerHTML = fv(Math.round(d.ups_monthly || 0), "kWh");
-                document.getElementById('disp-mean').innerHTML = d.mean_hourly ? `${d.mean_hourly.toFixed(4)} <small>kW</small>` : "--";
-
-                // 4. History Table
-                const tbody = document.getElementById('history-table-body');
-                historyLoader.style.display = 'none';
-                historyTable.style.display = 'table';
-
-                if (d.bill_history && d.bill_history.length > 0) {
-                    tbody.innerHTML = "";
-                    d.bill_history.forEach(row => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td class="month-cell">${row.month}</td>
-                            <td>${row.units} kWh</td>
-                            <td>Rs. ${(row.amount || 0).toLocaleString()}</td>
-                            <td style="color:var(--g3)"><i class="fa fa-circle-check"></i> Stored</td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
-                    document.getElementById('disp-avg-hist').innerHTML = fv(Math.round(d.historical_avg_units || 0), "kWh/mo");
+                    // 3. Three-Column Layout: Qty | kWh | Usage(Stacked)
+                    dispEl.innerHTML = `
+                        <div style="display: flex; align-items: center; width: 100%; justify-content: space-between;">
+                            <div style="font-family:'Syne'; font-weight:800; color:var(--g3); min-width:30px">${qty}x</div>
+                            <span style="color:var(--border); font-weight: 300;">|</span>
+                            <div style="text-align: center; flex: 1;">${kwhDisplay}</div>
+                            <span style="color:var(--border); font-weight: 300;">|</span>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; min-width:50px;">
+                                <div style="line-height:1">${hrsDisplay}</div>
+                                ${freqTag}
+                            </div>
+                        </div>
+                    `;
                 } else {
-                    historyTable.style.display = 'none';
-                    historyLoader.style.display = 'block';
-                    historyLoader.innerHTML = "<div class='empty-state'>No verified history found. Prediction accuracy may be limited.</div>";
-                    document.getElementById('disp-avg-hist').innerText = "--";
+                    labelEl.innerHTML = `<i class="${icon}"></i> ${labelText}`;
+                    dispEl.innerText = "--";
                 }
+            };
 
-            }).catch(err => {
-                console.error("Firestore Error:", err);
-                document.getElementById('history-loader').innerHTML = "<div class='empty-state' style='color:#f87171'>Error loading AI memory.</div>";
-            });
+            // ─── 2. SYSTEM CONTEXT ───
+            document.getElementById('disp-disco').innerText = d.disco || '--';
+            document.getElementById('disp-load').innerHTML = formatValue(d.sanctioned_load, "kW");
+
+            const cat = d.user_category || 'standard';
+            const catDisplay = cat === 'lifeline' ? 'Lifeline' : (cat === 'protected' ? 'Protected' : 'Standard');
+            document.getElementById('disp-protected').innerHTML = `<span class="status-badge">${catDisplay}</span>`;
+
+            document.getElementById('disp-occupants').innerHTML = formatValue(d.person_count);
+            document.getElementById('disp-area').innerHTML = formatValue(d.property_area, "sq.ft");
+            document.getElementById('disp-floors').innerHTML = formatValue(d.floors);
+            
+            const routineMap = { 'standard': 'Standard', 'morning_active': 'Morning Heavy', 'evening_active': 'Evening Heavy', 'all_day': 'Always Active' };
+            document.getElementById('disp-routine').innerText = d.user_routine ? routineMap[d.user_routine] : 'Not Set';
+
+            // ─── 3. APPLIANCES (AC, Fridge, Washer, Pump, UPS) ───
+            renderAppliance('ac', 'ac', 'AC', 'fa fa-snowflake', d.ac_monthly);
+            renderAppliance('fridge', 'f', 'Fridge', 'fa fa-box', d.refrigerator_monthly);
+            renderAppliance('wm', 'wm', 'Washer', 'fa fa-soap', d.wm_monthly);
+            renderAppliance('wp', 'wp', 'Pump', 'fa fa-water', d.wp_monthly);
+            renderAppliance('ups', 'u', 'UPS', 'fa fa-car-battery', d.ups_monthly);
+
+            // ─── 4. FANS (SPECIAL DUAL DISPLAY - QUANTITIES LEFT, KWH RIGHT) ───
+            const fAc = d.fan_ac_qty || 0;
+            const fDc = d.fan_dc_qty || 0;
+            const fanDisp = document.getElementById('disp-fans');
+
+            if (fAc > 0 || fDc > 0) {
+                let qtyStack = `<div style="display: flex; flex-direction: column; line-height: 1.1;">`;
+                if (fAc > 0) qtyStack += `<span><b style="color:var(--g3)">${fAc}x</b> <small style="font-size:0.6rem; color:var(--text-dim)">Standard</small></span>`;
+                if (fDc > 0) qtyStack += `<span><b style="color:var(--g3)">${fDc}x</b> <small style="font-size:0.6rem; color:var(--text-dim)">Inverter</small></span>`;
+                qtyStack += `</div>`;
+
+                fanDisp.innerHTML = `
+                    <div style="display: flex; align-items: center; width: 100%; justify-content: space-between;">
+                        ${qtyStack}
+                        <div style="display:flex; align-items:center;">
+                             <span style="color:var(--border); margin: 0 12px; font-weight: 300; font-size: 1.2rem;">|</span>
+                             <div style="white-space: nowrap;">
+                                ${Math.round(d.fan_monthly || 0)} <small style="font-size:0.7rem; color:var(--text-dim)">kWh</small>
+                             </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                fanDisp.innerText = "--";
+            }
+
+            document.getElementById('disp-mean').innerHTML = d.mean_hourly ? `${d.mean_hourly.toFixed(4)} <small>kW</small>` : "--";
+
+            // ─── 5. HISTORY ───
+            historyLoader.style.display = 'none';
+            historyTable.style.display = 'table';
+            const tbody = document.getElementById('history-table-body');
+            if (d.bill_history && d.bill_history.length > 0) {
+                tbody.innerHTML = d.bill_history.map(row => `<tr><td class="month-cell">${row.month}</td><td>${row.units} kWh</td><td>Rs. ${row.amount.toLocaleString()}</td><td style="color:var(--g3)"><i class="fa fa-check-circle"></i> Stored</td></tr>`).join('');
+                document.getElementById('disp-avg-hist').innerHTML = formatValue(Math.round(d.historical_avg_units || 0), "kWh/mo");
+            } else {
+                historyTable.style.display = 'none';
+                historyLoader.style.display = 'block';
+                historyLoader.innerHTML = "<div class='empty-state'>No history found.</div>";
+            }
+        }).catch(err => {
+            console.error(err);
+            document.getElementById('history-loader').innerHTML = "<div class='empty-state'>Error syncing data. Check Firestore connection.</div>";
         });
+    });
 
-        function logout() {
-            firebase.auth().signOut().then(() => window.location.href = 'index.html');
-        }
-    </script>
+    function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }
+</script>
 </body>
 </html>

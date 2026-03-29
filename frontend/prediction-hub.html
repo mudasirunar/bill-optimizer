@@ -420,6 +420,22 @@
         </div>
     </div>
 
+    <div id="inferenceModal" class="modal-overlay" onclick="closeInferenceModal()">
+        <div class="modal-card" style="max-width: 600px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3><i class="fa fa-brain-circuit"></i> AI Inference Analysis</h3>
+            </div>
+            <div id="inference-modal-content"></div>
+            <div style="margin-top: 20px; padding: 15px; border-radius: 12px; background: rgba(16, 185, 129, 0.05); border: 1px solid var(--border);">
+                <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.5;">
+                    <i class="fa fa-info-circle" style="color: var(--g3)"></i> 
+                    <strong>System Logic:</strong> This month's prediction is synthesized using a 3-way blend of Physics-based baseloads, Random Forest feature weights, and your recency-weighted history.
+                </p>
+            </div>
+            <button class="btn-predict" style="margin-top: 20px; padding: 12px;" onclick="closeInferenceModal()">Close Analysis</button>
+        </div>
+    </div>
+
    <footer class="footer">
         <div class="footer-brand">
             <i class="fa fa-graduation-cap"></i> Sir Syed University of Engineering and Technology
@@ -476,9 +492,14 @@
                     currentPredictionData = result;
                     animateValue("bill-amount", 0, Math.round(result.bill.total_bill), 1000);
                     
+                    // --- UPDATED: Showing Info Icon next to label ---
                     document.getElementById('unit-label').innerHTML = `
-                        <i class="fa fa-microchip" style="margin-right:8px; opacity:0.7"></i>
-                        ${result.kwh} Predicted Units
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span><i class="fa fa-microchip" style="opacity:0.7"></i> ${result.kwh} Predicted Units</span>
+                            <span class="help-trigger" onclick="openInferenceModal()" title="View AI Analysis">
+                                <i class="fa fa-circle-info"></i>
+                            </span>
+                        </div>
                     `;
 
                     // Handle NEPRA Info Box
@@ -766,6 +787,123 @@
                 if (progress < 1) window.requestAnimationFrame(step);
             };
             window.requestAnimationFrame(step);
+        }
+
+        // ─── INFERENCE ANALYSIS MODAL LOGIC ───
+        function openInferenceModal() {
+    if (!currentPredictionData) return;
+    const res = currentPredictionData;
+    const phy = res.bill.physics_breakdown;
+    const ctx = res.bill.seasonal_context;
+    const drift = res.bill.drift;
+    const content = document.getElementById('inference-modal-content');
+    
+    // 1. Blend Calculations
+    const pW = Math.round(res.bill.blend_weights.physics * 100);
+    const rW = Math.round(res.bill.blend_weights.rf * 100);
+
+    // 2. Logic for Physics Signatures
+    // We group them for the Post-Mortem report
+    const foundationTotal = phy.person_base + phy.area_lighting;
+    const appliancesTotal = phy.fridge + phy.water_pump + phy.kitchen + phy.washing + phy.ups;
+    const totalLoad = phy.total;
+
+    content.innerHTML = `
+        <div style="margin-bottom:28px">
+            <p class="step-title" style="margin-top:0"><i class="fa fa-layer-group"></i> 1. Model Decision Weights</p>
+            <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:10px;">
+                The system analyzed your appliance signatures and the current month (${ctx.month}). 
+                Because it is a <strong>${ctx.ac_scale > 0.5 ? 'High' : 'Low'}</strong> consumption month, the Decision Engine used this ratio:
+            </p>
+            <div style="display:flex; height:12px; border-radius:10px; overflow:hidden; background:var(--surface2)">
+                <div style="width:${pW}%; background:var(--g1)" title="Physics"></div>
+                <div style="width:${rW}%; background:var(--g3)" title="RF AI"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.7rem; margin-top:8px;">
+                <span>Physics Baseline: <b>${pW}%</b></span>
+                <span>RF AI Patterns: <b>${rW}%</b></span>
+            </div>
+        </div>
+
+        <div style="margin-bottom:28px">
+            <p class="step-title"><i class="fa fa-cloud-sun"></i> 2. Seasonal Climate Influence</p>
+            <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:12px; border:1px solid var(--border);">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                    <div>
+                        <small style="color:var(--text-dim); display:block; text-transform:uppercase; font-size:0.6rem;">AC Intensity</small>
+                        <span style="font-weight:700; color:var(--g3)">${(ctx.ac_scale * 100).toFixed(0)}% Capacity</span>
+                    </div>
+                    <div>
+                        <small style="color:var(--text-dim); display:block; text-transform:uppercase; font-size:0.6rem;">Avg. Fan Hours</small>
+                        <span style="font-weight:700; color:var(--g3)">${res.bill.physics_breakdown.fans > 0 ? 'Seasonal Heuristic' : '0'}</span>
+                    </div>
+                </div>
+                <p style="font-size:0.7rem; color:var(--text-muted); margin-top:10px; line-height:1.4;">
+                    <i class="fa fa-info-circle"></i> AI Logic: During ${ctx.month}, the system applies a <b>Non-Linear Decay</b> to AC usage and assumes peak fan operation of ~${ctx.month === 'June' ? '18' : '8'} hours to align with Karachi/Lahore climate data.
+                </p>
+            </div>
+        </div>
+
+        <div>
+            <p class="step-title"><i class="fa fa-microchip"></i> 3. Load Participation Audit</p>
+            <table class="calc-table" style="font-size:0.8rem">
+                <thead>
+                    <tr style="color:var(--text-dim); font-size:0.6rem; text-transform:uppercase;">
+                        <th style="text-align:left; padding-bottom:8px">Signature</th>
+                        <th style="text-align:right; padding-bottom:8px">Physics Baseline</th>
+                        <th style="text-align:right; padding-bottom:8px">Involvement</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="label">Structural Foundation (Area/People)</td>
+                        <td class="val">${foundationTotal.toFixed(1)} <small>kWh</small></td>
+                        <td class="val" style="color:var(--g3)">${Math.round((foundationTotal/totalLoad)*100)}%</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Cooling Signature (AC/Fans)</td>
+                        <td class="val">${(phy.ac + phy.fans).toFixed(1)} <small>kWh</small></td>
+                        <td class="val" style="color:var(--g3)">${Math.round(((phy.ac + phy.fans)/totalLoad)*100)}%</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Heavy Appliances (Fridge/Pump/WM)</td>
+                        <td class="val">${(phy.fridge + phy.water_pump + phy.washing).toFixed(1)} <small>kWh</small></td>
+                        <td class="val" style="color:var(--g3)">${Math.round(((phy.fridge + phy.water_pump + phy.washing)/totalLoad)*100)}%</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Operational Waste (UPS Losses)</td>
+                        <td class="val">${phy.ups.toFixed(1)} <small>kWh</small></td>
+                        <td class="val" style="color:var(--g3)">${Math.round((phy.ups/totalLoad)*100)}%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-top:20px; border-top:1px solid var(--border); padding-top:15px;">
+            <div style="display:flex; justify-content:space-between; align-items:center">
+                <span style="font-size:0.85rem; color:var(--text-muted)">Physics Derived Total:</span>
+                <span style="font-weight:600">${phy.total} kWh</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                <span style="font-size:0.85rem; color:var(--text-muted)">RF Neural Adjustment:</span>
+                <span style="font-weight:600; color:var(--warn)">${(res.kwh - phy.total).toFixed(1)} kWh</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px dashed var(--border)">
+                <span style="font-weight:800; color:var(--g3)">Final Inference:</span>
+                <span style="font-family:'Syne'; font-weight:800; font-size:1.2rem; color:var(--g3)">${res.kwh} kWh</span>
+            </div>
+            <p style="font-size:0.65rem; color:var(--text-dim); margin-top:12px; font-style:italic;">
+                * The "Neural Adjustment" represents the Random Forest model detecting patterns from the PRECON dataset that pure physics equations cannot capture (e.g. erratic standby power or human behavioral variance).
+            </p>
+        </div>
+    `;
+
+    document.body.classList.add('modal-open');
+    document.getElementById('inferenceModal').style.display = 'flex';
+}
+        function closeInferenceModal() {
+            document.getElementById('inferenceModal').style.display = 'none';
+            document.body.classList.remove('modal-open');
         }
 
         function openBreakdownModal() {
