@@ -76,6 +76,19 @@ def get_master_df():
         _master_df = pd.read_csv(MASTER_PATH, parse_dates=["datetime"])
     return _master_df
 
+def safe_get(data, key, default=0.0):
+    """
+    PREVENTS NoneType CRASHES.
+    If DB value is null or missing, returns the provided default.
+    """
+    val = data.get(key)
+    if val is None or val == "":
+        return default
+    try:
+        return float(val)
+    except:
+        return default
+
 
 # ─────────────────────────────────────────
 #  SEASONAL UTILITIES
@@ -111,7 +124,6 @@ def apply_seasonal_scaling(appliance_kwh: dict, month: int) -> dict:
         dict with season-adjusted values
     """
     ac_scale  = get_seasonal_ac_scale(month)
-    fan_scale = get_seasonal_fan_scale(month)
 
     adjusted = appliance_kwh.copy()
     adjusted['ac_monthly']         = appliance_kwh.get('ac_monthly', 0) * ac_scale
@@ -443,184 +455,139 @@ def forecast_24h():
 
 @app.route('/api/predict_bill', methods=['POST'])
 def predict_user_bill():
-    """
-    Predict monthly electricity bill.
-
-    V2 Pipeline:
-    1. Load user profile from Firestore
-    2. Compute seasonal-adjusted appliance kWh
-    3. Build RF feature vector (matching training features exactly)
-    4. RF predicts base kWh for current month
-    5. Apply occupancy + routine heuristics
-    6. Calibrate with recency-weighted bill history
-    7. Calculate bill via NepraEngine
-    8. Save to history
-    """
     try:
         data = request.json
         uid  = data['uid']
-
-        # Allow optional month override for "what-if" simulations
         target_month = int(data.get('month', get_current_month()))
 
         user_doc = db.collection('users').document(uid).get()
         if not user_doc.exists:
             return jsonify({"error": "Profile not found"}), 404
-
         u = user_doc.to_dict()
 
-        # ── STEP 1: Raw appliance kWh from user profile ──
-        # These are computed and stored by the frontend (setup_profile.html)
-        appliance_kwh_raw = {
-            'ac_monthly':           float(u.get('ac_monthly', 0)),
-            'refrigerator_monthly': float(u.get('refrigerator_monthly', 0)),
-            'kitchen_monthly':      float(u.get('kitchen_monthly', 0)),
-            'ups_monthly':          float(u.get('ups_monthly', 0)),
-            'wp_monthly':           float(u.get('wp_monthly', 0)),
-            'weekend_usage':        float(u.get('mean_hourly', 0.5)),  # proxy
-        }
-
-        # ── STEP 2: Apply seasonal scaling ──
-        # THIS is the core fix: user reports flat "8 hrs/day AC" usage
-        # but we know in January that AC runs 0 hours, so we scale it down.
-        appliance_kwh = apply_seasonal_scaling(appliance_kwh_raw, target_month)
-
-        ac_scale = get_seasonal_ac_scale(target_month)
-        month_name = calendar.month_name[target_month]
-
-        print(f"[INFO] Predicting for {month_name} (AC scale: {ac_scale:.2f})")
-        print(f"[INFO] Raw AC kWh: {appliance_kwh_raw['ac_monthly']:.1f} → "
-              f"Scaled: {appliance_kwh['ac_monthly']:.1f}")
-
-        # ── STEP 3: Occupancy & Routine heuristics ──
-        person_count = float(u.get('person_count', 1))
+        # ── STEP 1: Foundation Data Extraction ──
+        sanc_load    = safe_get(u, 'sanctioned_load', 1.0)
+        p_area       = safe_get(u, 'property_area', sanc_load * 600) 
+        person_count = safe_get(u, 'person_count', 1.0)
+        floors       = safe_get(u, 'floors', 1.0)
         routine      = u.get('user_routine', 'standard')
 
-        # Phantom load: fans, lights, phone chargers, always-on devices
-        # Scale by season (more fans in summer, more lights in winter)
-        fan_scale    = get_seasonal_fan_scale(target_month)
-        phantom_kwh  = person_count * (12.0 + 8.0 * fan_scale)  # 12–20 kWh/person/month
+        # ── STEP 2: Inventory Awareness ──
+        ac_qty = safe_get(u, 'ac_qty', 0.0)
+        f_qty  = safe_get(u, 'f_qty', 0.0)
+        u_qty  = safe_get(u, 'u_qty', 0.0)
+        is_minimalist = (ac_qty == 0 and f_qty == 0)
+        
+        # Calibration Multiplier: Damping AI assumptions for empty houses
+        appliance_intensity = 1.0 if not is_minimalist else 0.55
 
-        routine_multipliers = {
-            "standard":       1.00,
-            "morning_active": 1.05,
-            "evening_active": 1.15,
-            "all_day":        1.25,
+        appliance_kwh_raw = {
+            'ac_monthly':           safe_get(u, 'ac_monthly'),
+            'refrigerator_monthly': safe_get(u, 'refrigerator_monthly'),
+            'kitchen_monthly':      safe_get(u, 'kitchen_monthly'),
+            'ups_monthly':          safe_get(u, 'ups_monthly'),
+            'wp_monthly':           safe_get(u, 'wp_monthly'),
+            'weekend_usage':        safe_get(u, 'mean_hourly', 0.0833), 
         }
-        routine_factor = routine_multipliers.get(routine, 1.00)
 
-        # ── STEP 4: Build RF feature vector ──
-        # Must match BILL_FEATURES list from training EXACTLY
-        person_count_meta = person_count
-        property_area     = float(u.get('sanctioned_load', 5)) * 800  # rough proxy: kW → sqft
+        # ── STEP 3: Seasonal Intelligence ──
+        appliance_kwh = apply_seasonal_scaling(appliance_kwh_raw, target_month)
+        ac_scale      = get_seasonal_ac_scale(target_month)
+        fan_scale     = get_seasonal_fan_scale(target_month)
+        month_name    = calendar.month_name[target_month]
 
-        feature_vector = {feat: 0.0 for feat in bill_feats}  # initialize all to 0
+        # ── STEP 4: Occupancy & Routine Heuristics ──
+        # Tighter phantom load (5.0 base) to prevent 'Lifeline creep'
+        phantom_kwh = person_count * (5.0 + 5.0 * fan_scale)
+        routine_map = {"standard": 1.0, "morning_active": 1.05, "evening_active": 1.10, "all_day": 1.20}
+        routine_factor = routine_map.get(routine, 1.0)
 
-        # Fill known features
-        feature_vector['ac_monthly']           = appliance_kwh['ac_monthly']
-        feature_vector['kitchen_monthly']       = appliance_kwh['kitchen_monthly']
-        feature_vector['refrigerator_monthly']  = appliance_kwh['refrigerator_monthly']
-        feature_vector['ups_monthly']           = appliance_kwh['ups_monthly']
-        feature_vector['wp_monthly']            = appliance_kwh['wp_monthly']
-        feature_vector['weekend_usage']         = appliance_kwh['weekend_usage']
-        feature_vector['month_num']             = float(target_month)
-        feature_vector['person_count']          = person_count_meta
-        feature_vector['property_area']         = property_area
-        feature_vector['meta_ac_count']         = float(u.get('ac_qty', 0))
-        feature_vector['meta_fridge_count']     = float(u.get('f_qty', 0))
-        feature_vector['meta_ups_count']        = float(u.get('u_qty', 0))
-        feature_vector['floors']                = 1.0  # default — not collected in form
+        # ── STEP 5: Ground-Truth Physics Anchor ──
+        # Your input: 0.0833 kW * 24h * 30 days = ~60 kWh
+        user_mean_load = appliance_kwh_raw['weekend_usage']
+        physics_baseline_kwh = user_mean_load * 24 * 30
 
-        df_input = pd.DataFrame([feature_vector])
+        # ── STEP 6: Intelligent RF Inference ──
+        feature_vector = {feat: 0.0 for feat in bill_feats}
+        feature_vector.update({
+            'ac_monthly':           appliance_kwh['ac_monthly'],
+            'kitchen_monthly':      appliance_kwh['kitchen_monthly'],
+            'refrigerator_monthly': appliance_kwh['refrigerator_monthly'],
+            'ups_monthly':          appliance_kwh['ups_monthly'],
+            'wp_monthly':           appliance_kwh['wp_monthly'],
+            'weekend_usage':        user_mean_load,
+            'month_num':            float(target_month),
+            'person_count':         person_count,
+            'property_area':        p_area,
+            'meta_ac_count':        ac_qty,
+            'meta_fridge_count':    f_qty,
+            'meta_ups_count':       u_qty,
+            'floors':               floors
+        })
 
-        # ── STEP 5: RF prediction ──
-        ai_pred_kwh = float(rf_model.predict(df_input)[0])
+        ai_pred_raw = float(rf_model.predict(pd.DataFrame([feature_vector]))[0])
+        
+        # THE ACCURACY MERGE: Blend AI Structural logic with Physics Ground Truth
+        # If no appliances, we trust the Physics math 85% to avoid hallucinations
+        if is_minimalist:
+            ai_contribution = (ai_pred_raw * appliance_intensity)
+            steered_kwh = (physics_baseline_kwh * 0.85) + (ai_contribution * 0.15)
+            calibration_mode = "Physics-Anchored (Minimalist)"
+        else:
+            steered_kwh = (ai_pred_raw * 0.70) + (physics_baseline_kwh * 0.30)
+            calibration_mode = "Appliance-Aware Context"
 
-        # Apply occupancy heuristic and routine multiplier
-        steered_kwh = (ai_pred_kwh + phantom_kwh) * routine_factor
+        # Apply heuristics to the blended result
+        total_ai_kwh = (steered_kwh + phantom_kwh) * routine_factor
 
-        print(f"[INFO] RF base kWh: {ai_pred_kwh:.1f} | "
-              f"Phantom: {phantom_kwh:.1f} | Steered: {steered_kwh:.1f}")
-
-        # ── STEP 6: Recency-weighted history calibration ──
+        # ── STEP 7: History Blending & Drift ──
         bill_history = u.get('bill_history', [])
         hist_avg     = compute_recency_weighted_avg(bill_history)
         drift_info   = compute_usage_drift(bill_history)
 
         if hist_avg > 0:
-            # Blend AI (60%) with recency-weighted history (40%)
-            # If drift is strong, trust history more
-            if drift_info['trend'] in ('increasing', 'decreasing'):
-                ai_weight   = 0.50
-                hist_weight = 0.50
-                calibration_mode = (
-                    f"Hybrid AI — {drift_info['trend']} trend detected "
-                    f"({drift_info['change_pct']:+.1f}% vs 3mo ago)"
-                )
-            else:
-                ai_weight   = 0.60
-                hist_weight = 0.40
-                calibration_mode = (
-                    f"Hybrid AI — stable usage pattern "
-                    f"(Occupancy: {int(person_count)}p, {month_name}, {routine})"
-                )
-            final_kwh = (steered_kwh * ai_weight) + (hist_avg * hist_weight)
+            ai_weight, hist_weight = (0.50, 0.50) if drift_info['trend'] != 'stable' else (0.65, 0.35)
+            final_kwh = (total_ai_kwh * ai_weight) + (hist_avg * hist_weight)
+            calibration_mode += f" | Hybrid ({drift_info['trend']})"
         else:
-            final_kwh        = steered_kwh
-            calibration_mode = f"Seasonal AI ({month_name}, AC@{ac_scale:.0%}, {routine})"
+            final_kwh = total_ai_kwh
 
-        print(f"[INFO] History avg: {hist_avg:.1f} kWh | Final: {final_kwh:.1f} kWh")
+        # ── STEP 8: NEPRA Billing (Using the Overhauled Engine) ──
+        cat = u.get('user_category', 'lifeline')
+        bill_res = nepra.calculate_bill(units=final_kwh, load_kw=sanc_load, user_category=cat)
 
-        # ── STEP 7: Calculate bill via NepraEngine ──
-        cat      = u.get('user_category', 'non_protected')
-        bill_res = nepra.calculate_bill(
-            units         = final_kwh,
-            load_kw       = float(u.get('sanctioned_load', 1.0)),
-            user_category = cat
-        )
-
-        # ── STEP 8: Enrich response with seasonal context ──
-        bill_res['engine_mode']             = calibration_mode
-        bill_res['seasonal_context']        = {
-            'month':            month_name,
-            'month_num':        target_month,
-            'ac_scale':         round(ac_scale, 2),
-            'ac_kwh_raw':       round(appliance_kwh_raw['ac_monthly'], 1),
-            'ac_kwh_seasonal':  round(appliance_kwh['ac_monthly'], 1),
-            'ac_saving_kwh':    round(appliance_kwh_raw['ac_monthly'] -
-                                      appliance_kwh['ac_monthly'], 1),
+        # UI Response Formatting
+        bill_res['engine_mode'] = calibration_mode
+        bill_res['seasonal_context'] = {
+            'month': month_name, 
+            'ac_scale': round(ac_scale, 2),
+            'fan_scale': round(fan_scale, 2)
         }
-        bill_res['occupancy_phantom_kwh']   = round(phantom_kwh, 1)
-        bill_res['routine_factor']          = routine_factor
-        bill_res['drift']                   = drift_info
-        bill_res['history_months_used']     = len(bill_history)
+        bill_res['occupancy_phantom_kwh'] = round(phantom_kwh, 1)
+        bill_res['drift'] = drift_info
 
-        # ── Save prediction to Firestore history ──
+        # Detailed Audit Trail Save
         db.collection('users').document(uid).collection('history').add({
-            "timestamp":      firestore.SERVER_TIMESTAMP,
-            "month_predicted":target_month,
-            "kwh_predicted":  round(final_kwh, 2),
-            "kwh_rf_base":    round(ai_pred_kwh, 2),
-            "kwh_hist_avg":   round(hist_avg, 2),
+            "timestamp":       firestore.SERVER_TIMESTAMP,
+            "month_predicted": target_month,
+            "kwh_predicted":   round(final_kwh, 2),
+            "bill_estimate":   float(bill_res['total_bill']),
             "factors": {
-                "people":        person_count,
-                "routine":       routine,
-                "ac_scale":      round(ac_scale, 2),
-                "month":         month_name,
-                "calibration":   calibration_mode,
-            },
-            "bill_estimate":  float(bill_res['total_bill'])
+                "people": person_count, "area": p_area, "routine": routine,
+                "ac_qty": ac_qty, "f_qty": f_qty, "mean_hourly": user_mean_load,
+                "calibration": calibration_mode, "is_minimalist": is_minimalist
+            }
         })
 
         return jsonify({
-            "status": "success",
-            "month":  month_name,
-            "kwh":    round(final_kwh, 2),
-            "bill":   bill_res
+            "status": "success", 
+            "month": month_name, 
+            "kwh": round(final_kwh, 2), 
+            "bill": bill_res
         })
 
     except Exception as e:
-        print(f"Prediction Error: {e}")
+        print(f"[CRITICAL] AI Inference Failure: {e}")
         import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
@@ -628,88 +595,135 @@ def predict_user_bill():
 @app.route('/api/seasonal_preview', methods=['POST'])
 def seasonal_preview():
     """
-    NEW ENDPOINT: Return 12-month seasonal estimate for the user.
-    Useful for the dashboard's "Annual Energy Signature" chart.
-    Shows what the user's bill looks like across all 12 months.
+    Returns a 12-month seasonal simulation.
+    Fully synchronized with predict_bill v2.2 (Physics-Anchored Logic).
     """
     try:
-        uid      = request.json.get('uid')
+        data = request.json
+        uid = data.get('uid')
+        
         user_doc = db.collection('users').document(uid).get()
         if not user_doc.exists:
             return jsonify({"error": "Profile not found"}), 404
 
         u = user_doc.to_dict()
 
+        # ── STEP 1: Foundation Data Extraction ──
+        sanc_load    = safe_get(u, 'sanctioned_load', 1.0)
+        p_area       = safe_get(u, 'property_area', sanc_load * 600) 
+        person_count = safe_get(u, 'person_count', 1.0)
+        floors       = safe_get(u, 'floors', 1.0)
+        routine      = u.get('user_routine', 'standard')
+        cat          = u.get('user_category', 'non_protected')
+
+        # ── STEP 2: Inventory & Intensity Logic (PredictBill Sync) ──
+        ac_qty = safe_get(u, 'ac_qty', 0.0)
+        f_qty  = safe_get(u, 'f_qty', 0.0)
+        u_qty  = safe_get(u, 'u_qty', 0.0)
+        
+        is_minimalist = (ac_qty == 0 and f_qty == 0)
+        appliance_intensity = 1.0 if not is_minimalist else 0.55
+
         appliance_kwh_raw = {
-            'ac_monthly':           float(u.get('ac_monthly', 0)),
-            'refrigerator_monthly': float(u.get('refrigerator_monthly', 0)),
-            'kitchen_monthly':      float(u.get('kitchen_monthly', 0)),
-            'ups_monthly':          float(u.get('ups_monthly', 0)),
-            'wp_monthly':           float(u.get('wp_monthly', 0)),
-            'weekend_usage':        float(u.get('mean_hourly', 0.5)),
+            'ac_monthly':           safe_get(u, 'ac_monthly'),
+            'refrigerator_monthly': safe_get(u, 'refrigerator_monthly'),
+            'kitchen_monthly':      safe_get(u, 'kitchen_monthly'),
+            'ups_monthly':          safe_get(u, 'ups_monthly'),
+            'wp_monthly':           safe_get(u, 'wp_monthly'),
+            'weekend_usage':        safe_get(u, 'mean_hourly', 0.0833), 
         }
 
-        person_count   = float(u.get('person_count', 1))
-        routine        = u.get('user_routine', 'standard')
-        routine_factor = {'standard': 1.00, 'morning_active': 1.05,
-                          'evening_active': 1.15, 'all_day': 1.25}.get(routine, 1.0)
-        cat = u.get('user_category', 'non_protected')
+        # Routine Heuristics (PredictBill v2.2 Standards)
+        routine_map = {"standard": 1.0, "morning_active": 1.05, "evening_active": 1.10, "all_day": 1.20}
+        routine_factor = routine_map.get(routine, 1.0)
 
         monthly_preview = []
-        for m in range(1, 13):
-            scaled      = apply_seasonal_scaling(appliance_kwh_raw, m)
-            fan_scale   = get_seasonal_fan_scale(m)
-            phantom_kwh = person_count * (12.0 + 8.0 * fan_scale)
 
+        # ── STEP 3: 12-Month Simulation Loop ──
+        for m in range(1, 13):
+            # A. Seasonal Scaling for the specific month
+            scaled = apply_seasonal_scaling(appliance_kwh_raw, m)
+            ac_scale = get_seasonal_ac_scale(m)
+            fan_scale = get_seasonal_fan_scale(m)
+
+            # B. Phantom Load (Synchronized 5.0 base)
+            phantom_kwh = person_count * (5.0 + 5.0 * fan_scale)
+
+            # C. Ground-Truth Physics Anchor (Consistent with PredictBill)
+            # This represents the base-load behavior (mean_hourly * 720 hours)
+            user_mean_load = appliance_kwh_raw['weekend_usage']
+            physics_baseline_kwh = user_mean_load * 24 * 30
+
+            # D. AI Feature Vector Construction
             feature_vector = {feat: 0.0 for feat in bill_feats}
             feature_vector.update({
-                'ac_monthly':          scaled['ac_monthly'],
-                'kitchen_monthly':     scaled['kitchen_monthly'],
-                'refrigerator_monthly':scaled['refrigerator_monthly'],
-                'ups_monthly':         scaled['ups_monthly'],
-                'wp_monthly':          scaled['wp_monthly'],
-                'weekend_usage':       scaled['weekend_usage'],
-                'month_num':           float(m),
-                'person_count':        person_count,
-                'property_area':       float(u.get('sanctioned_load', 5)) * 800,
-                'meta_ac_count':       float(u.get('ac_qty', 0)),
-                'meta_fridge_count':   float(u.get('f_qty', 0)),
-                'meta_ups_count':      float(u.get('u_qty', 0)),
-                'floors':              1.0,
+                'ac_monthly':           scaled['ac_monthly'],
+                'kitchen_monthly':      scaled['kitchen_monthly'],
+                'refrigerator_monthly': scaled['refrigerator_monthly'],
+                'ups_monthly':          scaled['ups_monthly'],
+                'wp_monthly':           scaled['wp_monthly'],
+                'weekend_usage':        user_mean_load,
+                'month_num':            float(m),
+                'person_count':         person_count,
+                'property_area':        p_area,
+                'meta_ac_count':        ac_qty,
+                'meta_fridge_count':    f_qty,
+                'meta_ups_count':       u_qty,
+                'floors':               floors
             })
 
-            df_m         = pd.DataFrame([feature_vector])
-            ai_kwh       = float(rf_model.predict(df_m)[0])
-            final_kwh    = (ai_kwh + phantom_kwh) * routine_factor
+            # E. RF Inference
+            ai_pred_raw = float(rf_model.predict(pd.DataFrame([feature_vector]))[0])
 
+            # F. THE ACCURACY MERGE (The logic you specifically requested to sync)
+            if is_minimalist:
+                # Trust Physics math 85% for empty/low-appliance houses
+                ai_contribution = (ai_pred_raw * appliance_intensity)
+                steered_kwh = (physics_baseline_kwh * 0.85) + (ai_contribution * 0.15)
+            else:
+                # Standard blend for active houses
+                steered_kwh = (ai_pred_raw * 0.70) + (physics_baseline_kwh * 0.30)
+
+            # Apply final heuristics
+            final_kwh = (steered_kwh + phantom_kwh) * routine_factor
+
+            # G. NEPRA Calculation (Using the overhauled 2026 Engine)
             bill_res = nepra.calculate_bill(
-                units=final_kwh,
-                load_kw=float(u.get('sanctioned_load', 1.0)),
+                units=final_kwh, 
+                load_kw=sanc_load, 
                 user_category=cat
             )
 
             monthly_preview.append({
-                "month":     m,
-                "month_name":calendar.month_abbr[m],
-                "kwh":       round(final_kwh, 1),
-                "bill_pkr":  float(bill_res['total_bill']),
-                "ac_scale":  get_seasonal_ac_scale(m),
+                "month": m,
+                "month_name": calendar.month_abbr[m],
+                "kwh": round(final_kwh, 1),
+                "bill_pkr": float(bill_res['total_bill']),
+                "ac_scale": round(ac_scale, 2),
+                "is_peak": (m in [6, 7, 8, 9]) # Highlighting summer peak
             })
 
-        total_annual = sum(p['kwh'] for p in monthly_preview)
-        peak_month   = max(monthly_preview, key=lambda x: x['kwh'])
+        # ── STEP 4: Aggregated Annual Metrics ──
+        total_annual_kwh = sum(p['kwh'] for p in monthly_preview)
+        total_annual_bill = sum(p['bill_pkr'] for p in monthly_preview)
+        peak_month_data = max(monthly_preview, key=lambda x: x['kwh'])
 
         return jsonify({
-            "status":         "success",
-            "monthly":        monthly_preview,
-            "annual_kwh":     round(total_annual, 1),
-            "annual_bill":    round(sum(p['bill_pkr'] for p in monthly_preview), 0),
-            "peak_month":     peak_month['month_name'],
-            "peak_kwh":       peak_month['kwh'],
+            "status": "success",
+            "monthly": monthly_preview,
+            "summary": {
+                "annual_kwh": round(total_annual_kwh, 1),
+                "annual_bill": round(total_annual_bill, 0),
+                "avg_monthly_bill": round(total_annual_bill / 12, 0),
+                "peak_month": peak_month_data['month_name'],
+                "peak_kwh": peak_month_data['kwh'],
+                "is_minimalist_profile": is_minimalist
+            }
         })
 
     except Exception as e:
-        print(f"Seasonal Preview Error: {e}")
+        print(f"[CRITICAL] Seasonal Preview Error: {e}")
+        import traceback; traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 

@@ -293,27 +293,27 @@
         }
 
         /* Container for row  */
-       .bill-history-row {
+        .bill-history-row {
             display: flex;
             align-items: center;
             margin-bottom: 12px;
+            gap: 12px; /* Adds space between inputs and button */
             animation: fadeUp 0.4s ease-out both;
         }
 
         .history-inputs-group {
             display: flex;
-            flex: 1;
+            flex: 1; /* This takes up all available space */
             background: var(--input-bg);
             border: 1px solid var(--border);
             border-radius: 12px;
-            overflow: hidden; /* This makes them look like one combined piece */
+            overflow: hidden;
         }
 
         /* Vertical dividers between combined fields */
         .history-inputs-group .input-wrap {
             flex: 1;
             border-right: 1px solid var(--border);
-            position: relative;
         }
 
         .history-inputs-group .input-wrap:last-child {
@@ -328,10 +328,11 @@
 
         /* 3. Action Button Logic */
         .action-holder {
-            width: 0;
+            width: 40px; 
+            flex-shrink: 0; /* CRITICAL: Prevents stretching */
             display: flex;
             justify-content: center;
-            transition: width 0.3s;
+            align-items: center;
         }
 
         /* Only rows with a delete button get extra space */
@@ -362,6 +363,7 @@
             cursor: pointer;
             transition: 0.2s;
         }
+
         .btn-delete-row:hover {
             background: var(--error);
             color: white;
@@ -736,7 +738,8 @@
                 <div class="input-group">
                     <label><i class="fa fa-city"></i> Distribution Company</label>
                     <div class="select-wrap">
-                        <select id="disco" onchange="updateCompleteness()">
+                        <select id="disco" onchange="updateCompleteness()" required>
+                            <option value="" disabled selected>Select Provider</option>
                             <option value="K-Electric">Karachi (K-Electric)</option>
                             <option value="LESCO">Lahore (LESCO)</option>
                             <option value="IESCO">Islamabad (IESCO)</option>
@@ -758,7 +761,11 @@
                         <input type="number" id="load" placeholder="e.g. 5.0" step="0.5" oninput="updateCompleteness()">
                         <span class="input-unit">kW</span>
                     </div>
+                    <p style="font-size: 0.7rem; color: var(--g3); margin-top: 8px; line-height: 1.4; opacity: 0.9; font-weight: 500;">
+                        <i class="fa fa-circle-exclamation"></i> <strong>Note:</strong> This field is mandatory to unlock AI predictions and NEPRA cost calculations.
+                    </p>
                 </div>
+            </div>
 
                 <div class="full-width">
                     <label style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; display: block;">
@@ -811,6 +818,25 @@
                             <option value="morning_active">Morning Heavy (School/Work)</option>
                             <option value="evening_active">Evening Heavy (Office/Late Night)</option>
                             <option value="all_day">Always Active (Joint Family)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label><i class="fa fa-ruler-combined"></i> Property Area</label>
+                    <div class="input-wrap">
+                        <input type="number" id="property_area" placeholder="e.g. 1200" oninput="updateCompleteness()">
+                        <span class="input-unit">Sq.ft</span>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label><i class="fa fa-stairs"></i> Number of Floors</label>
+                    <div class="select-wrap">
+                        <select id="floors" onchange="updateCompleteness()">
+                            <option value="1">Single Floor (Flat/House)</option>
+                            <option value="2">Double Story</option>
+                            <option value="3">Triple Story+</option>
                         </select>
                     </div>
                 </div>
@@ -928,6 +954,20 @@
                         </select>
                     </div>
                 </div>
+
+                <div class="input-group">
+                    <label><i class="fa fa-fan"></i> Total Fans</label>
+                    <div class="input-wrap">
+                        <input type="number" id="fan_qty" placeholder="Qty" oninput="updateCompleteness()">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label><i class="fa fa-soap"></i> Laundry (W. Machine)</label>
+                    <div class="input-wrap">
+                        <input type="number" id="wm_qty" placeholder="Qty" oninput="updateCompleteness()">
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1036,359 +1076,359 @@
 
     <script src="js/auth.js"></script>
     <script>
-    /* ── State ── */
-    const db = firebase.firestore();
-    let isProtected = false;
+        /* ── State ── */
+        const db = firebase.firestore();
+        let selectedCategory = 'lifeline';
 
-    /* ── Auth & Loading Logic ── */
-    firebase.auth().onAuthStateChanged(user => {
-        if (!user) { window.location.href = "index.html"; return; }
+        /* ── Auth & Loading Logic ── */
+        firebase.auth().onAuthStateChanged(user => {
+            if (!user) { window.location.href = "index.html"; return; }
 
-        document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
-        if (user.photoURL) document.getElementById('user-pfp').src = user.photoURL;
+            // 1. IMMEDIATELY LOCK THE ENTIRE FORM
+            setFormState(true);
 
-        // LOAD DATA FROM FIREBASE
-        db.collection('users').doc(user.uid).get().then(doc => {
-            const d = doc.exists ? doc.data() : {};
+            document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
+            if (user.photoURL) document.getElementById('user-pfp').src = user.photoURL;
 
-            // 1. Load System Context
-            setValue('disco', d.disco, 'K-Electric');
-            setValue('load', d.sanctioned_load, '');
-            setValue('person_count', d.person_count, '');
-            setValue('user_routine', d.user_routine, 'standard');
-            
-            // Handle NEPRA Category (New 3-state logic)
-            if(d.user_category) {
-                setCategory(d.user_category);
-            } else {
-                // Smooth migration for old users who only had a boolean
-                setCategory(d.is_protected ? 'protected' : 'non_protected');
-            }
+            // 2. FETCH DATA FROM FIREBASE
+            db.collection('users').doc(user.uid).get().then(doc => {
+                const d = doc.exists ? doc.data() : {};
 
-            // 2. Load Appliance Values
-            const appliances = ['ac', 'f', 'wp', 'k', 'u'];
-            appliances.forEach(prefix => {
-                setValue(prefix + '_qty', d[prefix + '_qty'], '');
-                setValue(prefix + '_val', d[prefix + '_val'], '');
-                setValue(prefix + '_freq', d[prefix + '_freq'], '30');
-                if (d[prefix + '_type']) {
-                    setValue(prefix + '_type', d[prefix + '_type'], 'standard');
+                // Load System Context
+                setValue('disco', d.disco, '');
+                setValue('load', d.sanctioned_load, '');
+                setValue('person_count', d.person_count, '');
+                setValue('user_routine', d.user_routine, 'standard');
+
+                setValue('property_area', d.property_area, '');
+                setValue('floors', d.floors, '1');
+                
+                // Check for fan_qty and wm_qty (handling cases where they might not exist yet)
+                if(document.getElementById('fan_qty')) setValue('fan_qty', d.fan_qty, '');
+                if(document.getElementById('wm_qty')) setValue('wm_qty', d.wm_qty, '');
+                
+                // Handle NEPRA Category
+                if (d.user_category) {
+                    setCategory(d.user_category);
+                } else if (d.is_protected !== undefined) {
+                    setCategory(d.is_protected ? 'protected' : 'non_protected');
+                } else {
+                    setCategory('lifeline');
                 }
-                toggleApplianceRow(prefix); 
-            });
 
-            // 3. Load Bill History
-            const logContainer = document.getElementById('bill-log-container');
-            logContainer.innerHTML = ""; 
-            if (d.bill_history && d.bill_history.length > 0) {
-                d.bill_history.forEach(b => addBillRow(b.month, b.units, b.amount));
-            } else {
-                addBillRow(); // Force mandatory row
-            }
-            refreshRowActions();
-
-            // --- UNLOCK UI AFTER LOADING ---
-            const syncBtn = document.getElementById('syncBtn');
-            const addBtn = document.getElementById('addMonthBtn');
-            
-            syncBtn.disabled = false;
-            syncBtn.innerHTML = '<i class="fa fa-brain"></i> Sync AI Memory';
-            
-            addBtn.disabled = false;
-
-            updateCompleteness();
-        }).catch(err => {
-            console.error("Loading Error:", err);
-            // Even on error, we should enable the button so they can try to save new data
-            document.getElementById('syncBtn').disabled = false;
-            document.getElementById('syncBtn').innerHTML = '<i class="fa fa-brain"></i> Sync AI Memory';
-        });
-    });
-
-    function setValue(id, val, fallback) {
-        const el = document.getElementById(id);
-        if (el) el.value = (val !== undefined && val !== null) ? val : fallback;
-    }
-
-    /* ── UI Logic ── */
-    function toggleProtected() {
-        isProtected = !isProtected;
-        document.getElementById('protectedToggle').classList.toggle('on', isProtected);
-        updateCompleteness();
-    }
-
-    /* ── Modal Control ── */
-    function openLoadHelp() { document.getElementById('loadHelpModal').style.display = 'flex'; }
-    function closeLoadHelp() { document.getElementById('loadHelpModal').style.display = 'none'; }
-    
-    // Fixed: Added Unit Help functions
-    function openUnitHelp() { document.getElementById('unitHelpModal').style.display = 'flex'; }
-    function closeUnitHelp() { document.getElementById('unitHelpModal').style.display = 'none'; }
-
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') { closeLoadHelp(); closeUnitHelp(); }
-    });
-
-    /* ── Appliance Row Guard ── */
-    function toggleApplianceRow(prefix) {
-        const qtyEl = document.getElementById(prefix + '_qty');
-        const valEl = document.getElementById(prefix + '_val');
-        const freqEl = document.getElementById(prefix + '_freq');
-        const typeEl = document.getElementById(prefix + '_type'); 
-        
-        const qtyValue = qtyEl.value;
-        const qty = parseFloat(qtyValue) || 0;
-
-        if (qtyValue === "" || qty <= 0) {
-            valEl.disabled = true; freqEl.disabled = true;
-            if(typeEl) typeEl.disabled = true;
-            valEl.style.opacity = "0.4"; freqEl.style.opacity = "0.4";
-            if(typeEl) typeEl.style.opacity = "0.4";
-            valEl.value = (qtyValue === "0") ? "0" : ""; 
-        } else {
-            valEl.disabled = false; freqEl.disabled = false;
-            if(typeEl) typeEl.disabled = false;
-            valEl.style.opacity = "1"; freqEl.style.opacity = "1";
-            if(typeEl) typeEl.style.opacity = "1";
-        }
-        updateCompleteness();
-    }
-
-    let selectedCategory = 'lifeline'; // Default
-
-    function setCategory(cat) {
-        selectedCategory = cat;
-        
-        // Update UI Classes
-        document.querySelectorAll('.category-option').forEach(opt => opt.classList.remove('active'));
-        document.getElementById('opt-' + cat).classList.add('active');
-        
-        // Update Hint Text
-        const desc = document.getElementById('category-desc');
-        if(cat === 'lifeline') desc.innerHTML = '<i class="fa fa-info-circle"></i> Lifeline: Usage < 100 units for 12 months. No fixed charges applied.';
-        if(cat === 'protected') desc.innerHTML = '<i class="fa fa-info-circle"></i> Protected: Usage < 200 units for 6 months. Low rates + low fixed charges.';
-        if(cat === 'non_protected') desc.innerHTML = '<i class="fa fa-info-circle"></i> Standard: Regular slabs apply. Higher fixed charges based on load.';
-        
-        updateCompleteness();
-    }
-
-    /* ── Bill History Logic ── */
-    function addBillRow(month = "", units = "", amount = "") {
-        const container = document.getElementById('bill-log-container');
-        // Generate a truly unique ID using random string + timestamp
-        const uniqueSuffix = Math.random().toString(36).substring(2, 9);
-        const rowId = `row-${Date.now()}-${uniqueSuffix}`;
-        
-        // Create the element first
-        const rowDiv = document.createElement('div');
-        rowDiv.className = 'bill-history-row';
-        rowDiv.id = rowId;
-
-        rowDiv.innerHTML = `
-            <div class="history-inputs-group">
-                <div class="input-wrap" style="flex: 1.4;">
-                    <input type="month" class="hist-month" value="${month}" oninput="updateCompleteness()">
-                </div>
-                <div class="input-wrap">
-                    <input type="number" class="hist-units" placeholder="Units" value="${units}" oninput="updateCompleteness()">
-                    <span class="input-unit">kWh</span>
-                </div>
-                <div class="input-wrap">
-                    <input type="number" class="hist-amount" placeholder="Amount" value="${amount}" oninput="updateCompleteness()">
-                    <span class="input-unit">Rs.</span>
-                </div>
-            </div>
-            <div class="action-holder">
-                <button type="button" onclick="removeBillRow('${rowId}')" class="btn-delete-row">
-                    <i class="fa fa-trash-can"></i>
-                </button>
-            </div>
-        `;
-        
-        container.appendChild(rowDiv);
-        refreshRowActions(); // Re-evaluate which row is mandatory
-        updateCompleteness();
-    }
-
-    function removeBillRow(id) {
-        const row = document.getElementById(id);
-        if (row) {
-            row.remove();
-            refreshRowActions(); // Ensure we don't leave the list without a mandatory row
-            updateCompleteness();
-        }
-    }
-
-    // NEW helper: Ensures the first row is always "protected" and has no delete button
-    function refreshRowActions() {
-        const container = document.getElementById('bill-log-container');
-        const rows = container.querySelectorAll('.bill-history-row');
-        
-        rows.forEach((row, index) => {
-            const actionHolder = row.querySelector('.action-holder');
-            if (index === 0) {
-                // This is the mandatory first row
-                row.classList.remove('has-action');
-                actionHolder.style.display = 'none';
-            } else {
-                // These are additional rows
-                row.classList.add('has-action');
-                actionHolder.style.display = 'flex';
-            }
-        });
-    }
-
-    /* ── Completeness Logic ── */
-    function updateCompleteness() {
-        const loadField = document.getElementById('load');
-        let filledCount = (loadField && loadField.value !== "") ? 1 : 0;
-        
-        // Check Household Dynamics
-        const pCount = document.getElementById('person_count').value;
-        const routine = document.getElementById('user_routine').value;
-        if (pCount !== "" && parseInt(pCount) > 0) filledCount++;
-        if (routine !== "") filledCount++;
-
-        const appliances = ['ac', 'f', 'wp', 'k', 'u'];
-        appliances.forEach(pfx => {
-            const qtyVal = document.getElementById(pfx + '_qty').value;
-            const usageVal = document.getElementById(pfx + '_val').value;
-            if (qtyVal === "0") filledCount++;
-            else if (qtyVal !== "" && parseFloat(qtyVal) > 0 && usageVal !== "") filledCount++;
-        });
-
-        const historyRows = document.querySelectorAll('.bill-history-row');
-        if (historyRows.length > 0) {
-            const firstRow = historyRows[0];
-            const m = firstRow.querySelector('.hist-month').value;
-            const u = firstRow.querySelector('.hist-units').value;
-            if (m !== "" && u !== "" && parseFloat(u) > 0) filledCount++;
-        }
-
-        // Now 9 points: 1 (Load) + 2 (Dynamics) + 1 (History) + 5 (Appliances)
-        const totalPossible = 4 + appliances.length; 
-        const pct = Math.min(Math.round((filledCount / totalPossible) * 100), 100);
-        
-        document.getElementById('ringFill').style.strokeDashoffset = 163 - (pct / 100) * 163;
-        document.getElementById('pctLabel').textContent = pct + '%';
-    }
-
-    /* ── Toast Helper ── */
-    function showToast(msg, type = 'success') {
-        const t = document.getElementById('toast');
-        const icon = t.querySelector('i');
-        document.getElementById('toast-msg').textContent = msg;
-        
-        // Set standard class
-        t.className = 'toast ' + type;
-        
-        // FIX: Dynamic Icon change
-        if (type === 'error') {
-            icon.className = 'fa fa-circle-xmark'; // The "X" icon
-            icon.style.color = 'var(--error)';
-        } else {
-            icon.className = 'fa fa-check-circle'; // The Tick icon
-            icon.style.color = 'var(--g3)';
-        }
-        
-        t.classList.add('show');
-        setTimeout(() => t.classList.remove('show'), 3500);
-    }
-
-    /* ── Save & Sync ── */
-    async function saveProfile() {
-        const user = firebase.auth().currentUser;
-        if (!user) return;
-
-        const btn = document.getElementById('syncBtn');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa fa-circle-notch fa-spin"></i> Syncing...';
-
-        try {
-            const getV = (id) => {
-                const el = document.getElementById(id);
-                const val = el ? el.value : "";
-                return (val === "") ? 0 : parseFloat(val);
-            };
-
-            // --- Safety check for Type dropdowns ---
-            const acType = document.getElementById('ac_type')?.value || 'standard';
-            const fType = document.getElementById('f_type')?.value || 'old';
-
-            const ac_load = acType === 'inverter' ? 0.8 : 1.5;
-            const ac_monthly = getV('ac_qty') * ac_load * getV('ac_val') * getV('ac_freq');
-
-            const f_load = fType === 'inverter' ? 0.12 : 0.25;
-            const f_monthly = getV('f_qty') * f_load * getV('f_val') * 30 * 0.5;
-
-            const wp_monthly = getV('wp_qty') * 0.75 * getV('wp_val') * getV('wp_freq');
-            const k_monthly = getV('k_qty') * 1.2 * getV('k_val') * getV('k_freq');
-            const u_monthly = getV('u_qty') * 0.4 * getV('u_val') * getV('u_freq');
-
-            // History Processing (The most common place for errors)
-            const historyRows = document.querySelectorAll('.bill-history-row');
-            const billHistory = [];
-            let totalUnitsHistory = 0;
-
-            historyRows.forEach(row => {
-                const month = row.querySelector('.hist-month').value;
-                const unitsVal = row.querySelector('.hist-units').value;
-                const amountVal = row.querySelector('.hist-amount').value;
-
-                if (month && unitsVal !== "") {
-                    const units = parseFloat(unitsVal) || 0;
-                    const amount = parseFloat(amountVal) || 0;
-                    billHistory.push({ month, units, amount });
-                    totalUnitsHistory += units;
-                }
-            });
-
-            const avgUnits = billHistory.length > 0 ? (totalUnitsHistory / billHistory.length) : 0;
-            const total_m_kwh = ac_monthly + f_monthly + wp_monthly + k_monthly + u_monthly + 60;
-            const mean_hourly = total_m_kwh / 720;
-
-            const data = {
-                disco: document.getElementById('disco').value,
-                sanctioned_load: getV('load'),
-                user_category: selectedCategory,
-                person_count: getV('person_count'),
-                user_routine: document.getElementById('user_routine').value,
-                ac_qty: getV('ac_qty'), ac_type: acType, ac_val: getV('ac_val'), ac_freq: getV('ac_freq'),
-                f_qty: getV('f_qty'), f_type: fType, f_val: getV('f_val'), f_freq: 30,
-                wp_qty: getV('wp_qty'), wp_val: getV('wp_val'), wp_freq: getV('wp_freq'),
-                k_qty: getV('k_qty'), k_val: getV('k_val'), k_freq: getV('k_freq'),
-                u_qty: getV('u_qty'), u_val: getV('u_val'), u_freq: getV('u_freq'),
-                ac_monthly, refrigerator_monthly: f_monthly, kitchen_monthly: k_monthly, ups_monthly: u_monthly, wp_monthly,
-                mean_hourly, bill_history: billHistory, historical_avg_units: avgUnits,
-                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-            };
-
-            // SAVE TO FIRESTORE
-            await db.collection('users').doc(user.uid).set(data, { merge: true });
-            
-            // NOTIFY FLASK
-            try {
-                await fetch('http://localhost:5000/api/setup_profile', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ uid: user.uid, data })
+                // Load Appliance Values
+                const appliances = ['ac', 'f', 'wp', 'k', 'u'];
+                appliances.forEach(prefix => {
+                    setValue(prefix + '_qty', d[prefix + '_qty'], '');
+                    setValue(prefix + '_val', d[prefix + '_val'], '');
+                    setValue(prefix + '_freq', d[prefix + '_freq'], '30');
+                    if (d[prefix + '_type']) {
+                        setValue(prefix + '_type', d[prefix + '_type'], 'standard');
+                    }
+                    toggleApplianceRow(prefix); 
                 });
-            } catch(flaskErr) {
-                console.warn("Flask is offline, but data was saved to Firebase.");
+
+                // Load Bill History
+                const logContainer = document.getElementById('bill-log-container');
+                logContainer.innerHTML = ""; 
+                if (d.bill_history && d.bill_history.length > 0) {
+                    d.bill_history.forEach(b => addBillRow(b.month, b.units, b.amount));
+                } else {
+                    addBillRow(); 
+                }
+                refreshRowActions();
+
+                // 3. UNLOCK THE FORM ONCE DATA IS LOADED
+                setFormState(false);
+                updateCompleteness();
+
+            }).catch(err => {
+                console.error("Loading Error:", err);
+                // Unlock form even on error so user can enter fresh data
+                setFormState(false);
+                showToast("Offline mode: Entering fresh data.", "error");
+            });
+        });
+
+        /**
+         * Centralized function to lock/unlock all UI interactions
+         * @param {boolean} loading - True to lock, False to unlock
+         */
+        function setFormState(loading) {
+            const container = document.querySelector('.main-container');
+            const allInputs = document.querySelectorAll('input, select, .btn-add-month, .category-option');
+            const syncBtn = document.getElementById('syncBtn');
+
+            if (loading) {
+                container.classList.add('is-loading'); // Applies the CSS greyscale/opacity
+                syncBtn.disabled = true;
+                syncBtn.innerHTML = '<i class="fa fa-circle-notch fa-spin"></i> Initializing Memory...';
+                allInputs.forEach(el => {
+                    if (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'BUTTON') {
+                        el.disabled = true;
+                    }
+                    // Prevent clicking on the category divs
+                    el.style.pointerEvents = 'none';
+                });
+            } else {
+                container.classList.remove('is-loading');
+                syncBtn.disabled = false;
+                syncBtn.innerHTML = '<i class="fa fa-brain"></i> Sync AI Memory';
+                allInputs.forEach(el => {
+                    if (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'BUTTON') {
+                        el.disabled = false;
+                    }
+                    // Restore clicking
+                    el.style.pointerEvents = 'auto';
+                });
+                // Re-run the specific appliance row logic (e.g. if qty is 0, usage stays disabled)
+                ['ac', 'f', 'wp', 'k', 'u'].forEach(prefix => toggleApplianceRow(prefix));
+            }
+        }
+
+        function setValue(id, val, fallback) {
+            const el = document.getElementById(id);
+            if (el) el.value = (val !== undefined && val !== null) ? val : fallback;
+        }
+
+        /* ── UI Logic ── */
+        function toggleApplianceRow(prefix) {
+            const qtyEl = document.getElementById(prefix + '_qty');
+            const valEl = document.getElementById(prefix + '_val');
+            const freqEl = document.getElementById(prefix + '_freq');
+            const typeEl = document.getElementById(prefix + '_type'); 
+            
+            const qtyValue = qtyEl.value;
+            const qty = parseFloat(qtyValue) || 0;
+
+            if (qtyValue === "" || qty <= 0) {
+                if(valEl) { valEl.disabled = true; valEl.style.opacity = "0.4"; valEl.value = (qtyValue === "0") ? "0" : ""; }
+                if(freqEl) { freqEl.disabled = true; freqEl.style.opacity = "0.4"; }
+                if(typeEl) { typeEl.disabled = true; typeEl.style.opacity = "0.4"; }
+            } else {
+                if(valEl) { valEl.disabled = false; valEl.style.opacity = "1"; }
+                if(freqEl) { freqEl.disabled = false; freqEl.style.opacity = "1"; }
+                if(typeEl) { typeEl.disabled = false; typeEl.style.opacity = "1"; }
+            }
+            updateCompleteness();
+        }
+
+        function setCategory(cat) {
+            selectedCategory = cat;
+            document.querySelectorAll('.category-option').forEach(opt => opt.classList.remove('active'));
+            document.getElementById('opt-' + cat).classList.add('active');
+            
+            const desc = document.getElementById('category-desc');
+            if(cat === 'lifeline') desc.innerHTML = '<i class="fa fa-info-circle"></i> Lifeline: Usage < 100 units for 12 months. No fixed charges applied.';
+            if(cat === 'protected') desc.innerHTML = '<i class="fa fa-info-circle"></i> Protected: Usage < 200 units for 6 months. Low rates + low fixed charges.';
+            if(cat === 'non_protected') desc.innerHTML = '<i class="fa fa-info-circle"></i> Standard: Regular slabs apply. Higher fixed charges based on load.';
+            
+            updateCompleteness();
+        }
+
+        /* ── Bill History Logic ── */
+        function addBillRow(month = "", units = "", amount = "") {
+            const container = document.getElementById('bill-log-container');
+            const uniqueSuffix = Math.random().toString(36).substring(2, 9);
+            const rowId = `row-${Date.now()}-${uniqueSuffix}`;
+            
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'bill-history-row';
+            rowDiv.id = rowId;
+
+            rowDiv.innerHTML = `
+                <div class="history-inputs-group">
+                    <div class="input-wrap" style="flex: 1.4;">
+                        <input type="month" class="hist-month" value="${month}" oninput="updateCompleteness()">
+                    </div>
+                    <div class="input-wrap">
+                        <input type="number" class="hist-units" placeholder="Units" value="${units}" oninput="updateCompleteness()">
+                        <span class="input-unit">kWh</span>
+                    </div>
+                    <div class="input-wrap">
+                        <input type="number" class="hist-amount" placeholder="Amount" value="${amount}" oninput="updateCompleteness()">
+                        <span class="input-unit">Rs.</span>
+                    </div>
+                </div>
+                <div class="action-holder">
+                    <button type="button" onclick="removeBillRow('${rowId}')" class="btn-delete-row">
+                        <i class="fa fa-trash-can"></i>
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(rowDiv);
+            refreshRowActions();
+            updateCompleteness();
+        }
+
+        function removeBillRow(id) {
+            const row = document.getElementById(id);
+            if (row) {
+                row.remove();
+                refreshRowActions();
+                updateCompleteness();
+            }
+        }
+
+        function refreshRowActions() {
+            const container = document.getElementById('bill-log-container');
+            const rows = container.querySelectorAll('.bill-history-row');
+            
+            rows.forEach((row, index) => {
+                const actionHolder = row.querySelector('.action-holder');
+                if (index === 0) {
+                    // First row (mandatory) - hide the button area entirely
+                    actionHolder.style.display = 'none';
+                } else {
+                    // Other rows - show the button area
+                    actionHolder.style.display = 'flex';
+                }
+            });
+        }
+
+        /* ── Modal Control ── */
+        function openLoadHelp() { document.getElementById('loadHelpModal').style.display = 'flex'; }
+        function closeLoadHelp() { document.getElementById('loadHelpModal').style.display = 'none'; }
+        function openUnitHelp() { document.getElementById('unitHelpModal').style.display = 'flex'; }
+        function closeUnitHelp() { document.getElementById('unitHelpModal').style.display = 'none'; }
+
+        /* ── Completeness Logic ── */
+        function updateCompleteness() {
+            let score = 0;
+            const totalPoints = 9; // Total fields tracked
+
+            // 1. System Context (2 pts)
+            const disco = document.getElementById('disco').value;
+            const load = document.getElementById('load').value;
+            if (disco !== "") score++;
+            if (load !== "" && parseFloat(load) > 0) score++;
+
+            // 2. NEPRA Category (1 pt)
+            // Since selectedCategory always has a default ('lifeline'), we check if it's set
+            if (selectedCategory) score++;
+
+            // 3. Household Dynamics (4 pts)
+            const pCount = document.getElementById('person_count').value;
+            const routine = document.getElementById('user_routine').value;
+            const area = document.getElementById('property_area').value;
+            const floors = document.getElementById('floors').value;
+
+            if (pCount !== "" && parseInt(pCount) > 0) score++;
+            if (routine !== "") score++; // Always has a value
+            if (area !== "" && parseFloat(area) > 0) score++;
+            if (floors !== "") score++; // Always has a value
+
+            // 4. Appliance Inventory (1 pt)
+            // Scoring: At least ONE appliance must have a quantity > 0
+            const appliances = ['ac', 'f', 'wp', 'k', 'u'];
+            const hasAnyAppliance = appliances.some(pfx => {
+                const qty = parseFloat(document.getElementById(pfx + '_qty').value) || 0;
+                return qty > 0;
+            });
+            if (hasAnyAppliance) score++;
+
+            // 5. Billing History (1 pt)
+            // Scoring: At least ONE valid history row (Month + Units)
+            const historyRows = document.querySelectorAll('.bill-history-row');
+            let hasValidHistory = false;
+            historyRows.forEach(row => {
+                const m = row.querySelector('.hist-month').value;
+                const u = row.querySelector('.hist-units').value;
+                if (m !== "" && u !== "" && parseFloat(u) > 0) hasValidHistory = true;
+            });
+            if (hasValidHistory) score++;
+
+            // Calculate Percentage
+            const pct = Math.round((score / totalPoints) * 100);
+            
+            // Update Ring UI
+            const ring = document.getElementById('ringFill');
+            if (ring) {
+                // 163 is the dasharray constant for your SVG radius
+                ring.style.strokeDashoffset = 163 - (pct / 100) * 163;
+            }
+            document.getElementById('pctLabel').textContent = pct + '%';
+
+            // MASTER BUTTON LOCK: Enable only if core data is present (e.g., Score >= 5)
+            const syncBtn = document.getElementById('syncBtn');
+            if (score >= 5) {
+                syncBtn.disabled = false;
+                syncBtn.style.opacity = "1";
+            } else {
+                syncBtn.disabled = true;
+                syncBtn.style.opacity = "0.5";
+            }
+        }
+
+        /* ── Save & Sync ── */
+        async function saveProfile() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            const loadValue = document.getElementById('load').value;
+            if (!loadValue || parseFloat(loadValue) <= 0) {
+                showToast("Sanctioned Load is mandatory!", "error");
+                return; 
             }
 
-            showToast('AI Memory Synced!');
-            setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+            const btn = document.getElementById('syncBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-circle-notch fa-spin"></i> Syncing...';
 
-        } catch (e) {
-            console.error("Critical Sync Error:", e); // This will tell you EXACTLY why it failed in the F12 console
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa fa-brain"></i> Sync AI Memory';
-            showToast('Sync failed!', 'error');
+            try {
+                const getRawV = (id) => {
+                    const el = document.getElementById(id);
+                    return (el && el.value !== "") ? parseFloat(el.value) : null;
+                };
+
+                const v = (id) => parseFloat(document.getElementById(id).value) || 0;
+                const acType = document.getElementById('ac_type')?.value || 'standard';
+                const fType = document.getElementById('f_type')?.value || 'old';
+
+                const data = {
+                    disco: document.getElementById('disco').value || null,
+                    sanctioned_load: parseFloat(loadValue),
+                    property_area: getRawV('property_area'), 
+                    person_count: getRawV('person_count'),
+                    floors: document.getElementById('floors').value,
+                    user_routine: document.getElementById('user_routine').value,
+                    user_category: selectedCategory,
+                    ac_qty: v('ac_qty'), ac_type: acType, ac_val: v('ac_val'), ac_freq: v('ac_freq'),
+                    f_qty: v('f_qty'), f_type: fType, f_val: v('f_val'),
+                    wp_qty: v('wp_qty'), wp_val: v('wp_val'), wp_freq: v('wp_freq'),
+                    k_qty: v('k_qty'), k_val: v('k_val'), k_freq: v('k_freq'),
+                    u_qty: v('u_qty'), u_val: v('u_val'), u_freq: v('u_freq'),
+                    bill_history: Array.from(document.querySelectorAll('.bill-history-row')).map(row => ({
+                        month: row.querySelector('.hist-month').value,
+                        units: parseFloat(row.querySelector('.hist-units').value) || 0,
+                        amount: parseFloat(row.querySelector('.hist-amount').value) || 0
+                    })).filter(b => b.month !== ""),
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                await db.collection('users').doc(user.uid).set(data, { merge: true });
+                
+                try {
+                    await fetch('http://localhost:5000/api/setup_profile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ uid: user.uid, data })
+                    });
+                } catch(e) { console.warn("Flask offline."); }
+
+                showToast('AI Memory Synced!');
+                setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+
+            } catch (e) {
+                console.error("Sync Error:", e);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa fa-brain"></i> Sync AI Memory';
+                showToast('Sync failed!', 'error');
+            }
         }
-    }
 
-    function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }
-</script>
+        function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }
+    </script>
 </body>
 </html>

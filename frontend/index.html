@@ -213,6 +213,13 @@
             font-size: 0.92rem; outline: none;
             transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
         }
+
+        /* ── FIX: Hides the native Edge/IE password reveal eye icon ── */
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+            display: none;
+        }
+
         input::placeholder { color: var(--text-dim); }
         input:focus {
             border-color: var(--g2);
@@ -299,7 +306,6 @@
 </head>
 <body>
 
-    <!-- LEFT BRANDING PANEL -->
     <div class="left-panel">
         <i class="fa fa-bolt bolt-deco bolt-1"></i>
         <i class="fa fa-bolt bolt-deco bolt-2"></i>
@@ -334,7 +340,6 @@
         </div>
     </div>
 
-    <!-- RIGHT FORM PANEL -->
     <div class="right-panel">
         <div class="form-wrap">
 

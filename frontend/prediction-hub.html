@@ -311,21 +311,30 @@
             </div>
 
             <div style="margin-top:25px">
-                <button class="btn-predict" id="predictBtn" onclick="runInference()">
-                    <div class="loader" id="btnLoader"></div>
-                    <span id="btnText"><i class="fa fa-bolt"></i> Generate AI Prediction</span>
+                <button class="btn-predict" id="predictBtn" onclick="runInference()" disabled>
+                    <div class="loader" id="btnLoader" style="display: none;"></div>
+                    <span id="btnText"><i class="fa fa-circle-notch fa-spin"></i> Checking Profile...</span>
                 </button>
             </div>
         </div>
 
         <div class="section-card" style="position: relative;">
-            <h3 style="font-family:'Syne'; margin-bottom:20px">Consumption Signature</h3>
+            <h3 style="font-family:'Syne'; margin-bottom:20px">Annual Energy Roadmap</h3>
             
             <div class="chart-container" style="position: relative; height: 280px; width: 100%;">
                 
                 <div id="chart-loader" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--surface); z-index: 10; border-radius: 12px;">
                     <div class="loader" style="display: block;"></div>
                     <p style="font-size: 0.7rem; color: var(--g3); margin-top: 10px; font-weight: 600; letter-spacing: 0.05em;">Syncing Patterns...</p>
+                </div>
+
+                <div id="chart-empty-state" style="display: none; position: absolute; inset: 0; flex-direction: column; align-items: center; justify-content: center; background: var(--surface); z-index: 15; border-radius: 12px; text-align: center; padding: 20px;">
+                    <i class="fa fa-clipboard-list" style="font-size: 2.5rem; color: var(--g3); margin-bottom: 15px; opacity: 0.5;"></i>
+                    <p style="color: var(--text); font-size: 1rem; font-weight: 600;">Profile Data Required</p>
+                    <p style="color: var(--text-dim); font-size: 0.8rem; margin-top: 5px; max-width: 250px;">Please complete your appliance profile to unlock the AI forecasting roadmap.</p>
+                    <a href="setup-profile.html" class="btn-outline" style="margin-top: 20px; padding: 10px 20px; font-size: 0.8rem;">
+                        <i class="fa fa-arrow-right"></i> Setup Profile Now
+                    </a>
                 </div>
 
                 <canvas id="usageChart"></canvas>
@@ -359,9 +368,15 @@
             </div>
 
             <div class="section-card" style="background: rgba(16, 185, 129, 0.05); border-color: var(--g1)">
-                <h4 style="color:var(--g3); font-family:'Syne'; font-size:0.8rem">Model Confidence</h4>
-                <div style="font-size:1.8rem; font-weight:800; margin:10px 0">98.2%</div>
-                <p style="font-size:0.72rem; color:var(--text-dim); line-height: 1.4;">Confidence level derived from $R^2$ validation scores against the NEPRA-regulated PRECON dataset archetypes.</p>
+                <h4 style="color:var(--g3); font-family:'Syne'; font-size:0.8rem"><i class="fa fa-sliders"></i> Active Calibration</h4>
+                
+                <div id="engine-mode-display" style="font-size:1.1rem; font-weight:800; margin:10px 0; color: var(--text);">
+                    Initializing Engine...
+                </div>
+                
+                <p id="engine-desc-display" style="font-size:0.72rem; color:var(--text-dim); line-height: 1.4;">
+                    Hybrid system utilizing Random Forest regression, bounded by seasonal physics and recency-weighted history.
+                </p>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 12px; margin-top: -10px; margin-bottom: 20px;">
@@ -372,6 +387,15 @@
                     <i class="fa fa-brain"></i> View AI Memory
                 </a>
             </div>
+
+            <div id="data-gap-card" class="section-card" style="display: none; border-color: var(--warn); background: rgba(251, 191, 36, 0.05); margin-top: 10px; padding: 20px;">
+                <h4 style="color:var(--warn); font-family:'Syne'; font-size:0.8rem; margin-bottom:12px;">
+                    <i class="fa fa-triangle-exclamation"></i> Optimization Gaps
+                </h4>
+                <div id="missing-fields-list" style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.6;">
+                    </div>
+            </div>
+
         </div>
     </main>
 
@@ -420,56 +444,20 @@
             }
         });
 
-        async function loadInferenceData() {
-            const doc = await db.collection('users').doc(userUid).get();
-            if(doc.exists) {
-                const d = doc.data();
-                
-                // --- Smart Date Logic ---
-                let displayDate = "";
-                if (d.bill_history && d.bill_history.length > 0) {
-                    // Sort history to find the most recent entry (Format: YYYY-MM)
-                    const sortedHistory = [...d.bill_history].sort((a, b) => b.month.localeCompare(a.month));
-                    const lastMonthStr = sortedHistory[0].month;
-                    const [year, month] = lastMonthStr.split('-').map(Number);
-                    
-                    // Create a date object and add 1 month
-                    const nextDate = new Date(year, month, 1); // JS months are 0-indexed, but since 'month' is 1-indexed from string, this naturally points to the next month
-                    displayDate = "Forecast for: " + nextDate.toLocaleString('default', { month: 'long', year: 'numeric' });
-                } else {
-                    // Fallback if no history exists
-                    displayDate = "Current Cycle: " + new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
-                }
-                document.getElementById('forecast-date').innerText = displayDate;
-
-                // --- Fill Sidebar Context ---
-                document.getElementById('st-load').innerText = (d.sanctioned_load || 0) + " kW";
-                document.getElementById('st-mean').innerText = (d.mean_hourly || 0).toFixed(4) + " kW";
-                document.getElementById('st-disco').innerText = d.disco || "---";
-                const catMap = {
-                    'lifeline': 'Lifeline',
-                    'protected': 'Protected',
-                    'non_protected': 'Unprotected'
-                };
-                const rawCat = d.user_category || "---";
-                document.getElementById('st-cat').innerText = catMap[rawCat] || rawCat.replace('_', ' ');
-                document.getElementById('st-hist').innerText = Math.round(d.historical_avg_units || 0) + " kWh";
-                
-                initChart(d);
-
-                // HIDE THE CHART LOADER
-                const chartLoader = document.getElementById('chart-loader');
-                if (chartLoader) {
-                    chartLoader.style.opacity = '0';
-                    setTimeout(() => { chartLoader.style.display = 'none'; }, 300); // Smooth fade out
-                }
-            }
-        }
+        let currentPredictionData = null; // Global to store results for modal
 
         async function runInference() {
             const btn = document.getElementById('predictBtn');
             const loader = document.getElementById('btnLoader');
             const btnText = document.getElementById('btnText');
+
+            // Safety check: Re-verify data before hitting Flask
+            const doc = await db.collection('users').doc(userUid).get();
+            const u = doc.data();
+            if (!u.property_area || !u.person_count) {
+                alert("Missing Profile Data: Please add your house Area and Person count in Setup Profile.");
+                return;
+            }
 
             btn.disabled = true;
             loader.style.display = 'block';
@@ -485,35 +473,29 @@
                 const result = await response.json();
                 
                 if(result.status === "success") {
-
                     currentPredictionData = result;
-                    // 1. Animate main total
                     animateValue("bill-amount", 0, Math.round(result.bill.total_bill), 1000);
                     
-                    // 2. Set the badge with icon (Clean, no extra text)
                     document.getElementById('unit-label').innerHTML = `
                         <i class="fa fa-microchip" style="margin-right:8px; opacity:0.7"></i>
                         ${result.kwh} Predicted Units
                     `;
 
-                    // 3. Handle Contextual Message with Unified Styling
+                    // Handle NEPRA Info Box
                     const msgArea = document.getElementById('inference-msg-area');
                     const msgText = document.getElementById('inference-text');
                     const applied = result.bill.applied_category; 
-                    
-                    // Unify naming: non_protected -> Unprotected
                     let categoryName = applied === 'non_protected' ? 'Unprotected' : (applied.charAt(0).toUpperCase() + applied.slice(1));
 
                     msgArea.style.display = 'block';
                     msgArea.style.borderColor = 'rgba(52,211,153,0.15)';
                     
-                    // Using unified var(--g3) coloring for all categories
                     msgText.innerHTML = `Based on your consumption pattern, you fall into the 
                         <strong style="color:var(--g3); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${categoryName}</strong> category. 
                         Your bill is calculated using verified 2026 tariff slabs. 
                         Learn more about <a href="nepra-info.html" style="color:var(--g3); text-decoration:none; border-bottom:1px dashed var(--g3); font-weight:600;">NEPRA Categories</a>.`;
 
-                    // 4. Update Detailed Breakdown Card
+                    // Update Detailed Breakdown Card
                     document.getElementById('breakdown-card').style.display = 'block';
                     document.getElementById('br-energy').innerText = "Rs. " + result.bill.energy_cost.toLocaleString();
                     document.getElementById('br-fixed').innerText = "Rs. " + result.bill.fixed_charges.toLocaleString();
@@ -521,12 +503,52 @@
                     
                     const slabEl = document.getElementById('br-cat');
                     slabEl.innerText = categoryName;
-                    slabEl.style.color = "var(--g3)"; // Unified color
-                }else {
+                    slabEl.style.color = "var(--g3)";
+                    
+              
+                    // --- Active Calibration Card ---
+                    const userDoc = await db.collection('users').doc(userUid).get();
+                    const u = userDoc.data();
+                    
+                    let engineMode = "Hybrid AI Active";
+                    let engineDesc = "";
+
+                    // 1. Determine the "Inference Mode" based on data density
+                    if (!u.bill_history || u.bill_history.length === 0) {
+                        engineMode = "Structural Inference";
+                        engineDesc = "No history found. AI is synthesizing your bill based purely on house size and baseline structural loads.";
+                    } else if (u.ac_qty > 0) {
+                        engineMode = "Seasonal Calibration";
+                        const acScaleVal = result.bill.seasonal_context ? result.bill.seasonal_context.ac_scale : 1.0;
+                        const acScalePercent = Math.round(acScaleVal * 100);
+                        engineDesc = `Pattern recognized. Applying <strong>${acScalePercent}%</strong> seasonal cap to your AC load for ${result.bill.seasonal_context.month}.`;
+                    } else {
+                        engineMode = "Baseload Profiling";
+                        engineDesc = "No AC detected. AI is focusing on your constant appliance signatures (Fridge, Fans, and Standby power).";
+                    }
+
+                    // 2. High-Accuracy Warning (If data is very low)
+                    if (u.sanctioned_load <= 1 && (!u.ac_qty || u.ac_qty == 0)) {
+                        engineMode = "Minimum Baseline";
+                        engineDesc = "Low-density data profile. AI is predicting the absolute technical minimum units for a 1kW connection.";
+                    }
+
+                    // 3. Update the UI
+                    document.getElementById('engine-mode-display').innerText = engineMode;
+                    document.getElementById('engine-desc-display').innerHTML = engineDesc;
+
+                    // Only run the chart fetch AFTER the UI has completely updated
+                    setTimeout(async () => {
+                        const userDoc = await db.collection('users').doc(userUid).get();
+                        const userData = userDoc.data();
+                        fetchAnnualPreview(userData.bill_history);
+                    }, 50);
+
+                } else {
                     alert("AI Error: " + result.error);
                 }
             } catch (e) {
-                alert("Flask Server Offline! Run py app.py first.");
+                alert("Flask Server Offline! Please run 'python app.py' in your backend folder.");
             } finally {
                 btn.disabled = false;
                 loader.style.display = 'none';
@@ -534,6 +556,206 @@
             }
         }
 
+        async function loadInferenceData() {
+            const btn = document.getElementById('predictBtn');
+            const btnText = document.getElementById('btnText');
+            const forecastDateEl = document.getElementById('forecast-date');
+            const chartLoader = document.getElementById('chart-loader');
+            const chartEmpty = document.getElementById('chart-empty-state');
+            const gapCard = document.getElementById('data-gap-card');
+            const gapList = document.getElementById('missing-fields-list');
+            
+            const doc = await db.collection('users').doc(userUid).get();
+            const d = doc.exists ? doc.data() : {};
+
+            // --- 1. DATA INTEGRITY SCAN ---
+            let missingFields = [];
+            if (!d.sanctioned_load) missingFields.push("Sanctioned Load (Required for capacity and fixed charges)");
+            if (!d.property_area) missingFields.push("Property Area (Required for structural baseload calculation)");
+            if (!d.person_count) missingFields.push("Total Occupants (Required for baseline noise scaling)");
+
+            // Handle the Gap Card visibility and content
+            if (missingFields.length > 0) {
+                gapCard.style.display = 'block';
+                gapList.innerHTML = missingFields.map(msg => 
+                    `<div style="margin-bottom:6px; display:flex; gap:8px;">
+                        <i class="fa fa-circle" style="font-size:0.4rem; margin-top:6px; color:var(--warn)"></i> 
+                        <span>${msg}</span>
+                    </div>`
+                ).join('');
+            } else {
+                gapCard.style.display = 'none';
+            }
+
+            // --- 2. UI LOCKING LOGIC ---
+            if(!doc.exists || missingFields.length > 0) {
+                forecastDateEl.innerText = "Context Incomplete";
+                if(chartLoader) chartLoader.style.display = 'none';
+                if(chartEmpty) chartEmpty.style.display = 'flex'; 
+                
+                btn.disabled = true;
+                btnText.innerHTML = '<i class="fa fa-lock"></i> Profile Incomplete';
+                
+                document.getElementById('engine-mode-display').innerText = "Inference Suspended";
+                document.getElementById('engine-desc-display').innerHTML = 
+                    "AI engine requires foundational context. Please resolve the <strong>Optimization Gaps</strong> to enable forecasting.";
+                
+                // Still update sidebar with what we HAVE, even if locked
+                document.getElementById('st-load').innerText = (d.sanctioned_load || "--") + " kW";
+                document.getElementById('st-disco').innerText = d.disco || "Not Set";
+                return; 
+            }
+
+            // --- 3. NORMAL FLOW (All Data Present) ---
+            let displayDate = "";
+            if (d.bill_history && d.bill_history.length > 0) {
+                const sortedHistory = [...d.bill_history].sort((a, b) => b.month.localeCompare(a.month));
+                const lastMonthStr = sortedHistory[0].month;
+                const [year, month] = lastMonthStr.split('-').map(Number);
+                const nextDate = new Date(year, month, 1);
+                displayDate = "Forecast: " + nextDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+            } else {
+                displayDate = "Current Cycle: " + new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+            }
+            forecastDateEl.innerText = displayDate;
+
+            // Sync Sidebar Context
+            document.getElementById('st-load').innerText = (d.sanctioned_load || 0) + " kW";
+            document.getElementById('st-mean').innerText = (d.mean_hourly || 0).toFixed(4) + " kW";
+            document.getElementById('st-disco').innerText = d.disco || "Not Set";
+            
+            const catMap = { 'lifeline': 'Lifeline', 'protected': 'Protected', 'non_protected': 'Unprotected' };
+            const rawCat = d.user_category || "---";
+            document.getElementById('st-cat').innerText = catMap[rawCat] || rawCat;
+            const histAvg = d.historical_avg_units;
+                document.getElementById('st-hist').innerText = (histAvg && histAvg > 0) 
+                    ? Math.round(histAvg) + " kWh" 
+                    : "No History";
+            
+            // Unlock UI
+            btn.disabled = false;
+            btnText.innerHTML = '<i class="fa fa-bolt"></i> Generate AI Prediction';
+
+            document.getElementById('engine-mode-display').innerText = "System Standby";
+            document.getElementById('engine-desc-display').innerHTML = "Foundational context synchronized. Ready to synthesize seasonal patterns and appliance signatures.";
+
+            fetchAnnualPreview(d.bill_history || []);
+        }
+
+        // Fetch the 12-month data and hide loader when done
+        async function fetchAnnualPreview(billHistory) {
+            const loader = document.getElementById('chart-loader');
+            if (loader) loader.style.display = 'flex';
+
+            try {
+                const res = await fetch('http://127.0.0.1:5000/api/seasonal_preview', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ uid: userUid })
+                });
+                const data = await res.json();
+                
+                if(data.status === "success") {
+                    updateAnnualChart(data.monthly, billHistory);
+                } else {
+                    // Backend says no profile
+                    document.getElementById('chart-empty-state').style.display = 'flex';
+                }
+            } catch (e) {
+                console.error("Seasonal preview error:", e);
+            } finally {
+                // Always hide loader when done
+                if (loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => { loader.style.display = 'none'; }, 300);
+                }
+            }
+        }
+
+        //  The missing function that draws the line chart
+        function updateAnnualChart(monthlyData, billHistory) {
+            const ctx = document.getElementById('usageChart').getContext('2d');
+            if(myChart) myChart.destroy();
+
+            // 1. Identify the "Next Month" after history for rolling logic
+            let startMonth;
+            if (billHistory && billHistory.length > 0) {
+                const sortedHistory = [...billHistory].sort((a, b) => b.month.localeCompare(a.month));
+                const lastMonthVal = parseInt(sortedHistory[0].month.split('-')[1]);
+                startMonth = (lastMonthVal % 12) + 1;
+            } else {
+                startMonth = new Date().getMonth() + 1;
+            }
+
+            // 2. Rotate data so the Predicted month is index 0
+            const startIndex = monthlyData.findIndex(d => d.month === startMonth);
+            const rollingData = [...monthlyData.slice(startIndex), ...monthlyData.slice(0, startIndex)];
+
+            // ─── FIX 1: Convert full names to 3-letter abbreviations ───
+            const labels = rollingData.map(d => d.month_name.substring(0, 3)); 
+            const bills = rollingData.map(d => d.bill_pkr);
+            const kwhs = rollingData.map(d => d.kwh);
+
+            myChart = new Chart(ctx, {
+                type: 'line', 
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: bills,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#10b981',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(13, 26, 18, 0.95)',
+                            padding: 12,
+                            displayColors: false,
+                            callbacks: {
+                                label: (context) => {
+                                    const valPKR = context.raw.toLocaleString();
+                                    const valKWh = kwhs[context.dataIndex];
+                                    return [
+                                        ` Estimated Bill: Rs. ${valPKR}`,
+                                        ` Predicted Load: ${valKWh} kWh`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, 
+                            ticks: { color: '#4b7a5e', font: { size: 10 } } 
+                        },
+                        x: { 
+                            grid: { display: false }, 
+                            // ─── FIX 2: Ensure text is horizontal and perfectly aligned ───
+                            ticks: { 
+                                color: '#4b7a5e', 
+                                font: { size: 11, weight: '600' },
+                                maxRotation: 0, // Force labels to stay horizontal
+                                minRotation: 0,
+                                autoSkip: false // Show every month since they are short now
+                            } 
+                        }
+                    }
+                }
+            });
+        }
+
+        
+
+        // Keep your existing animateValue
         function animateValue(id, start, end, duration) {
             const obj = document.getElementById(id);
             let startTimestamp = null;
@@ -546,183 +768,128 @@
             window.requestAnimationFrame(step);
         }
 
-        function initChart(data) {
-            const ctx = document.getElementById('usageChart').getContext('2d');
-            if(myChart) myChart.destroy();
+        function openBreakdownModal() {
+            if (!currentPredictionData) return;
+            const res = currentPredictionData;
+            const modalContent = document.getElementById('modal-content');
+
+            // 1. Unified Category Mapping
+            const catDisplayName = {
+                'non_protected': 'Un-Protected',
+                'protected': 'Protected',
+                'lifeline': 'Lifeline'
+            };
+            const displayCategory = catDisplayName[res.bill.applied_category] || 'Un-Protected';
+            const isLifeline = res.bill.applied_category === "lifeline";
             
-            myChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['AC', 'Fridge', 'Pump', 'Kitchen', 'UPS', 'Base'],
-                    datasets: [{
-                        label: 'Monthly Units (kWh)',
-                        data: [
-                            data.ac_monthly || 0, 
-                            data.refrigerator_monthly || 0, 
-                            data.wp_monthly || 0, 
-                            data.kitchen_monthly || 0, 
-                            data.ups_monthly || 0, 
-                            60 
-                        ],
-                        backgroundColor: '#10b981',
-                        borderRadius: 8, // More rounded for the larger size
-                        barThickness: 35 // Increased from 25 to match bigger scale
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(13, 26, 18, 0.9)',
-                            titleFont: { family: 'Syne', size: 13 },
-                            bodyFont: { family: 'DM Sans', size: 12 },
-                            padding: 12,
-                            displayColors: false,
-                            callbacks: {
-                                label: (context) => ` ${context.raw.toFixed(1)} kWh`
-                            }
-                        }
-                    },
-                    scales: {
-                        y: { 
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Units (kWh)',
-                                color: 'rgba(255,255,255,0.6)',
-                                font: { family: 'DM Sans', size: 11, weight: '700' },
-                                padding: { bottom: 10 }
-                            },
-                            grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, 
-                            ticks: { color: '#4b7a5e', font: { size: 11 } } 
-                        },
-                        x: { 
-                            title: {
-                                display: true,
-                                text: 'Appliance Category',
-                                color: 'rgba(255,255,255,0.6)',
-                                font: { family: 'DM Sans', size: 11, weight: '700' },
-                                padding: { top: 10 }
-                            },
-                            grid: { display: false }, 
-                            ticks: { color: '#4b7a5e', font: { size: 11 } } 
-                        }
-                    }
+            // 2. Slab & Energy Logic
+            let mathRows = "";
+            if (isLifeline) {
+                // Lifeline: Non-progressive flat rate
+                const rate = res.kwh <= 50 ? 3.95 : 7.74;
+                mathRows = `
+                    <div style="display:flex; justify-content:space-between; font-size:0.85rem; padding: 6px 0;">
+                        <span style="color: rgba(255,255,255,0.7);">Lifeline Slab: (${res.kwh.toFixed(1)} units × Rs. ${rate})</span>
+                        <span style="color: #ffffff; font-weight: 600;">Rs. ${Math.round(res.kwh * rate).toLocaleString()}</span>
+                    </div>`;
+            } else {
+                // Protected & Non-Protected: Progressive Slabs
+                const protectedSlabs = [[1, 100, 10.54], [101, 200, 13.01]];
+                const nonProtectedSlabs = [
+                    [1, 100, 22.44], [101, 200, 28.91], [201, 300, 33.10],
+                    [301, 400, 36.46], [401, 500, 38.95], [501, 600, 40.22],
+                    [601, 700, 41.85], [701, 9999, 47.20]
+                ];
+
+                const slabs = res.bill.applied_category === "protected" ? protectedSlabs : nonProtectedSlabs;
+                let tempUnits = res.kwh;
+                let prevLimit = 0;
+
+                for (const [low, high, rate] of slabs) {
+                    if (tempUnits <= 0) break;
+                    let chunk = Math.min(tempUnits, high - prevLimit);
+                    let cost = chunk * rate;
+                    mathRows += `
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <span style="color: rgba(255,255,255,0.7);">Slab ${low}-${high === 9999 ? 'Above' : high}: (${chunk.toFixed(1)} units × Rs. ${rate})</span>
+                            <span style="color: #ffffff; font-weight: 600;">Rs. ${Math.round(cost).toLocaleString()}</span>
+                        </div>`;
+                    tempUnits -= chunk;
+                    prevLimit = high;
                 }
-            });
+            }
+
+            // 3. Dynamic Fixed Charge Rate Calculation
+            const loadVal = parseFloat(document.getElementById('st-load').innerText) || 1.0;
+            // Calculate rate per kW (Total / Load). If Lifeline, it will be 0.
+            const ratePerKw = loadVal > 0 ? Math.round(res.bill.fixed_charges / loadVal) : 0;
+            
+            // 4. Taxes & FCA
+            const fcaRate = 1.63; // Updated to match your new Python engine
+            const tvFee = 35.0;
+            const valFca = Math.round(res.kwh * fcaRate);
+            const valDuty = isLifeline ? 0 : Math.round(res.bill.energy_cost * 0.015);
+            const valGst = isLifeline ? 0 : Math.round((res.bill.energy_cost + res.bill.fixed_charges + valFca) * 0.18);
+            const totalTaxesAndFca = valFca + valDuty + valGst + tvFee;
+
+            document.body.classList.add('modal-open');
+            document.getElementById('breakdownModal').style.display = 'flex';
+
+            modalContent.innerHTML = `
+                <div style="margin-bottom:24px; margin-top: 5px;">
+                    <p class="step-title" style="margin-top:0; color: var(--g3);"><i class="fa fa-layer-group"></i> 1. Energy Computation (${displayCategory})</p>
+                    <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:10px; margin-top:8px; border:1px solid var(--border);">
+                        ${mathRows}
+                        <div style="border-top:1px solid var(--border); margin-top:8px; padding-top:8px; display:flex; justify-content:space-between; font-weight:700;">
+                            <span style="color: rgba(255,255,255,0.7);">Total Energy Charges:</span>
+                            <span style="color: #ffffff;">Rs. ${Math.round(res.bill.energy_cost).toLocaleString()}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:24px;">
+                    <p class="step-title" style="color: var(--g3);"><i class="fa fa-plug"></i> 2. Fixed Charges</p>
+                    <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:10px; border:1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
+                            <span style="color: rgba(255,255,255,0.7);">Capacity Charges:</span>
+                            <span style="color: #ffffff; font-weight: 700;">Rs. ${res.bill.fixed_charges.toLocaleString()}</span>
+                        </div>
+                        <p style="font-size:0.75rem; color: #a0a0a0; margin-top:4px; letter-spacing: 0.3px;">
+                            (Load: <b>${loadVal} kW</b> × Rs. <b>${ratePerKw}</b> / kW)
+                        </p>
+                        ${isLifeline ? '<p style="font-size:0.65rem; color: #4caf50; margin-top:4px;">* Lifeline category is exempt from fixed charges.</p>' : ''}
+                    </div>
+                </div>
+
+                <div style="margin-bottom:15px;">
+                    <p class="step-title" style="color: var(--g3);"><i class="fa fa-percent"></i> 3. Taxes & FCA Breakdown</p>
+                    <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:10px; border:1px solid var(--border);">
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
+                            <span style="color: rgba(255,255,255,0.7);">Fuel Adjustment (FCA):</span>
+                            <span style="color: #ffffff;">Rs. ${valFca.toLocaleString()}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
+                            <span style="color: rgba(255,255,255,0.7);">Electricity Duty (${isLifeline ? '0%' : '1.5%'}):</span>
+                            <span style="color: #ffffff;">Rs. ${valDuty.toLocaleString()}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
+                            <span style="color: rgba(255,255,255,0.7);">Pvt. TV Fee:</span>
+                            <span style="color: #ffffff;">Rs. ${tvFee.toLocaleString()}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
+                            <span style="color: rgba(255,255,255,0.7);">GST (${isLifeline ? '0%' : '18%'}):</span>
+                            <span style="color: #ffffff;">Rs. ${valGst.toLocaleString()}</span>
+                        </div>
+                        
+                        <div style="border-top:1px solid var(--border); margin-top:8px; padding-top:8px; display:flex; justify-content:space-between; font-weight:700;">
+                            <span style="color: rgba(255,255,255,0.7);">Total Taxes & FCA:</span>
+                            <span style="color: #ffffff;">Rs. ${Math.round(totalTaxesAndFca).toLocaleString()}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
-        // --- Modal Controls ---
-        function openBreakdownModal() {
-    if(!currentPredictionData) return;
-    const res = currentPredictionData;
-    const modalContent = document.getElementById('modal-content');
-
-    // 1. Unified Category Mapping
-    const catDisplayName = {
-        'non_protected': 'Un-Protected',
-        'protected': 'Protected',
-        'lifeline': 'Lifeline'
-    };
-    const displayCategory = catDisplayName[res.bill.applied_category] || 'Un-Protected';
-    
-    // 2. Slab Logic (Matches Python NepraEngine)
-    const protectedSlabs = [[1, 100, 10.54], [101, 200, 13.01]];
-    const nonProtectedSlabs = [
-        [1, 100, 22.44], [101, 200, 28.91], [201, 300, 33.10],
-        [301, 400, 36.46], [401, 500, 38.97], [501, 600, 40.22],
-        [601, 700, 41.85], [701, 9999, 47.20]
-    ];
-
-    const slabs = res.bill.applied_category === "protected" ? protectedSlabs : nonProtectedSlabs;
-    
-    let mathRows = "";
-    let tempUnits = res.kwh;
-    let prevLimit = 0;
-
-    for (const [low, high, rate] of slabs) {
-        if (tempUnits <= 0) break;
-        let chunk = Math.min(tempUnits, high - prevLimit);
-        let cost = chunk * rate;
-        
-        mathRows += `
-            <div style="display:flex; justify-content:space-between; font-size:0.8rem; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                <span style="color: rgba(255,255,255,0.7);">Slab ${low}-${high === 9999 ? 'Above' : high}: (${chunk.toFixed(1)} units × Rs. ${rate})</span>
-                <span style="color: #ffffff; font-weight: 600;">Rs. ${Math.round(cost).toLocaleString()}</span>
-            </div>`;
-        
-        tempUnits -= chunk;
-        prevLimit = high;
-    }
-
-    // 3. Tax Components (Alignment with card)
-    const fcaRate = 1.64;
-    const tvFee = 35.0;
-    const loadVal = parseFloat(document.getElementById('st-load').innerText) || 1.0;
-    
-    const valFca = Math.round(res.kwh * fcaRate);
-    const valDuty = Math.round(res.bill.energy_cost * 0.015);
-    const valGst = Math.round((res.bill.energy_cost + res.bill.fixed_charges + valFca) * 0.18);
-    
-    // This sum will match the "Taxes & FCA" value on your prediction card
-    const totalTaxesAndFca = valFca + valDuty + valGst + tvFee;
-
-    document.body.classList.add('modal-open');
-    document.getElementById('breakdownModal').style.display = 'flex';
-
-    modalContent.innerHTML = `
-        <div style="margin-bottom:24px; margin-top: 5px;">
-            <p class="step-title" style="margin-top:0; color: var(--g3);"><i class="fa fa-layer-group"></i> 1. Energy Computation (${displayCategory})</p>
-            <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:10px; margin-top:8px; border:1px solid var(--border);">
-                ${mathRows}
-                <div style="border-top:1px solid var(--border); margin-top:8px; padding-top:8px; display:flex; justify-content:space-between; font-weight:700;">
-                    <span style="color: rgba(255,255,255,0.7);">Total Energy Charges:</span>
-                    <span style="color: #ffffff;">Rs. ${res.bill.energy_cost.toLocaleString()}</span>
-                </div>
-            </div>
-        </div>
-
-        <div style="margin-bottom:24px;">
-            <p class="step-title" style="color: var(--g3);"><i class="fa fa-plug"></i> 2. Fixed Charges</p>
-            <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:10px; border:1px solid var(--border);">
-                <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
-                    <span style="color: rgba(255,255,255,0.7);">Capacity Charges:</span>
-                    <span style="color: #ffffff; font-weight: 700;">Rs. ${res.bill.fixed_charges.toLocaleString()}</span>
-                </div>
-                <p style="font-size:0.7rem; color:var(--text-dim); margin-top:4px;">(Load: ${loadVal} kW × Slab Rate)</p>
-            </div>
-        </div>
-
-        <div style="margin-bottom:15px;">
-            <p class="step-title" style="color: var(--g3);"><i class="fa fa-percent"></i> 3. Taxes & FCA Breakdown</p>
-            <div style="background:rgba(255,255,255,0.03); padding:12px; border-radius:10px; border:1px solid var(--border);">
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
-                    <span style="color: rgba(255,255,255,0.7);">Fuel Adjustment (FCA):</span>
-                    <span style="color: #ffffff;">Rs. ${valFca.toLocaleString()}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
-                    <span style="color: rgba(255,255,255,0.7);">Electricity Duty (1.5%):</span>
-                    <span style="color: #ffffff;">Rs. ${valDuty.toLocaleString()}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
-                    <span style="color: rgba(255,255,255,0.7);">Pvt. TV Fee:</span>
-                    <span style="color: #ffffff;">Rs. ${tvFee.toLocaleString()}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
-                    <span style="color: rgba(255,255,255,0.7);">GST (18%):</span>
-                    <span style="color: #ffffff;">Rs. ${valGst.toLocaleString()}</span>
-                </div>
-                
-                <div style="border-top:1px solid var(--border); margin-top:8px; padding-top:8px; display:flex; justify-content:space-between; font-weight:700;">
-                    <span style="color: rgba(255,255,255,0.7);">Total Taxes & FCA:</span>
-                    <span style="color: #ffffff;">Rs. ${totalTaxesAndFca.toLocaleString()}</span>
-                </div>
-            </div>
-        </div>
-    `;
-}
         function closeBreakdownModal() {
             document.getElementById('breakdownModal').style.display = 'none';
             document.body.classList.remove('modal-open');

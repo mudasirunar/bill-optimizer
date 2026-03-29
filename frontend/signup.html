@@ -129,9 +129,9 @@
 
         /* Meter animation on left bottom */
         .meter-deco {
-            position: relative; /* Change from absolute */
-            margin-top: 48px;   /* Firmly pushes it below the 'steps' list */
-            left: 0;            /* Align with the text above */
+            position: relative; 
+            margin-top: 48px;  
+            left: 0;            
             z-index: 1;
             display: flex; 
             align-items: center; 
@@ -239,6 +239,13 @@
             font-size: 0.9rem; outline: none;
             transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
         }
+        
+        /* ── FIX: Hides the native Edge/IE password reveal eye icon ── */
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear {
+            display: none;
+        }
+
         input::placeholder { color: var(--text-dim); }
         input:focus {
             border-color: var(--g2);
@@ -312,7 +319,6 @@
 </head>
 <body>
 
-    <!-- LEFT PANEL -->
     <div class="left-panel">
         <i class="fa fa-bolt bolt-deco bolt-1"></i>
         <i class="fa fa-bolt bolt-deco bolt-2"></i>
@@ -360,7 +366,6 @@
         </div>
     </div>
 
-    <!-- RIGHT FORM PANEL -->
     <div class="right-panel">
         <div class="form-wrap">
 
@@ -461,7 +466,6 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="js/firebase-config.js"></script>
     <script src="js/auth.js"></script>
 </body>
 </html>

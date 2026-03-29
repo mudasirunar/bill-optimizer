@@ -527,7 +527,6 @@
                         <th>Consumption Slab</th>
                         <th>Category</th>
                         <th>Rate (Rs/kWh)</th>
-                        <th>Fixed Charge</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -535,49 +534,130 @@
                         <td>01 – 50 Units</td>
                         <td><span class="cat-badge cat-lifeline" style="margin:0">Lifeline</span></td>
                         <td><span class="rate-pill pill-green">3.95</span></td>
-                        <td>None</td>
                     </tr>
                     <tr class="row-lifeline">
                         <td>51 – 100 Units</td>
                         <td><span class="cat-badge cat-lifeline" style="margin:0">Lifeline</span></td>
                         <td><span class="rate-pill pill-green">7.74</span></td>
-                        <td>None</td>
                     </tr>
                     <tr class="row-protected">
                         <td>01 – 100 Units</td>
                         <td><span class="cat-badge cat-protected" style="margin:0">Protected</span></td>
                         <td><span class="rate-pill pill-purple">10.54</span></td>
-                        <td>Rs. 200 / kW</td>
                     </tr>
                     <tr class="row-protected">
                         <td>101 – 200 Units</td>
                         <td><span class="cat-badge cat-protected" style="margin:0">Protected</span></td>
                         <td><span class="rate-pill pill-purple">13.01</span></td>
-                        <td>Rs. 300 / kW</td>
+                    </tr>
+                    <tr class="row-danger">
+                        <td>01 – 100 Units</td>
+                        <td><span class="cat-badge cat-standard" style="margin:0">Unprotected</span></td>
+                        <td><span class="rate-pill pill-red">22.44</span></td>
+                    </tr>
+                    <tr class="row-danger">
+                        <td>101 – 200 Units</td>
+                        <td><span class="cat-badge cat-standard" style="margin:0">Unprotected</span></td>
+                        <td><span class="rate-pill pill-red">28.91</span></td>
                     </tr>
                     <tr class="row-danger">
                         <td>201 – 300 Units</td>
                         <td><span class="cat-badge cat-standard" style="margin:0">Unprotected</span></td>
                         <td><span class="rate-pill pill-red">33.10</span></td>
-                        <td>Rs. 350 / kW</td>
                     </tr>
                     <tr class="row-danger">
                         <td>301 – 400 Units</td>
                         <td><span class="cat-badge cat-standard" style="margin:0">Unprotected</span></td>
-                        <td><span class="rate-pill pill-red">39.70</span></td>
-                        <td>Rs. 450 / kW</td>
+                        <td><span class="rate-pill pill-red">36.46</span></td>
                     </tr>
                     <tr class="row-danger">
-                        <td>401 – 700 Units</td>
+                        <td>401 – 500 Units</td>
                         <td><span class="cat-badge cat-standard" style="margin:0">Unprotected</span></td>
-                        <td><span class="rate-pill pill-red">43.50</span></td>
-                        <td>Rs. 575 / kW</td>
+                        <td><span class="rate-pill pill-red">38.97</span></td>
+                    </tr>
+                    <tr class="row-danger">
+                        <td>501 – 600 Units</td>
+                        <td><span class="cat-badge cat-standard" style="margin:0">Unprotected</span></td>
+                        <td><span class="rate-pill pill-red">40.22</span></td>
+                    </tr>
+                    <tr class="row-danger">
+                        <td>601 – 700 Units</td>
+                        <td><span class="cat-badge cat-standard" style="margin:0">Unprotected</span></td>
+                        <td><span class="rate-pill pill-red">41.85</span></td>
                     </tr>
                     <tr class="row-danger">
                         <td>Above 700 Units</td>
                         <td><span class="cat-badge cat-standard" style="margin:0">Peak User</span></td>
                         <td><span class="rate-pill pill-red">47.20</span></td>
-                        <td>Rs. 675 / kW</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section-label" style="animation: fadeUp 0.7s 0.4s cubic-bezier(0.16,1,0.3,1) both;">
+            <h2><i class="fa fa-plug-circle-bolt" style="color:var(--g2);margin-right:8px;font-size:0.9em"></i>Category-Wise Fixed Charges (per kW)</h2>
+            <div class="label-line"></div>
+        </div>
+
+        <div class="table-wrapper" style="animation: fadeUp 0.7s 0.45s cubic-bezier(0.16,1,0.3,1) both;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Consumer Category</th>
+                        <th>Unit Consumption Range</th>
+                        <th>Fixed Charge (PKR/kW)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="row-lifeline">
+                        <td><span class="cat-badge cat-lifeline">Lifeline</span></td>
+                        <td>01 – 100 Units</td>
+                        <td><span class="rate-pill pill-green">Rs. 0.00</span></td>
+                    </tr>
+                    <tr class="row-protected">
+                        <td><span class="cat-badge cat-protected">Protected</span></td>
+                        <td>01 – 100 Units</td>
+                        <td><span class="rate-pill pill-purple">Rs. 200.00</span></td>
+                    </tr>
+                    <tr class="row-protected">
+                        <td><span class="cat-badge cat-protected">Protected</span></td>
+                        <td>101 – 200 Units</td>
+                        <td><span class="rate-pill pill-purple">Rs. 300.00</span></td>
+                    </tr>
+                    <tr class="row-danger">
+                        <td><span class="cat-badge cat-standard">Non-Protected</span></td>
+                        <td>01 – 100 Units</td>
+                        <td><span class="rate-pill pill-red">Rs. 275.00</span></td>
+                    </tr>
+                    <tr class="row-danger">
+                        <td><span class="cat-badge cat-standard">Non-Protected</span></td>
+                        <td>101 – 200 Units</td>
+                        <td><span class="rate-pill pill-red">Rs. 300.00</span></td>
+                    </tr>
+                    <tr class="row-danger">
+                        <td><span class="cat-badge cat-standard">Non-Protected</span></td>
+                        <td>201 – 300 Units</td>
+                        <td><span class="rate-pill pill-red">Rs. 350.00</span></td>
+                    </tr>
+                    <tr class="row-danger">
+                        <td><span class="cat-badge cat-standard">Non-Protected</span></td>
+                        <td>301 – 400 Units</td>
+                        <td><span class="rate-pill pill-red">Rs. 400.00</span></td>
+                    </tr>
+                    <tr class="row-danger">
+                        <td><span class="cat-badge cat-standard">Non-Protected</span></td>
+                        <td>401 – 500 Units</td>
+                        <td><span class="rate-pill pill-red">Rs. 500.00</span></td>
+                    </tr>
+                    <tr class="row-danger">
+                        <td><span class="cat-badge cat-standard">Non-Protected</span></td>
+                        <td>501 – 700 Units</td>
+                        <td><span class="rate-pill pill-red">Rs. 675.00</span></td>
+                    </tr>
+                    <tr class="row-danger">
+                        <td><span class="cat-badge cat-standard">Peak User</span></td>
+                        <td>700+ Units</td>
+                        <td><span class="rate-pill pill-red">Rs. 675.00</span></td>
                     </tr>
                 </tbody>
             </table>

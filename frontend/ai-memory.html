@@ -21,57 +21,21 @@
             --text: #f0fdf4; --text-muted: #86efac; --text-dim: #4b7a5e;
             --glow: rgba(16,185,129,0.2); --glow-strong: rgba(16,185,129,0.45);
             --card-bg: rgba(13,26,18,0.85);
+            --warn: #fbbf24;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; }
-
-        body {
-            font-family: 'DM Sans', sans-serif;
-            background: var(--dark); color: var(--text);
-            min-height: 100vh; overflow-x: hidden;
-        }
+        body { font-family: 'DM Sans', sans-serif; background: var(--dark); color: var(--text); min-height: 100vh; overflow-x: hidden; }
 
         /* Ambient BG */
-        body::before {
-            content: ''; position: fixed; inset: 0; z-index: 0;
-            background:
-                radial-gradient(ellipse 80% 60% at 10% 10%, rgba(5,150,105,0.18) 0%, transparent 60%),
-                radial-gradient(ellipse 60% 80% at 90% 80%, rgba(16,185,129,0.12) 0%, transparent 55%);
-            pointer-events: none;
-        }
-        body::after {
-            content: ''; position: fixed; inset: 0; z-index: 0;
-            background-image:
-                linear-gradient(rgba(52,211,153,0.025) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(52,211,153,0.025) 1px, transparent 1px);
-            background-size: 48px 48px; pointer-events: none;
-        }
+        body::before { content: ''; position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse 80% 60% at 10% 10%, rgba(5,150,105,0.18) 0%, transparent 60%), radial-gradient(ellipse 60% 80% at 90% 80%, rgba(16,185,129,0.12) 0%, transparent 55%); pointer-events: none; }
+        body::after { content: ''; position: fixed; inset: 0; z-index: 0; background-image: linear-gradient(rgba(52,211,153,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(52,211,153,0.025) 1px, transparent 1px); background-size: 48px 48px; pointer-events: none; }
 
-        /* ─── NAVBAR ─── */
-        .navbar {
-            position: sticky; top: 0; z-index: 1000;
-            height: 68px; display: flex; align-items: center; justify-content: space-between;
-            padding: 0 5%;
-            background: rgba(3,10,6,0.75); backdrop-filter: blur(20px) saturate(180%);
-            border-bottom: 1px solid var(--border);
-        }
-        .nav-logo {
-            font-family: 'Syne', sans-serif; font-size: 1.35rem; font-weight: 800;
-            color: var(--text); display: flex; align-items: center; gap: 10px;
-            cursor: pointer; text-decoration: none;
-        }
-        .nav-logo i {
-            width: 34px; height: 34px;
-            background: linear-gradient(135deg, var(--g1), var(--g3));
-            border-radius: 9px; display: flex; align-items: center; justify-content: center;
-            font-size: 0.9rem; color: #fff; box-shadow: 0 0 14px var(--glow);
-        }
-        .ai-tag {
-            font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em;
-            background: linear-gradient(90deg, var(--g1), var(--g3));
-            padding: 3px 8px; border-radius: 20px; color: #fff;
-        }
+        .navbar { position: sticky; top: 0; z-index: 1000; height: 68px; display: flex; align-items: center; justify-content: space-between; padding: 0 5%; background: rgba(3,10,6,0.75); backdrop-filter: blur(20px) saturate(180%); border-bottom: 1px solid var(--border); }
+        .nav-logo { font-family: 'Syne', sans-serif; font-size: 1.35rem; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 10px; cursor: pointer; text-decoration: none; }
+        .nav-logo i { width: 34px; height: 34px; background: linear-gradient(135deg, var(--g1), var(--g3)); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; color: #fff; box-shadow: 0 0 14px var(--glow); }
+        .ai-tag { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; background: linear-gradient(90deg, var(--g1), var(--g3)); padding: 3px 8px; border-radius: 20px; color: #fff; }
 
         .nav-user-area { display: flex; align-items: center; gap: 14px; }
         .user-info { text-align: right; line-height: 1.2; }
@@ -79,144 +43,65 @@
         .user-info small { font-size: 0.72rem; color: var(--text-muted); }
 
         .profile-dropdown { position: relative; }
-        .profile-dropdown::after {
-            content: ''; position: absolute; top: 100%; right: 0;
-            width: 100%; height: 16px; background: transparent;
-        }
-        .user-avatar {
-            width: 40px; height: 40px; border-radius: 50%; object-fit: cover; cursor: pointer;
-            border: 2px solid var(--border); transition: 0.3s;
-        }
+        .profile-dropdown::after { content: ''; position: absolute; top: 100%; right: 0; width: 100%; height: 16px; background: transparent; }
+        .user-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 2px solid var(--border); transition: 0.3s; }
         .user-avatar:hover { border-color: var(--g2); box-shadow: 0 0 16px var(--glow); transform: scale(1.06); }
 
-        .dropdown-menu {
-            position: absolute; top: calc(100% + 8px); right: 0; width: 210px;
-            background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 8px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-            opacity: 0; visibility: hidden; pointer-events: none;
-            transform: translateY(-8px); transition: 0.22s; z-index: 999;
-        }
+        .dropdown-menu { position: absolute; top: calc(100% + 8px); right: 0; width: 210px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 8px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-8px); transition: 0.22s; z-index: 999; }
         .profile-dropdown:hover .dropdown-menu { opacity: 1; visibility: visible; pointer-events: all; transform: translateY(0); }
-        .dropdown-menu a {
-            display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 9px;
-            color: var(--text-muted); font-size: 0.875rem; text-decoration: none; transition: 0.18s;
-        }
+        .dropdown-menu a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 9px; color: var(--text-muted); font-size: 0.875rem; text-decoration: none; transition: 0.18s; }
         .dropdown-menu a:hover { background: rgba(52,211,153,0.1); color: var(--g3); }
         .dropdown-menu hr { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
         .logout-link { color: #f87171 !important; }
         .logout-link:hover { background: rgba(239,68,68,0.1) !important; }
 
-        /* ─── PAGE HEADER ─── */
-        .page-header {
-            position: relative; z-index: 1; padding: 44px 5% 36px;
-            border-bottom: 1px solid var(--border);
-            animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) both;
-        }
-        .breadcrumb {
-            display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 600;
-            text-transform: uppercase; color: var(--text-dim); margin-bottom: 14px;
-        }
+        .page-header { position: relative; z-index: 1; padding: 44px 5% 36px; border-bottom: 1px solid var(--border); animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+        .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--text-dim); margin-bottom: 14px; }
         .breadcrumb a { color: var(--g3); text-decoration: none; }
         .page-header h1 { font-family: 'Syne', sans-serif; font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; }
         .highlight { background: linear-gradient(120deg, var(--g3), var(--g2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
-        /* ─── MODEL FEED INDICATOR ─── */
-        .model-badge {
-            display: inline-flex; align-items: center; gap: 7px;
-            font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-            color: var(--g3); background: rgba(52,211,153,0.07);
-            border: 1px solid var(--border); padding: 5px 12px; border-radius: 20px;
-        }
-        .model-badge i { font-size: 0.65rem; }
+        .model-badge { display: inline-flex; align-items: center; gap: 7px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--g3); background: rgba(52,211,153,0.07); border: 1px solid var(--border); padding: 5px 12px; border-radius: 20px; }
 
-        /* ─── MAIN CONTENT ─── */
         .main-container { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 40px 5%; }
-
-        .section-card {
-            background: var(--card-bg); border: 1px solid var(--border);
-            border-radius: 20px; padding: 32px; margin-bottom: 24px;
-            backdrop-filter: blur(14px); animation: fadeUp 0.7s 0.2s both;
-        }
+        .section-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 32px; margin-bottom: 24px; backdrop-filter: blur(14px); animation: fadeUp 0.7s 0.2s both; }
         
         .card-heading { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
-        .card-icon {
-            width: 42px; height: 42px; background: rgba(52,211,153,0.1);
-            border: 1px solid rgba(52,211,153,0.18); border-radius: 11px;
-            display: flex; align-items: center; justify-content: center; color: var(--g3);
-        }
+        .card-icon { width: 42px; height: 42px; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.18); border-radius: 11px; display: flex; align-items: center; justify-content: center; color: var(--g3); }
 
-        /* Data Visualization Rows */
         .memory-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-        .data-item {
-            background: rgba(5, 20, 10, 0.4); border: 1px solid var(--border);
-            padding: 18px; border-radius: 12px;
-        }
+        .data-item { background: rgba(5, 20, 10, 0.4); border: 1px solid var(--border); padding: 18px; border-radius: 12px; }
         .data-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
         .data-value { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 700; color: var(--g3); }
         .data-sub { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; }
 
-        /* History Table Styling */
-        .history-container { width: 100%; overflow-x: auto; margin-top: 10px; }
+        .history-container { width: 100%; overflow-x: auto; margin-top: 10px; position: relative; min-height: 120px; }
         table { width: 100%; border-collapse: collapse; min-width: 500px; }
         th { text-align: left; font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); padding: 12px; border-bottom: 1px solid var(--border); }
         td { padding: 12px; font-size: 0.9rem; border-bottom: 1px solid rgba(52,211,153,0.05); color: var(--text-muted); }
         .month-cell { font-weight: 700; color: var(--g3); font-family: 'Syne', sans-serif; }
         .data-type-tag { font-size: 0.6rem; background: var(--g1); color: white; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-left: 5px; }
 
-        /* LINK SECTION */
-        .link-section {
-            text-align: center; padding: 44px 20px;
-            animation: fadeUp 0.7s 0.5s cubic-bezier(0.16,1,0.3,1) both;
-        }
+        /* Loader & Empty State */
+        #history-loader { display: flex; justify-content: center; align-items: center; padding: 40px; color: var(--g3); font-size: 1.2rem; }
+        .empty-state { text-align: center; padding: 40px; color: var(--text-dim); font-size: 0.9rem; }
+
+        .link-section { text-align: center; padding: 44px 20px; animation: fadeUp 0.7s 0.5s cubic-bezier(0.16,1,0.3,1) both; }
         .link-section p { color: var(--text-dim); font-size: 0.95rem; margin-bottom: 22px; }
-        .btn-outline {
-            display: inline-flex; align-items: center; gap: 12px;
-            padding: 14px 32px; border-radius: 14px;
-            border: 1px solid var(--border-hover); background: rgba(52,211,153,0.07);
-            color: var(--g3); font-weight: 700; font-size: 0.95rem;
-            text-decoration: none; transition: 0.25s;
-        }
-        .btn-outline:hover {
-            background: rgba(52,211,153,0.14); border-color: var(--g2);
-            box-shadow: 0 0 28px var(--glow); transform: translateY(-2px);
-        }
+        .btn-outline { display: inline-flex; align-items: center; gap: 12px; padding: 14px 32px; border-radius: 14px; border: 1px solid var(--border-hover); background: rgba(52,211,153,0.07); color: var(--g3); font-weight: 700; font-size: 0.95rem; text-decoration: none; transition: 0.25s; }
+        .btn-outline:hover { background: rgba(52,211,153,0.14); border-color: var(--g2); box-shadow: 0 0 28px var(--glow); transform: translateY(-2px); }
         .btn-outline i { transition: transform 0.25s; }
         .btn-outline:hover i { transform: translateX(5px); }
 
-        /* Badge for protected status */
-        .status-badge {
-            padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 800;
-            text-transform: uppercase; background: rgba(52,211,153,0.1); border: 1px solid var(--g1);
-        }
+        .status-badge { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; background: rgba(52,211,153,0.1); border: 1px solid var(--g1); }
 
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-         /* ─── FOOTER ─── */
-        .footer {
-            position: relative; z-index: 1;
-            background: rgba(3,10,6,0.8); border-top: 1px solid var(--border);
-            padding: 40px 20px; text-align: center; backdrop-filter: blur(10px);
-        }
-        .footer-brand {
-            font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700;
-            color: var(--text-muted); margin-bottom: 6px;
-        }
+        .footer { position: relative; z-index: 1; background: rgba(3,10,6,0.8); border-top: 1px solid var(--border); padding: 40px 20px; text-align: center; backdrop-filter: blur(10px); }
+        .footer-brand { font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
         .footer-brand i { color: var(--g2); margin-right: 6px; }
         .footer-sub { color: var(--text-dim); font-size: 0.8rem; margin-bottom: 10px; }
-        .footer-tag {
-            display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
-            text-transform: uppercase; color: var(--g3); border: 1px solid var(--border);
-            padding: 4px 12px; border-radius: 20px; background: rgba(52,211,153,0.06);
-        }
-
-        @media (max-width: 640px) {
-            .form-grid { grid-template-columns: 1fr; }
-            .full-width { grid-column: span 1; }
-            .header-row { flex-direction: column; align-items: flex-start; }
-        }
+        .footer-tag { display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--g3); border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; background: rgba(52,211,153,0.06); }
     </style>
 </head>
 <body>
@@ -254,9 +139,10 @@
             RF Regression and LSTM models to synthesize predictions.
         </p>
         <div style="margin-top:12px">
-                    <span class="model-badge"><i class="fa fa-circle-nodes"></i> RF Model · LSTM Forecaster</span>
-                </div>
+            <span class="model-badge"><i class="fa fa-circle-nodes"></i> RF Model · LSTM Forecaster</span>
+        </div>
     </div>
+
     <main class="main-container">
 
         <div class="section-card">
@@ -272,15 +158,15 @@
             <div class="memory-grid">
                 <div class="data-item">
                     <div class="data-label">Distribution Co.</div>
-                    <div class="data-value" id="disp-disco">---</div>
+                    <div class="data-value" id="disp-disco">--</div>
                 </div>
                 <div class="data-item">
                     <div class="data-label">Sanctioned Load</div>
-                    <div class="data-value" id="disp-load">0.0 <small>kW</small></div>
+                    <div class="data-value" id="disp-load">--</div>
                 </div>
                 <div class="data-item">
                     <div class="data-label">Consumer Class</div>
-                    <div id="disp-protected">---</div>
+                    <div id="disp-protected">--</div>
                 </div>
             </div>
         </div>
@@ -291,15 +177,25 @@
                 <div class="card-heading-text">
                     <h3 style="font-family:'Syne'">Lifestyle Fingerprint</h3>
                     <p style="color:var(--text-dim); font-size:0.85rem; margin-top:4px;">
-                        Occupancy and behavioral routine variables used for high-frequency model calibration.
+                        Structural and behavioral variables used for model calibration.
                     </p>
                 </div>
             </div>
             <div class="memory-grid">
                 <div class="data-item">
                     <div class="data-label">Collective Occupancy</div>
-                    <div class="data-value" id="disp-occupants">0 <small>Persons</small></div>
+                    <div class="data-value" id="disp-occupants">--</div>
                     <div class="data-sub">Base-load noise scaling</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">Property Area</div>
+                    <div class="data-value" id="disp-area">--</div>
+                    <div class="data-sub">Structural heat gain variable</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label">Building Levels</div>
+                    <div class="data-value" id="disp-floors">--</div>
+                    <div class="data-sub">Floor count</div>
                 </div>
                 <div class="data-item">
                     <div class="data-label">Active Routine</div>
@@ -313,36 +209,40 @@
             <div class="card-heading">
                 <div class="card-icon"><i class="fa fa-chart-bar"></i></div>
                 <div class="card-heading-text">
-                    <h3 style="font-family:'Syne'">Model Features (Monthly)</h3>
+                    <h3 style="font-family:'Syne'">Appliance Inventory (Features)</h3>
                     <p style="color:var(--text-dim); font-size:0.85rem; margin-top:4px;">
-                        Estimated monthly footprint used by the AI to synthesize patterns and forecast billing slabs.
+                        Monthly footprint and quantities used to synthesize high-frequency load patterns.
                     </p>
                 </div>
             </div>
             <div class="memory-grid">
                 <div class="data-item">
-                    <div class="data-label"><i class="fa fa-snowflake"></i> Air Conditioning</div>
-                    <div class="data-value" id="disp-ac">0 <small>kWh</small></div>
+                    <div class="data-label" id="label-ac"><i class="fa fa-snowflake"></i> Air Conditioning</div>
+                    <div class="data-value" id="disp-ac">--</div>
                 </div>
                 <div class="data-item">
-                    <div class="data-label"><i class="fa fa-box"></i> Refrigeration</div>
-                    <div class="data-value" id="disp-fridge">0 <small>kWh</small></div>
+                    <div class="data-label" id="label-fridge"><i class="fa fa-box"></i> Refrigeration</div>
+                    <div class="data-value" id="disp-fridge">--</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label"><i class="fa fa-fan"></i> Ceiling Fans</div>
+                    <div class="data-value" id="disp-fans">--</div>
+                </div>
+                <div class="data-item">
+                    <div class="data-label"><i class="fa fa-tshirt"></i> Washing Machine</div>
+                    <div class="data-value" id="disp-wm">--</div>
                 </div>
                 <div class="data-item">
                     <div class="data-label"><i class="fa fa-water"></i> Water Pump</div>
-                    <div class="data-value" id="disp-wp">0 <small>kWh</small></div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label"><i class="fa fa-utensils"></i> Kitchen Heavy</div>
-                    <div class="data-value" id="disp-kitchen">0 <small>kWh</small></div>
+                    <div class="data-value" id="disp-wp">--</div>
                 </div>
                 <div class="data-item">
                     <div class="data-label"><i class="fa fa-car-battery"></i> UPS Charging</div>
-                    <div class="data-value" id="disp-ups">0 <small>kWh</small></div>
+                    <div class="data-value" id="disp-ups">--</div>
                 </div>
-                <div class="data-item" style="border-color: var(--g1); background: rgba(16,185,129,0.05)">
+                <div class="data-item" style="border-color: var(--g1); background: rgba(16,185,129,0.05); grid-column: span 1;">
                     <div class="data-label" style="color:var(--g3)"><i class="fa fa-microchip"></i> Mean Hourly Load</div>
-                    <div class="data-value" id="disp-mean">0.0 <small>kW</small></div>
+                    <div class="data-value" id="disp-mean">--</div>
                     <div class="data-sub">Core prediction feature</div>
                 </div>
             </div>
@@ -359,7 +259,8 @@
                 </div>
             </div>
             <div class="history-container">
-                <table>
+                <div id="history-loader"><i class="fa fa-circle-notch fa-spin"></i></div>
+                <table id="history-table" style="display:none">
                     <thead>
                         <tr>
                             <th>Billing Month</th>
@@ -373,7 +274,7 @@
             </div>
             <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
                 <div class="data-label">Historical Average Units</div>
-                <div class="data-value" id="disp-avg-hist">0 <small>kWh/mo</small></div>
+                <div class="data-value" id="disp-avg-hist">--</div>
             </div>
         </div>
 
@@ -399,33 +300,34 @@
         const db = firebase.firestore();
 
         firebase.auth().onAuthStateChanged(user => {
-            if (!user) { 
-                console.warn("No user detected, redirecting...");
-                window.location.href = "index.html"; 
-                return; 
-            }
+            if (!user) { window.location.href = "index.html"; return; }
 
-            console.log("User Authenticated:", user.uid);
             document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
             if (user.photoURL) document.getElementById('user-pfp').src = user.photoURL;
 
-            // Fetch stored AI features
             db.collection('users').doc(user.uid).get().then(doc => {
+                const historyLoader = document.getElementById('history-loader');
+                const historyTable = document.getElementById('history-table');
+                
                 if (!doc.exists) {
-                    console.error("No Firestore document found for this UID!");
+                    historyLoader.innerHTML = "<div class='empty-state'>No profile found. Please complete setup.</div>";
                     return;
                 }
 
                 const d = doc.data();
-                console.log("Data fetched from Firestore:", d);
 
-                // 1. System Context & Dynamic Category
-                document.getElementById('disp-disco').innerText = d.disco || 'Not Set';
-                document.getElementById('disp-load').innerHTML = `${d.sanctioned_load || 0} <small>kW</small>`;
+                // Helper to format values as -- if 0 or missing
+                const fv = (val, suffix = "") => {
+                    if (val === undefined || val === null || val === 0 || val === "0" || val === "") return "--";
+                    return val + (suffix ? ` <small>${suffix}</small>` : "");
+                };
+
+                // 1. System Context
+                document.getElementById('disp-disco').innerText = d.disco || '--';
+                document.getElementById('disp-load').innerHTML = fv(d.sanctioned_load, "kW");
 
                 const protEl = document.getElementById('disp-protected');
                 const cat = d.user_category || 'non_protected';
-
                 if (cat === 'lifeline') {
                     protEl.innerHTML = `<span class="status-badge" style="border-color:var(--g1); color:var(--g3)">Lifeline</span>`;
                 } else if (cat === 'protected') {
@@ -434,63 +336,60 @@
                     protEl.innerHTML = `<span class="status-badge" style="border-color:var(--warn); color:var(--warn)">Unprotected</span>`;
                 }
 
-                // 1.5  Lifestyle Fingerprint Mapping
+                // 2. Lifestyle Fingerprint
+                document.getElementById('disp-occupants').innerHTML = fv(d.person_count);
+                document.getElementById('disp-area').innerHTML = fv(d.property_area, "sq.ft");
+                document.getElementById('disp-floors').innerHTML = fv(d.floors);
+                
                 const routineMap = {
                     'standard': 'Standard / Balanced',
                     'morning_active': 'Morning Heavy',
                     'evening_active': 'Evening Heavy',
                     'all_day': 'Always Active'
                 };
+                document.getElementById('disp-routine').innerText = d.user_routine ? routineMap[d.user_routine] : 'Not Set';
 
-                const persons = d.person_count || 0;
-                document.getElementById('disp-occupants').innerHTML = `${persons} <small>Persons</small>`;
+                // 3. Appliance Features
+                document.getElementById('disp-ac').innerHTML = fv(Math.round(d.ac_monthly || 0), "kWh");
+                document.getElementById('label-ac').innerHTML = `<i class="fa fa-snowflake"></i> AC <span class="data-type-tag">${d.ac_type === 'inverter' ? 'Inverter' : 'Fixed'}</span>`;
 
-                const routineKey = d.user_routine || 'standard';
-                document.getElementById('disp-routine').innerText = routineMap[routineKey];
+                document.getElementById('disp-fridge').innerHTML = fv(Math.round(d.refrigerator_monthly || 0), "kWh");
+                document.getElementById('label-fridge').innerHTML = `<i class="fa fa-box"></i> Fridge <span class="data-type-tag">${d.f_type === 'inverter' ? 'Inverter' : 'Old'}</span>`;
 
-                // 2. Appliance kWh (Formatted)
-                const formatUnits = (val) => `${Math.round(val || 0)} <small>kWh</small>`;
-                
-                document.getElementById('disp-ac').innerHTML = formatUnits(d.ac_monthly);
-                // We use querySelector to find the label inside the parent of the value display
-                const acBox = document.getElementById('disp-ac').closest('.data-item');
-                if(acBox) acBox.querySelector('.data-label').innerHTML = `<i class="fa fa-snowflake"></i> AC <span class="data-type-tag">${d.ac_type === 'inverter' ? 'Inverter' : 'Fixed'}</span>`;
+                document.getElementById('disp-fans').innerHTML = fv(d.fan_qty);
+                document.getElementById('disp-wm').innerHTML = fv(d.wm_qty);
+                document.getElementById('disp-wp').innerHTML = fv(Math.round(d.wp_monthly || 0), "kWh");
+                document.getElementById('disp-ups').innerHTML = fv(Math.round(d.ups_monthly || 0), "kWh");
+                document.getElementById('disp-mean').innerHTML = d.mean_hourly ? `${d.mean_hourly.toFixed(4)} <small>kW</small>` : "--";
 
-                document.getElementById('disp-fridge').innerHTML = formatUnits(d.refrigerator_monthly);
-                const fridgeBox = document.getElementById('disp-fridge').closest('.data-item');
-                if(fridgeBox) fridgeBox.querySelector('.data-label').innerHTML = `<i class="fa fa-box"></i> Fridge <span class="data-type-tag">${d.f_type === 'inverter' ? 'Inverter' : 'Old'}</span>`;
-
-                document.getElementById('disp-wp').innerHTML = formatUnits(d.wp_monthly);
-                document.getElementById('disp-kitchen').innerHTML = formatUnits(d.kitchen_monthly);
-                document.getElementById('disp-ups').innerHTML = formatUnits(d.ups_monthly);
-                
-                // 3. AI Core Feature (Mean Hourly)
-                document.getElementById('disp-mean').innerHTML = `${(d.mean_hourly || 0).toFixed(4)} <small>kW</small>`;
-
-                // 4. Billing History Table Mapping
+                // 4. History Table
                 const tbody = document.getElementById('history-table-body');
-                if (tbody) {
-                    tbody.innerHTML = ""; 
-                    if (d.bill_history && d.bill_history.length > 0) {
-                        d.bill_history.forEach(row => {
-                            const tr = document.createElement('tr');
-                            tr.innerHTML = `
-                                <td class="month-cell">${row.month}</td>
-                                <td>${row.units} kWh</td>
-                                <td>Rs. ${(row.amount || 0).toLocaleString()}</td>
-                                <td style="color:var(--g3)"><i class="fa fa-circle-check"></i> Stored</td>
-                            `;
-                            tbody.appendChild(tr);
-                        });
-                        
-                        const avgEl = document.getElementById('disp-avg-hist');
-                        if (avgEl) avgEl.innerHTML = `${Math.round(d.historical_avg_units || 0)} <small>kWh/mo</small>`;
-                    } else {
-                        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:30px; color:var(--text-dim)'>No history found.</td></tr>";
-                    }
+                historyLoader.style.display = 'none';
+                historyTable.style.display = 'table';
+
+                if (d.bill_history && d.bill_history.length > 0) {
+                    tbody.innerHTML = "";
+                    d.bill_history.forEach(row => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td class="month-cell">${row.month}</td>
+                            <td>${row.units} kWh</td>
+                            <td>Rs. ${(row.amount || 0).toLocaleString()}</td>
+                            <td style="color:var(--g3)"><i class="fa fa-circle-check"></i> Stored</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                    document.getElementById('disp-avg-hist').innerHTML = fv(Math.round(d.historical_avg_units || 0), "kWh/mo");
+                } else {
+                    historyTable.style.display = 'none';
+                    historyLoader.style.display = 'block';
+                    historyLoader.innerHTML = "<div class='empty-state'>No verified history found. Prediction accuracy may be limited.</div>";
+                    document.getElementById('disp-avg-hist').innerText = "--";
                 }
+
             }).catch(err => {
                 console.error("Firestore Error:", err);
+                document.getElementById('history-loader').innerHTML = "<div class='empty-state' style='color:#f87171'>Error loading AI memory.</div>";
             });
         });
 
