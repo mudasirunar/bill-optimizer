@@ -98,6 +98,88 @@
             box-shadow: 0 0 28px var(--glow); transform: translateY(-2px);
         }
 
+        #load-pie-card {
+            background: rgba(13, 26, 18, 0.6);
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+        }
+
+        #loadPieChart {
+            filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.5));
+        }
+
+        /* Make legend text wrap better on small screens */
+        canvas {
+            max-width: 100% !important;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: var(--surface2);
+            height: 8px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: var(--g3);
+            box-shadow: 0 0 10px var(--glow);
+            cursor: pointer;
+        }
+
+        /* Tip Change Animation */
+        @keyframes tipEnter {
+            from { opacity: 0; transform: translateY(15px); filter: blur(4px); }
+            to { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+
+        @keyframes tipExit {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+
+        .tip-animate-in {
+            animation: tipEnter 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+        }
+
+        .tip-animate-out {
+            animation: tipExit 0.25s ease-in forwards;
+        }
+
+        /* Smooth fade for the Engine Card */
+        #engine-mode-display, #engine-desc-display {
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .engine-fade-out {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+
+        /* AI Pulse Animation for the status dot */
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 10px;
+            background: var(--g3);
+            box-shadow: 0 0 10px var(--g3);
+        }
+
+        .pulse-active {
+            animation: engine-pulse 1.5s infinite;
+        }
+
+        @keyframes engine-pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
         /* SIDEBAR / STATUS */
         .status-item { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
         .status-val { font-weight: 700; color: var(--g3); }
@@ -355,6 +437,81 @@
                 <div class="status-item" style="border:none"><span>Applied Slab</span> <span id="br-cat" class="status-val" style="text-transform: uppercase; color: var(--warn);">---</span></div>
             </div>
         </div>
+
+        <div class="section-card" id="ai-insights-card" style="display: none; border-left: 4px solid var(--g3); background: rgba(16,185,129,0.03); padding: 20px;">
+    
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="font-family:'Syne'; font-size: 0.8rem; color: var(--g3); text-transform: uppercase; letter-spacing: 1px;">
+                    <i class="fa-solid fa-brain"></i> Contextual Strategy
+                </h3>
+                <span id="tip-category-tag" class="ai-tag" style="font-size: 0.55rem; padding: 3px 8px; border-radius: 6px;">Analyzing...</span>
+            </div>
+            
+            <div id="prominent-tip-content" style="display: flex; gap: 15px; align-items: center;">
+                </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                <button onclick="rotateTip()" class="btn-outline" style="padding: 5px 10px; font-size: 0.65rem; border-radius: 6px; background: rgba(52,211,153,0.05); border-color: rgba(52,211,153,0.15);">
+                    Next Insight <i class="fa-solid fa-arrow-right" style="margin-left:5px; opacity: 0.8;"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="section-card" id="solar-sim-card" style="display: none; border-top: 4px solid var(--g1); background: linear-gradient(180deg, rgba(16,185,129,0.05) 0%, transparent 100%);">
+    
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px;">
+                <div>
+                    <h3 style="font-family:'Syne'; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa fa-solar-panel" style="color:var(--g3)"></i> Solar Savings Expert
+                    </h3>
+                    <p id="solar-payback-text" style="font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;"></p>
+                </div>
+                <div style="text-align: right;">
+                    <small style="display:block; font-size: 0.6rem; color: var(--text-muted); font-weight: 700;">MONTHLY PROFIT</small>
+                    <span id="solar-savings" style="font-weight: 800; color: var(--g3); font-size: 1.6rem; font-family: 'Syne'; text-shadow: 0 0 15px var(--glow);">Rs. 0</span>
+                </div>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 18px; border: 1px solid var(--border); margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <label style="font-size: 0.85rem; font-weight: 700; color: var(--text);">
+                        When do you use electricity?
+                    </label>
+                    <div id="verdict-badge" style="font-size: 0.65rem; padding: 4px 10px; border-radius: 20px; background: var(--surface2); color: var(--g3); font-weight: 800; text-transform: uppercase; border: 1px solid var(--border);">
+                        Standard
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <i class="fa fa-moon" style="color: #94a3b8; font-size: 1.1rem;"></i>
+                    <div style="flex-grow: 1; position: relative;">
+                        <input type="range" id="load-shift-slider" min="10" max="90" value="40" step="5" 
+                            style="width: 100%; cursor: pointer;" oninput="updateSolarSimulation()">
+                    </div>
+                    <i class="fa fa-sun" style="color: #fbbf24; font-size: 1.3rem; filter: drop-shadow(0 0 5px #fbbf2466);"></i>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.65rem; font-weight: 600;">
+                    <span style="color: #94a3b8;">Mostly at Night (2026 Loss)</span>
+                    <span style="color: var(--g3);">Sunlight Hours (Max Profit)</span>
+                </div>
+            </div>
+
+            <div id="solar-advice-box" style="font-size: 0.75rem; line-height: 1.5; color: var(--text-muted); background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; border-left: 3px solid var(--g3); margin-bottom: 20px;">
+                Slide to the right to see how moving your <strong>Water Pump</strong> and <strong>AC</strong> to the daytime increases your savings.
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="padding: 12px; background: var(--surface2); border-radius: 12px; border: 1px solid var(--border);">
+                    <small style="display:block; font-size:0.55rem; color:var(--text-dim); text-transform: uppercase;">Required Panels</small>
+                    <span id="solar-kw" style="font-weight:700; color:var(--text); font-size: 1.1rem;">-- kW</span>
+                </div>
+                <div style="padding: 12px; background: var(--surface2); border-radius: 12px; border: 1px solid var(--border);">
+                    <small style="display:block; font-size:0.55rem; color:var(--text-dim); text-transform: uppercase;">Direct Sun Usage</small>
+                    <span id="self-use-units" style="font-weight:700; color:var(--text); font-size: 1.1rem;">-- Units</span>
+                </div>
+            </div>
+        </div>
     </div>
 
         <div class="prediction-side">
@@ -364,7 +521,17 @@
                 <div class="status-item"><span style="color:var(--text-dim)">Mean Hourly</span> <span class="status-val" id="st-mean">-- kW</span></div>
                 <div class="status-item"><span style="color:var(--text-dim)">Provider</span> <span class="status-val" id="st-disco">--</span></div>
                 <div class="status-item"><span style="color:var(--text-dim)">Billing Category</span> <span class="status-val" id="st-cat" style="text-transform: capitalize;">--</span></div>
-                <div class="status-item" style="border:none"><span style="color:var(--text-dim)">History Avg</span> <span class="status-val" id="st-hist">-- kWh</span></div>
+                
+                <div class="status-item" style="border:none; padding-bottom: 5px;">
+                    <span style="color:var(--text-dim)">History Avg</span> 
+                    <span class="status-val" id="st-hist">-- kWh</span>
+                </div>
+
+                <div id="st-accuracy-zone" style="display:none; justify-content:space-between; align-items:center; padding: 12px 0 0 0; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.03);">
+                    <span style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">History Reliability</span>
+                    <div id="st-stars" style="color: #fbbf24; font-size: 0.75rem; text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);">
+                        </div>
+                </div>
             </div>
 
             <div class="section-card" style="background: rgba(16, 185, 129, 0.05); border-color: var(--g1)">
@@ -379,6 +546,7 @@
                 </p>
             </div>
 
+
             <div style="display: flex; flex-direction: column; gap: 12px; margin-top: -10px; margin-bottom: 20px;">
                 <a href="setup-profile.html" class="btn-outline" style="width: 100%; justify-content: center;">
                     <i class="fa fa-pen-nib"></i> Update Profile
@@ -386,6 +554,11 @@
                 <a href="ai-memory.html" class="btn-outline" style="width: 100%; justify-content: center; border-color: var(--border);">
                     <i class="fa fa-brain"></i> View AI Memory
                 </a>
+            </div>
+
+            <div class="section-card" id="load-pie-card" style="display:none; padding:20px;">
+                <h4 style="font-family:'Syne'; font-size:0.8rem; margin-bottom:15px;"><i class="fa fa-chart-pie"></i> Load Distribution</h4>
+                <div style="height:180px;"><canvas id="loadPieChart"></canvas></div>
             </div>
 
             <div id="data-gap-card" class="section-card" style="display: none; border-color: var(--warn); background: rgba(251, 191, 36, 0.05); margin-top: 10px; padding: 20px;">
@@ -449,6 +622,7 @@
         const db = firebase.firestore();
         let userUid = null;
         let myChart = null;
+        let annualForecastData = null; 
 
         firebase.auth().onAuthStateChanged(user => {
             if (!user) { window.location.href = "index.html"; }
@@ -467,7 +641,7 @@
             const loader = document.getElementById('btnLoader');
             const btnText = document.getElementById('btnText');
 
-            // Safety check: Re-verify data before hitting Flask
+            // Safety check
             const doc = await db.collection('users').doc(userUid).get();
             const u = doc.data();
             if (!u.property_area || !u.person_count) {
@@ -478,6 +652,9 @@
             btn.disabled = true;
             loader.style.display = 'block';
             btnText.innerText = "Analyzing Patterns...";
+
+            const procContext = getEngineContext(u, null, 'predicting');
+            updateEngineDisplay(procContext.mode, procContext.desc, true);
 
             try {
                 const response = await fetch('http://127.0.0.1:5000/api/predict_bill', {
@@ -492,17 +669,27 @@
                     currentPredictionData = result;
                     animateValue("bill-amount", 0, Math.round(result.bill.total_bill), 1000);
                     
-                    // --- UPDATED: Showing Info Icon next to label ---
+                    // ─── 1. RANGE CALCULATION FOR THE CHIP ───
+                    const margin = 0.07; 
+                    const lowerKwh = (result.kwh * (1 - margin)).toFixed(1);
+                    const upperKwh = (result.kwh * (1 + margin)).toFixed(1);
+
+                    // ─── 2. UNIT LABEL: CORRECTED TO OPEN INFERENCE MODAL ───
                     document.getElementById('unit-label').innerHTML = `
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span><i class="fa fa-microchip" style="opacity:0.7"></i> ${result.kwh} Predicted Units</span>
-                            <span class="help-trigger" onclick="openInferenceModal()" title="View AI Analysis">
-                                <i class="fa fa-circle-info"></i>
-                            </span>
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span><i class="fa fa-microchip" style="opacity:0.7"></i> ${result.kwh} Predicted Units</span>
+                                <span class="help-trigger" onclick="openInferenceModal()" title="View AI Post-Mortem">
+                                    <i class="fa fa-circle-info"></i>
+                                </span>
+                            </div>
+                            <div style="font-size: 0.62rem; color: var(--text-dim); opacity: 0.8; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 600;">
+                                Probable Range: <span style="color:var(--text-muted)">${lowerKwh} - ${upperKwh} kWh</span>
+                            </div>
                         </div>
                     `;
 
-                    // Handle NEPRA Info Box
+                    // ─── 3. ORIGINAL NEPRA MESSAGE BOX ───
                     const msgArea = document.getElementById('inference-msg-area');
                     const msgText = document.getElementById('inference-text');
                     const applied = result.bill.applied_category; 
@@ -514,62 +701,51 @@
                     msgText.innerHTML = `Based on your consumption pattern, you fall into the 
                         <strong style="color:var(--g3); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${categoryName}</strong> category. 
                         Your bill is calculated using verified 2026 tariff slabs. 
-                        Learn more about <a href="nepra-info.html" style="color:var(--g3); text-decoration:none; border-bottom:1px dashed var(--g3); font-weight:600;">NEPRA Categories</a>.`;
+                        Learn more about <a href="nepra-info.html" target="_blank" rel="noopener noreferrer" style="color:var(--g3); text-decoration:none; border-bottom:1px dashed var(--g3); font-weight:600;">NEPRA Categories</a>.`;
 
-                    // Update Detailed Breakdown Card
+                    // ─── 4. DETAILED BREAKDOWN & CALIBRATION SIDEBAR ───
                     document.getElementById('breakdown-card').style.display = 'block';
                     document.getElementById('br-energy').innerText = "Rs. " + result.bill.energy_cost.toLocaleString();
                     document.getElementById('br-fixed').innerText = "Rs. " + result.bill.fixed_charges.toLocaleString();
                     document.getElementById('br-taxes').innerText = "Rs. " + result.bill.taxes_and_fca.toLocaleString();
-                    
-                    const slabEl = document.getElementById('br-cat');
-                    slabEl.innerText = categoryName;
-                    slabEl.style.color = "var(--g3)";
-                    
-              
-                    // --- Active Calibration Card ---
-                    const userDoc = await db.collection('users').doc(userUid).get();
-                    const u = userDoc.data();
-                    
+                    document.getElementById('br-cat').innerText = categoryName;
+
+                    // Sync Engine Mode (Sidebar)
+                    const userData = (await db.collection('users').doc(userUid).get()).data();
                     let engineMode = "Hybrid AI Active";
                     let engineDesc = "";
 
-                    // 1. Determine the "Inference Mode" based on data density
-                    if (!u.bill_history || u.bill_history.length === 0) {
+                    if (!userData.bill_history || userData.bill_history.length === 0) {
                         engineMode = "Structural Inference";
                         engineDesc = "No history found. AI is synthesizing your bill based purely on house size and baseline structural loads.";
-                    } else if (u.ac_qty > 0) {
+                    } else if (userData.ac_qty > 0) {
                         engineMode = "Seasonal Calibration";
-                        const acScaleVal = result.bill.seasonal_context ? result.bill.seasonal_context.ac_scale : 1.0;
-                        const acScalePercent = Math.round(acScaleVal * 100);
-                        engineDesc = `Pattern recognized. Applying <strong>${acScalePercent}%</strong> seasonal cap to your AC load for ${result.bill.seasonal_context.month}.`;
+                        engineDesc = `Pattern recognized. Applying <strong>${Math.round(result.bill.seasonal_context.ac_scale * 100)}%</strong> seasonal cap to your AC load for ${result.bill.seasonal_context.month}.`;
                     } else {
                         engineMode = "Baseload Profiling";
                         engineDesc = "No AC detected. AI is focusing on your constant appliance signatures (Fridge, Fans, and Standby power).";
                     }
 
-                    // 2. High-Accuracy Warning (If data is very low)
-                    if (u.sanctioned_load <= 1 && (!u.ac_qty || u.ac_qty == 0)) {
-                        engineMode = "Minimum Baseline";
-                        engineDesc = "Low-density data profile. AI is predicting the absolute technical minimum units for a 1kW connection.";
-                    }
+                    const successContext = getEngineContext(u, result, 'done');
+                    updateEngineDisplay(successContext.mode, successContext.desc, false);
 
-                    // 3. Update the UI
-                    document.getElementById('engine-mode-display').innerText = engineMode;
-                    document.getElementById('engine-desc-display').innerHTML = engineDesc;
 
-                    // Only run the chart fetch AFTER the UI has completely updated
-                    setTimeout(async () => {
-                        const userDoc = await db.collection('users').doc(userUid).get();
-                        const userData = userDoc.data();
-                        fetchAnnualPreview(userData.bill_history);
-                    }, 50);
+                    updateLoadPieChart(result.bill.physics_breakdown);
+                    await fetchAnnualPreview(userData.bill_history);
+                    generateAISuggestions(result);
+                    simulateSolarImpact(result);
 
+                    setTimeout(() => {
+                        loadInferenceData(); 
+                    }, 7000);
+    
                 } else {
                     alert("AI Error: " + result.error);
+                    updateEngineDisplay("Engine Error", result.error, false);
                 }
             } catch (e) {
-                alert("Flask Server Offline! Please run 'python app.py' in your backend folder.");
+                updateEngineDisplay("Connection Lost", "Flask server offline.", false);
+                alert("Flask Server Offline!");
             } finally {
                 btn.disabled = false;
                 loader.style.display = 'none';
@@ -594,14 +770,15 @@
             if (!d.sanctioned_load) missingFields.push("Sanctioned Load (Required for capacity and fixed charges)");
             if (!d.property_area) missingFields.push("Property Area (Required for structural baseload calculation)");
             if (!d.person_count) missingFields.push("Total Occupants (Required for baseline noise scaling)");
+            if (!d.disco) missingFields.push("Distribution Provider (Required for regional climate calibration)"); // NEW CHECK
 
             // Handle the Gap Card visibility and content
             if (missingFields.length > 0) {
                 gapCard.style.display = 'block';
                 gapList.innerHTML = missingFields.map(msg => 
-                    `<div style="margin-bottom:6px; display:flex; gap:8px;">
-                        <i class="fa fa-circle" style="font-size:0.4rem; margin-top:6px; color:var(--warn)"></i> 
-                        <span>${msg}</span>
+                    `<div style="margin-bottom:8px; display:flex; gap:10px; align-items:flex-start;">
+                        <i class="fa fa-triangle-exclamation" style="font-size:0.7rem; margin-top:3px; color:var(--warn)"></i> 
+                        <span style="line-height:1.2">${msg}</span>
                     </div>`
                 ).join('');
             } else {
@@ -616,10 +793,6 @@
                 
                 btn.disabled = true;
                 btnText.innerHTML = '<i class="fa fa-lock"></i> Profile Incomplete';
-                
-                document.getElementById('engine-mode-display').innerText = "Inference Suspended";
-                document.getElementById('engine-desc-display').innerHTML = 
-                    "AI engine requires foundational context. Please resolve the <strong>Optimization Gaps</strong> to enable forecasting.";
                 
                 // Still update sidebar with what we HAVE, even if locked
                 document.getElementById('st-load').innerText = (d.sanctioned_load || "--") + " kW";
@@ -649,16 +822,47 @@
             const rawCat = d.user_category || "---";
             document.getElementById('st-cat').innerText = catMap[rawCat] || rawCat;
             const histAvg = d.historical_avg_units;
-                document.getElementById('st-hist').innerText = (histAvg && histAvg > 0) 
-                    ? Math.round(histAvg) + " kWh" 
-                    : "No History";
+            const validHistory = (d.bill_history || []).filter(b => parseFloat(b.units) > 5);
+            const historyCount = validHistory.length;
+
+            // Update History Average Text
+            document.getElementById('st-hist').innerText = (histAvg && histAvg > 0) 
+                ? Math.round(histAvg) + " kWh" 
+                : "No History";
+
+            // --- NEW: IMMEDIATE STAR LOGIC ---
+            const accuracyZone = document.getElementById('st-accuracy-zone');
+            const starContainer = document.getElementById('st-stars');
+
+            if (historyCount > 0) {
+                accuracyZone.style.display = 'flex';
+                
+                // Accuracy Math (Seasonal Maturity)
+                let starCount = 0;
+                if (historyCount >= 11) starCount = 5;
+                else if (historyCount >= 7) starCount = 4;
+                else if (historyCount >= 4) starCount = 3;
+                else if (historyCount >= 1) starCount = 2;
+
+                let starsHtml = "";
+                for (let i = 1; i <= 5; i++) {
+                    if (i <= starCount) {
+                        starsHtml += '<i class="fa fa-star"></i>';
+                    } else {
+                        starsHtml += '<i class="fa-regular fa-star" style="opacity:0.2; color:var(--text-dim)"></i>';
+                    }
+                }
+                starContainer.innerHTML = starsHtml;
+            } else {
+                accuracyZone.style.display = 'none';
+            }
             
             // Unlock UI
             btn.disabled = false;
             btnText.innerHTML = '<i class="fa fa-bolt"></i> Generate AI Prediction';
 
-            document.getElementById('engine-mode-display').innerText = "System Standby";
-            document.getElementById('engine-desc-display').innerHTML = "Foundational context synchronized. Ready to synthesize seasonal patterns and appliance signatures.";
+            const context = getEngineContext(d); 
+            updateEngineDisplay(context.mode, context.desc, false);
 
             fetchAnnualPreview(d.bill_history || []);
         }
@@ -677,15 +881,17 @@
                 const data = await res.json();
                 
                 if(data.status === "success") {
+                    annualForecastData = data.monthly;
                     updateAnnualChart(data.monthly, billHistory);
+                    return true;
                 } else {
                     // Backend says no profile
                     document.getElementById('chart-empty-state').style.display = 'flex';
                 }
             } catch (e) {
                 console.error("Seasonal preview error:", e);
+                return false;
             } finally {
-                // Always hide loader when done
                 if (loader) {
                     loader.style.opacity = '0';
                     setTimeout(() => { loader.style.display = 'none'; }, 300);
@@ -789,121 +995,652 @@
             window.requestAnimationFrame(step);
         }
 
-        // ─── INFERENCE ANALYSIS MODAL LOGIC ───
+        // ─── INFERENCE ANALYSIS MODAL LOGIC (v2.6 Synchronized) ───
         function openInferenceModal() {
-    if (!currentPredictionData) return;
-    const res = currentPredictionData;
-    const phy = res.bill.physics_breakdown;
-    const ctx = res.bill.seasonal_context;
-    const drift = res.bill.drift;
-    const content = document.getElementById('inference-modal-content');
-    
-    // 1. Blend Calculations
-    const pW = Math.round(res.bill.blend_weights.physics * 100);
-    const rW = Math.round(res.bill.blend_weights.rf * 100);
+            if (!currentPredictionData) return;
+            const res = currentPredictionData;
+            const phy = res.bill.physics_breakdown;
+            const ctx = res.bill.seasonal_context;
+            const drift = res.bill.drift;
+            const historyUsed = res.bill.history_months_used || 0;
+            const content = document.getElementById('inference-modal-content');
 
-    // 2. Logic for Physics Signatures
-    // We group them for the Post-Mortem report
-    const foundationTotal = phy.person_base + phy.area_lighting;
-    const appliancesTotal = phy.fridge + phy.water_pump + phy.kitchen + phy.washing + phy.ups;
-    const totalLoad = phy.total;
+            // 1. SYNCHRONIZED WEIGHT CALCULATION (Matching app.py logic)
+            let hW = 0;
+            if (historyUsed > 0) {
+                // Match Python Tier: 40% if drifting, 30% if stable
+                hW = (drift.trend !== 'stable') ? 40 : 30;
+            }
 
-    content.innerHTML = `
-        <div style="margin-bottom:28px">
-            <p class="step-title" style="margin-top:0"><i class="fa fa-layer-group"></i> 1. Model Decision Weights</p>
-            <p style="font-size:0.75rem; color:var(--text-dim); margin-bottom:10px;">
-                The system analyzed your appliance signatures and the current month (${ctx.month}). 
-                Because it is a <strong>${ctx.ac_scale > 0.5 ? 'High' : 'Low'}</strong> consumption month, the Decision Engine used this ratio:
-            </p>
-            <div style="display:flex; height:12px; border-radius:10px; overflow:hidden; background:var(--surface2)">
-                <div style="width:${pW}%; background:var(--g1)" title="Physics"></div>
-                <div style="width:${rW}%; background:var(--g3)" title="RF AI"></div>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:0.7rem; margin-top:8px;">
-                <span>Physics Baseline: <b>${pW}%</b></span>
-                <span>RF AI Patterns: <b>${rW}%</b></span>
-            </div>
-        </div>
+            // Proportional split of the remaining percentage
+            const remaining = 100 - hW;
+            const pW = Math.round(res.bill.blend_weights.physics * remaining);
+            const rW = Math.round(res.bill.blend_weights.rf * remaining);
 
-        <div style="margin-bottom:28px">
-            <p class="step-title"><i class="fa fa-cloud-sun"></i> 2. Seasonal Climate Influence</p>
-            <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:12px; border:1px solid var(--border);">
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                    <div>
-                        <small style="color:var(--text-dim); display:block; text-transform:uppercase; font-size:0.6rem;">AC Intensity</small>
-                        <span style="font-weight:700; color:var(--g3)">${(ctx.ac_scale * 100).toFixed(0)}% Capacity</span>
+            // 2. Physics & Calculation Helpers
+            const foundationTotal = phy.person_base + phy.area_lighting;
+            const totalLoad = phy.total;
+
+            // 3. UI Colors (High Contrast)
+            const historyColor = "#fbbf24"; // Bright Electric Gold
+            const physicsColor = "#10b981"; // Emerald
+            const patternColor = "#34d399"; // Mint
+
+            // Dynamic Confidence Logic
+            let confidence = "Low";
+            let confColor = "#f87171"; // Red-ish
+
+            if (historyUsed >= 10) {
+                confidence = "High";
+                confColor = "#10b981"; // Emerald
+            } else if (historyUsed >= 5) {
+                confidence = "Medium";
+                confColor = "#fbbf24"; // Gold
+            }
+
+            // 4. History Status Template
+            let historyHtml = "";
+            if (historyUsed > 0) {
+                historyHtml = `
+                    <div style="background:rgba(16,185,129,0.05); padding:15px; border-radius:12px; border:1px solid var(--border); margin-bottom:28px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <p class="step-title" style="margin:0; color:var(--g3)"><i class="fa fa-clock-rotate-left"></i> 4. Historical Calibration</p>
+                            <span class="status-badge" style="background:var(--g1); color:white; font-size:0.6rem; font-weight:800; padding:2px 8px; border-radius:4px;">ACTIVE</span>
+                        </div>
+                        <p style="font-size:0.75rem; color:var(--text-muted); line-height:1.4">
+                            The AI detected a <b>${drift.trend}</b> usage trend over <b>${historyUsed} months</b>. 
+                            This verified history was used to "calibrate" the theoretical model by <b>${hW}%</b> to match your real-world habits.
+                        </p>
+                        <div style="margin-top:10px; font-size:0.7rem; display:flex; gap:15px; color:#ffffff">
+                            <span>Trend Shift: <b style="color:${drift.change_pct > 0 ? '#f87171' : '#10b981'}">${drift.change_pct}%</b></span>
+                            <span>Confidence: <b style="color:${confColor}">${confidence}</b></span>
+                        </div>
                     </div>
-                    <div>
-                        <small style="color:var(--text-dim); display:block; text-transform:uppercase; font-size:0.6rem;">Avg. Fan Hours</small>
-                        <span style="font-weight:700; color:var(--g3)">${res.bill.physics_breakdown.fans > 0 ? 'Seasonal Heuristic' : '0'}</span>
+                `;
+            } else {
+                historyHtml = `
+                    <div style="background:rgba(251,191,36,0.05); padding:15px; border-radius:12px; border:1px solid rgba(251,191,36,0.2); margin-bottom:28px;">
+                        <p class="step-title" style="margin:0; color:#fbbf24"><i class="fa fa-triangle-exclamation"></i> 4. History Gap</p>
+                        <p style="font-size:0.75rem; color:var(--text-muted); margin-top:8px; line-height:1.4">
+                            <b>No history active.</b> The AI is currently relying 100% on structural math and regional patterns. 
+                            <span style="color:var(--text)">Add past bills</span> to help the model learn your personal lifestyle noise.
+                        </p>
+                    </div>
+                `;
+            }
+
+            content.innerHTML = `
+                <div style="margin-bottom:28px">
+                    <p class="step-title" style="margin-top:0"><i class="fa fa-layer-group"></i> 1. Model Decision Weights</p>
+                    <div style="display:flex; height:18px; border-radius:10px; overflow:hidden; margin-top:10px; background:var(--surface2); border:1px solid var(--border); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);">
+                        <div style="width:${pW}%; background:${physicsColor}" title="Physics"></div>
+                        <div style="width:${rW}%; background:${patternColor}" title="RF AI"></div>
+                        <div style="width:${hW}%; background:${historyColor}" title="History"></div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.65rem; margin-top:10px; text-transform:uppercase; letter-spacing:0.8px; font-weight:700;">
+                        <span style="color:${physicsColor}">Physics: ${pW}%</span>
+                        <span style="color:${patternColor}">Patterns: ${rW}%</span>
+                        <span style="color:${historyColor}">History: ${hW}%</span>
                     </div>
                 </div>
-                <p style="font-size:0.7rem; color:var(--text-muted); margin-top:10px; line-height:1.4;">
-                    <i class="fa fa-info-circle"></i> AI Logic: During ${ctx.month}, the system applies a <b>Non-Linear Decay</b> to AC usage and assumes peak fan operation of ~${ctx.month === 'June' ? '18' : '8'} hours to align with Karachi/Lahore climate data.
-                </p>
-            </div>
-        </div>
 
-        <div>
-            <p class="step-title"><i class="fa fa-microchip"></i> 3. Load Participation Audit</p>
-            <table class="calc-table" style="font-size:0.8rem">
-                <thead>
-                    <tr style="color:var(--text-dim); font-size:0.6rem; text-transform:uppercase;">
-                        <th style="text-align:left; padding-bottom:8px">Signature</th>
-                        <th style="text-align:right; padding-bottom:8px">Physics Baseline</th>
-                        <th style="text-align:right; padding-bottom:8px">Involvement</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="label">Structural Foundation (Area/People)</td>
-                        <td class="val">${foundationTotal.toFixed(1)} <small>kWh</small></td>
-                        <td class="val" style="color:var(--g3)">${Math.round((foundationTotal/totalLoad)*100)}%</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Cooling Signature (AC/Fans)</td>
-                        <td class="val">${(phy.ac + phy.fans).toFixed(1)} <small>kWh</small></td>
-                        <td class="val" style="color:var(--g3)">${Math.round(((phy.ac + phy.fans)/totalLoad)*100)}%</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Heavy Appliances (Fridge/Pump/WM)</td>
-                        <td class="val">${(phy.fridge + phy.water_pump + phy.washing).toFixed(1)} <small>kWh</small></td>
-                        <td class="val" style="color:var(--g3)">${Math.round(((phy.fridge + phy.water_pump + phy.washing)/totalLoad)*100)}%</td>
-                    </tr>
-                    <tr>
-                        <td class="label">Operational Waste (UPS Losses)</td>
-                        <td class="val">${phy.ups.toFixed(1)} <small>kWh</small></td>
-                        <td class="val" style="color:var(--g3)">${Math.round((phy.ups/totalLoad)*100)}%</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+                <div style="margin-bottom:28px">
+                    <p class="step-title"><i class="fa fa-cloud-sun"></i> 2. Seasonal Climate Influence</p>
+                    <div style="background:rgba(255,255,255,0.03); padding:15px; border-radius:12px; border:1px solid var(--border);">
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                            <div>
+                                <small style="color:var(--text-dim); display:block; text-transform:uppercase; font-size:0.6rem;">Climate Status</small>
+                                <span style="font-weight:700; color:var(--g3)">${phy.ac > 0 ? (ctx.ac_scale * 100).toFixed(0) + '% Thermal Intensity' : 'Standard Season'}</span>
+                            </div>
+                            <div>
+                                <small style="color:var(--text-dim); display:block; text-transform:uppercase; font-size:0.6rem;">Dynamic Fan Baseline</small>
+                                <span style="font-weight:700; color:var(--g3)">${ctx.fan_hours_today} Hours/Day</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        <div style="margin-top:20px; border-top:1px solid var(--border); padding-top:15px;">
-            <div style="display:flex; justify-content:space-between; align-items:center">
-                <span style="font-size:0.85rem; color:var(--text-muted)">Physics Derived Total:</span>
-                <span style="font-weight:600">${phy.total} kWh</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
-                <span style="font-size:0.85rem; color:var(--text-muted)">RF Neural Adjustment:</span>
-                <span style="font-weight:600; color:var(--warn)">${(res.kwh - phy.total).toFixed(1)} kWh</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px dashed var(--border)">
-                <span style="font-weight:800; color:var(--g3)">Final Inference:</span>
-                <span style="font-family:'Syne'; font-weight:800; font-size:1.2rem; color:var(--g3)">${res.kwh} kWh</span>
-            </div>
-            <p style="font-size:0.65rem; color:var(--text-dim); margin-top:12px; font-style:italic;">
-                * The "Neural Adjustment" represents the Random Forest model detecting patterns from the PRECON dataset that pure physics equations cannot capture (e.g. erratic standby power or human behavioral variance).
-            </p>
-        </div>
-    `;
+                <div style="margin-bottom:28px">
+                    <p class="step-title"><i class="fa fa-microchip"></i> 3. Load Participation Audit</p>
+                    <table class="calc-table" style="font-size:0.8rem">
+                        <thead>
+                            <tr style="color:var(--text-dim); font-size:0.6rem; text-transform:uppercase;">
+                                <th style="text-align:left; padding-bottom:8px">Signature</th>
+                                <th style="text-align:right; padding-bottom:8px">Raw Physics</th>
+                                <th style="text-align:right; padding-bottom:8px">Impact</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="label">Structural Foundation</td>
+                                <td class="val">${foundationTotal.toFixed(1)} <small>kWh</small></td>
+                                <td class="val" style="color:var(--g3)">${Math.round((foundationTotal/totalLoad)*100)}%</td>
+                            </tr>
+                            <tr>
+                                <td class="label">Cooling (AC/Fans)</td>
+                                <td class="val">${(phy.ac + phy.fans).toFixed(1)} <small>kWh</small></td>
+                                <td class="val" style="color:var(--g3)">${Math.round(((phy.ac + phy.fans)/totalLoad)*100)}%</td>
+                            </tr>
+                            <tr>
+                                <td class="label">Appliances (Fridge/Pump)</td>
+                                <td class="val">${(phy.fridge + phy.water_pump + phy.washing).toFixed(1)} <small>kWh</small></td>
+                                <td class="val" style="color:var(--g3)">${Math.round(((phy.fridge + phy.water_pump + phy.washing)/totalLoad)*100)}%</td>
+                            </tr>
+                            <tr>
+                                <td class="label">Efficiency Waste (UPS)</td>
+                                <td class="val">${phy.ups.toFixed(1)} <small>kWh</small></td>
+                                <td class="val" style="color:var(--g3)">${Math.round((phy.ups/totalLoad)*100)}%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-    document.body.classList.add('modal-open');
-    document.getElementById('inferenceModal').style.display = 'flex';
-}
+                ${historyHtml}
+
+                <div style="margin-top:10px; border-top:1px solid var(--border); padding-top:15px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center">
+                        <span style="font-size:0.85rem; color:var(--text-muted)">Physics Derived Total:</span>
+                        <span style="font-weight:600">${phy.total} kWh</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                        <span style="font-size:0.85rem; color:var(--text-muted)">AI Behavioral Offset:</span>
+                        <span style="font-weight:600; color:#ffffff;">${(res.kwh - phy.total).toFixed(1)} kWh</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:10px; border-top:1px dashed var(--border)">
+                        <span style="font-weight:800; color:var(--g3)">Final Predicted Units:</span>
+                        <span style="font-family:'Syne'; font-weight:800; font-size:1.4rem; color:var(--g3)">${res.kwh} <small style="font-size:0.8rem">kWh</small></span>
+                    </div>
+                </div>
+            `;
+
+            document.body.classList.add('modal-open');
+            document.getElementById('inferenceModal').style.display = 'flex';
+        }
+
         function closeInferenceModal() {
             document.getElementById('inferenceModal').style.display = 'none';
             document.body.classList.remove('modal-open');
+        }
+
+        let currentEligibleTips = [];
+        let lastTipIndex = -1;
+
+        function generateAISuggestions(res) {
+            const phy = res.bill.physics_breakdown;
+            const disco = document.getElementById('st-disco').innerText;
+            const units = res.kwh;
+            const isProtected = res.bill.applied_category === 'protected';
+            const isLifeline = res.bill.applied_category === 'lifeline';
+            const load = parseFloat(document.getElementById('st-load').innerText) || 0;
+            const month = new Date().getMonth() + 1;
+            const isSummer = [4, 5, 6, 7, 8, 9].includes(month);
+
+            let peakMonth = null;
+            let winterMonth = null;
+            let annualTotal = 0;
+
+            if (annualForecastData && annualForecastData.length === 12) {
+                peakMonth = annualForecastData.reduce((max, p) => p.kwh > max.kwh ? p : max, annualForecastData[0]);
+                winterMonth = annualForecastData.reduce((min, p) => p.kwh < min.kwh ? p : min, annualForecastData[0]);
+                annualTotal = annualForecastData.reduce((sum, m) => sum + m.bill_pkr, 0);
+            }
+
+            // ─── THE MASTER POOL (30+ CONDITIONS) ───
+            const pool = [
+                // 1. SLAB & STATUS LOGIC
+                { 
+                    trigger: isProtected && units > 185 && units <= 200,
+                    cat: 'URGENT: PROTECTED STATUS', icon: 'fa-shield-alt', color: '#f87171',
+                    title: 'The Rs. 4,000 Threshold',
+                    text: `You are at ${units} units. Crossing 200 will move you to "Unprotected" for 6 months. This mistake costs roughly Rs. 4,000/month in extra taxes.`
+                },
+                { 
+                    trigger: units > 300 && units < 320,
+                    cat: 'SLAB OPTIMIZATION', icon: 'fa-angle-double-down', color: '#fbbf24',
+                    title: 'Drop to the 300 Slab',
+                    text: 'You are just 20 units over the 300-unit limit. Reducing usage by only 0.7 units/day will drop your base rate significantly.'
+                },
+                { 
+                    trigger: isLifeline && units > 45 && units <= 50,
+                    cat: 'LIFELINE ALERT', icon: 'fa-heartbeat', color: '#f87171',
+                    title: 'Keep your Lifeline Status',
+                    text: 'Lifeline rates only apply below 50 units. At 51 units, your bill could double instantly. Turn off all standby lights tonight.'
+                },
+
+                // --- CATEGORY : PROACTIVE FORECASTING ---
+                { 
+                    trigger: peakMonth && peakMonth.kwh > (units * 1.4),
+                    cat: 'FORECAST: PEAK WARNING', icon: 'fa-calendar-check', color: '#f87171',
+                    title: `Future Shock in ${peakMonth?.month_name}`,
+                    text: `AI Roadmap predicts your usage will spike to **${Math.round(peakMonth?.kwh)} units** in ${peakMonth?.month_name}. Clean your AC coils *now* to flatten this curve.`
+                },
+                { 
+                    trigger: winterMonth && winterMonth.bill_pkr < (res.bill.total_bill * 0.5),
+                    cat: 'STRATEGIC SAVINGS', icon: 'fa-piggy-bank', color: '#34d399',
+                    title: 'Winter Bill Trough',
+                    text: `Your bill will drop significantly in **${winterMonth?.month_name}**. Use that extra cash for a BLDC Fan upgrade to ensure next summer's bill stays in the Protected Slab.`
+                },
+
+                // 1. SLAB RISK LOOK-AHEAD (Predictive Protection)
+                { 
+                    // Trigger: Current month is Protected, but roadmap shows crossing 200 units in the next 3 months
+                    trigger: isProtected && annualForecastData && annualForecastData.some((m, idx) => {
+                        const nextMonths = [(month % 12), (month + 1) % 12, (month + 2) % 12];
+                        return nextMonths.includes(idx) && m.kwh > 200;
+                    }),
+                    cat: 'FORECAST: SLAB RISK', icon: 'fa-shield-alt', color: '#f87171',
+                    title: 'Protected Status at Risk',
+                    text: `AI detects your usage will cross 200 units within 90 days. If this happens, you lose "Protected" benefits for 6 months. Start "Unit Pruning" today to stay below the line.`
+                },
+
+                // 2. THE "INVERTER GAP" ANALYSIS (Hardware Signature)
+                { 
+                    // Trigger: The difference between Summer Peak and Winter Low is more than 300 units
+                    trigger: peakMonth && winterMonth && (peakMonth.kwh - winterMonth.kwh) > 300,
+                    cat: 'HARDWARE SIGNATURE', icon: 'fa-microchip', color: '#fbbf24',
+                    title: 'High Thermal Sensitivity',
+                    text: `Your roadmap shows a massive **${Math.round(peakMonth.kwh - winterMonth.kwh)} unit gap** between seasons. This signature strongly suggests a Non-Inverter AC. Switching to an Inverter would save you ~Rs. 45,000 annually.`
+                },
+
+                // 3. FIXED CHARGE AUDIT (Over-provisioning)
+                { 
+                    // Trigger: Peak summer usage never utilizes 80% of sanctioned load (1kW handles ~200 units comfortably)
+                    trigger: peakMonth && (peakMonth.kwh < (load * 120)), 
+                    cat: 'FIXED COST AUDIT', icon: 'fa-file-invoice-dollar', color: '#a78bfa',
+                    title: 'Excess Capacity Detected',
+                    text: `Your AI roadmap shows you never fully utilize your **${load}kW load**. You are paying "Capacity Charges" for power you don't use. AI suggests a downgrade to a lower kW contract to save on monthly fixed fees.`
+                },
+
+                // 4. ANNUAL BUDGETING (The "Energy Debt")
+                { 
+                    // Trigger: Total annual cost calculated from roadmap is high
+                    trigger: annualForecastData && annualForecastData.reduce((sum, m) => sum + m.bill_pkr, 0) > 200000,
+                    cat: 'FINANCIAL FORECAST', icon: 'fa-chart-line', color: '#f87171',
+                    title: 'Annual Energy Debt',
+                    text: `AI calculates your total 2026 power spend at **Rs. ${Math.round(annualForecastData.reduce((sum, m) => sum + m.bill_pkr, 0)).toLocaleString()}**. This is ${Math.round((annualForecastData.reduce((sum, m) => sum + m.bill_pkr, 0) / 12) / 30000 * 100)}% of a typical Pakistani middle-class salary.`
+                },
+
+                // 5. MAINTENANCE WINDOW (60-Day Look-ahead)
+                { 
+                    // Trigger: Exactly 2 months before peak month
+                    trigger: peakMonth && (peakMonth.month - month === 2 || peakMonth.month - month === -10),
+                    cat: 'PREDICTIVE MAINTENANCE', icon: 'fa-wrench', color: '#60a5fa',
+                    title: '60-Day Peak Prep',
+                    text: `You are 2 months away from your annual peak of **${Math.round(peakMonth.kwh)} units**. Service your appliances now before summer technician rates increase and efficiency drops.`
+                },
+
+                // 6. BASELOAD "LEAK" DETECTION
+                { 
+                    // Trigger: Winter month (no AC/Fans) is still over 150 units
+                    trigger: winterMonth && winterMonth.kwh > 150,
+                    cat: 'BASELOAD LEAK', icon: 'fa-droplet', color: '#fb7185',
+                    title: 'Hidden Winter Drain',
+                    text: `Even in **${winterMonth.month_name}**, you are predicted to use ${Math.round(winterMonth.kwh)} units. This suggests "Phantom Loads" like UPS battery waste or a Water Dispenser. Investigate these to lower your year-round baseline.`
+                },
+
+                // 2. COOLING & AC (THERMAL PHYSICS)
+                { 
+                    trigger: phy.ac > 0 && isSummer,
+                    cat: 'AC EFFICIENCY', icon: 'fa-snowflake', color: '#60a5fa',
+                    title: 'The 26°C Sweet Spot',
+                    text: 'Physics Check: Every 1°C you lower below 26°C increases AC power consumption by 8%. Set a timer to switch to "Fan Only" at 4 AM.'
+                },
+                { 
+                    trigger: phy.ac > 150 && units > 400,
+                    cat: 'HARDWARE UPGRADE', icon: 'fa-microchip', color: '#34d399',
+                    title: 'Inverter ROI Check',
+                    text: 'Your AC load is high enough that switching a Non-Inverter unit to an EER 4.0 Inverter would pay for itself in just 14 months.'
+                },
+                { 
+                    trigger: phy.fans > 60,
+                    cat: 'FAN WASTE', icon: 'fa-fan', color: '#6ee7b7',
+                    title: 'Old Motor Friction',
+                    text: 'High Fan load detected. If your fans "hum" or start slowly, the internal bearings are wasting energy as heat. Regular oiling saves ~5 units/month.'
+                },
+
+                // 3. REFRIGERATION (ALWAYS-ON LOAD)
+                { 
+                    trigger: phy.fridge > 50,
+                    cat: 'THERMAL LEAK', icon: 'fa-door-closed', color: '#10b981',
+                    title: 'Compressor Overwork',
+                    text: 'Your fridge is using more than 50 units. Ensure it is not placed in direct sunlight or near a stove, which forces the compressor to run 20% longer.'
+                },
+                { 
+                    trigger: phy.fridge > 35 && isSummer,
+                    cat: 'VENTILATION', icon: 'fa-wind', color: '#34d399',
+                    title: 'The 6-Inch Rule',
+                    text: 'Pull your fridge 6 inches away from the wall. This allows the rear coils to dissipate heat faster, reducing the duty cycle of the motor.'
+                },
+
+                // 4. WATER PUMP & HEAVY LOADS
+                { 
+                    trigger: phy.water_pump > 12,
+                    cat: 'PUMP TIMING', icon: 'fa-tint', color: '#60a5fa',
+                    title: 'Avoid Peak Hour Stress',
+                    text: 'Water pumps have high "locked rotor amps" (startup surge). Never run the pump between 6:30 PM and 10:30 PM to avoid stressing your home wiring.'
+                },
+                { 
+                    trigger: phy.water_pump > 0 && disco === 'K-Electric',
+                    cat: 'PUMP EFFICIENCY', icon: 'fa-faucet', color: '#34d399',
+                    title: 'Air Lock Prevention',
+                    text: 'In Karachi, low suction pressure causes pumps to run longer. Install an automatic level sensor to ensure the pump only runs when pressure is optimal.'
+                },
+
+                // 5. UPS & BATTERY WASTE
+                { 
+                    trigger: phy.ups > 15,
+                    cat: 'VAMPIRE LOAD', icon: 'fa-battery-empty', color: '#a78bfa',
+                    title: 'UPS Efficiency Loss',
+                    text: 'Your UPS waste is high. If using a Modified Sine Wave UPS, 25% of power is lost as heat. Switching to a Pure Sine Wave inverter saves units.'
+                },
+                { 
+                    trigger: phy.ups > 10 && isSummer,
+                    cat: 'BATTERY HEALTH', icon: 'fa-bolt', color: '#fbbf24',
+                    title: 'Battery Gravity Check',
+                    text: 'Distilled water levels drop faster in summer. Low water levels increase internal resistance, causing the UPS to charge "endlessly" and waste units.'
+                },
+
+                // 6. KITCHEN & LAUNDRY
+                { 
+                    trigger: phy.washing > 8,
+                    cat: 'LAUNDRY LOGIC', icon: 'fa-tshirt', color: '#fb7185',
+                    title: 'Cold Wash Strategy',
+                    text: 'If using an automatic machine, disable the internal heater. Heating water accounts for 80% of a washing machine’s energy per cycle.'
+                },
+                { 
+                    trigger: phy.kitchen > 15,
+                    cat: 'KITCHEN WASTE', icon: 'fa-coffee', color: '#fbbf24',
+                    title: 'Electric Kettle vs Gas',
+                    text: 'Electric kettles are 1.2kW+. In the current high-unit slabs, boiling water on a gas stove is 4x cheaper than using an electric kettle.'
+                },
+
+                { 
+                    trigger: true, // General Tip
+                    cat: 'STANDBY WASTE', icon: 'fa-plug', color: '#6ee7b7',
+                    title: 'Phantom Loads',
+                    text: 'Microwaves, TVs, and Chargers left plugged in consume 0.5-2W constantly. In a 30-day month, this "phantom" load adds 5-8 units to your bill.'
+                },
+
+                // 7. REGIONAL & POLICY (2026)
+                { 
+                    trigger: disco === 'K-Electric' && isSummer,
+                    cat: 'HUMIDITY HACK', icon: 'fa-cloud-sun', color: '#6ee7b7',
+                    title: 'KE "Dry Mode" Advantage',
+                    text: 'On humid Karachi nights, use "Dry Mode" (💧). It focuses on moisture removal, making 26°C feel like 23°C for much less power.'
+                },
+                { 
+                    trigger: disco === 'LESCO',
+                    cat: 'LESCO: LAHORE CLIMATE', icon: 'fa-city', color: '#f59e0b',
+                    title: 'Urban Heat Island Effect',
+                    text: 'Lahore’s dense construction retains heat. AI suggests running your AC at **26°C with a ceiling fan**; this combination feels like 22°C but prevents the compressor from hitting the 100% duty cycle.'
+                },
+                { 
+                    trigger: disco === 'IESCO',
+                    cat: 'IESCO: NORTHERN STRATEGY', icon: 'fa-snowflake', color: '#60a5fa',
+                    title: 'Winter Gas-to-Electric Shift',
+                    text: 'For the Islamabad cold, stop using electric rod heaters. They are "Efficiency Killers." Switching to your **Inverter AC Heat Mode** uses 3x less power for the same warmth.'
+                },
+                { 
+                    trigger: disco === 'FESCO',
+                    cat: 'FESCO: INDUSTRIAL HUB', icon: 'fa-industry', color: '#8b5cf6',
+                    title: 'Industrial Adjacent Timing',
+                    text: 'Faisalabad’s grid faces industrial surges. To avoid voltage-drop losses that make your appliances pull more current, shift heavy laundry to **Sunday mornings** when local industrial load is at its lowest.'
+                },
+                { 
+                    trigger: disco === 'MEPCO',
+                    cat: 'MEPCO: EXTREME HEAT', icon: 'fa-sun', color: '#fbbf24',
+                    title: 'The Multan Heat Shield',
+                    text: 'Multan is a high-temperature zone. AI recommends **white roof treatment**. Reducing your roof temperature by 5°C can lower your monthly AC consumption by approximately 45 units.'
+                },
+                { 
+                    trigger: disco === 'PESCO',
+                    cat: 'PESCO: GRID QUALITY', icon: 'fa-bolt', color: '#10b981',
+                    title: 'Stabilizer Efficiency',
+                    text: 'Peshawar often faces low-voltage scenarios. Ensure your refrigerator uses a **Digital Voltage Stabilizer**. Low voltage causes motors to overheat and waste units through thermal dissipation.'
+                },
+                { 
+                    trigger: disco === 'HESCO',
+                    cat: 'HESCO: SOLAR POTENTIAL', icon: 'fa-solar-panel', color: '#6ee7b7',
+                    title: 'Ideal Sun-Hours ROI',
+                    text: 'Hyderabad has the highest solar irradiance in your profile. A **3kW system** here will have a 15% faster payback period compared to northern regions due to consistent clear skies.'
+                },
+                { 
+                    trigger: disco === 'QESCO',
+                    cat: 'QESCO: ARID HEIGHTS', icon: 'fa-mountain', color: '#fb7185',
+                    title: 'High-Altitude Pumping',
+                    text: 'Quetta’s altitude affects water pump suction. A small **air leak in your delivery pipe** can force your 1.0 HP pump to run 25% longer. Check seals every 3 months to save units.'
+                },
+
+                // ─── 2026 POLICY & SEASONAL LOOK-AHEAD ───
+                { 
+                    trigger: true, // Always active
+                    cat: '2026 TARIFF POLICY', icon: 'fa-gavel', color: '#ffffff', textColor: '#000000',
+                    title: 'Fuel Adjustment (FCA)',
+                    text: 'NEPRA has verified a **Rs. 1.63/unit FCA** for this month. This is a flat surcharge on every unit. Efficiency is your only defense against these external price hikes.'
+                },
+
+                { 
+                    trigger: load >= 5,
+                    cat: 'FIXED COST', icon: 'fa-file-invoice-dollar', color: '#fbbf24',
+                    title: 'Meter Downgrading',
+                    text: `You pay high fixed charges for a 5kW load. If your peak usage never hits 5kW, apply to ${disco} for a 2kW or 3kW downgrade to save monthly.`
+                },
+
+                // 8. SOLAR ROI (2026 NET BILLING)
+                { 
+                    trigger: units > 600,
+                    cat: 'SOLAR ADVICE', icon: 'fa-solar-panel', color: '#10b981',
+                    title: 'Solar ROI Is Ideal',
+                    text: 'At 600+ units, you are in the highest tariff bracket. A solar system will pay for itself in less than 1.5 years at current 2026 rates.'
+                },
+                { 
+                    trigger: units > 200 && units < 400,
+                    cat: 'NET BILLING', icon: 'fa-sun', color: '#34d399',
+                    title: 'The Rs. 11 Policy',
+                    text: 'Under new Net-Billing rules, selling to the grid only earns Rs. 11. Focus on using your heavy appliances (Pump/AC) during 11 AM - 3 PM solar peak.'
+                },
+
+                // 9. BUILDING PHYSICS
+                { 
+                    trigger: phy.area_lighting > 10,
+                    cat: 'LIGHTING AUDIT', icon: 'fa-lightbulb', color: '#fbbf24',
+                    title: 'LED Conversion',
+                    text: 'Your baseline lighting load is high. Replacing 5 old "Energy Savers" (25W) with 12W LEDs will save you ~15 units per month.'
+                }
+            ];
+
+            // Filter tips where trigger is true
+            currentEligibleTips = pool.filter(t => t.trigger);
+            
+            // Safety fallback if no special conditions met
+            if (currentEligibleTips.length === 0) {
+                currentEligibleTips.push({
+                    cat: 'GENERAL', icon: 'fa-info-circle', color: 'var(--g3)',
+                    title: 'Basic Energy Hygiene',
+                    text: 'Ensure all appliances are unplugged when not in use. "Phantom loads" can add up to 5% to a standard Pakistani household bill.'
+                });
+            }
+
+            document.getElementById('ai-insights-card').style.display = 'block';
+            rotateTip(); 
+        }
+
+        function rotateTip() {
+            if (!currentEligibleTips || currentEligibleTips.length === 0) return;
+
+            // Pick a unique random tip
+            let newIndex;
+            do {
+                newIndex = Math.floor(Math.random() * currentEligibleTips.length);
+            } while (newIndex === lastTipIndex && currentEligibleTips.length > 1);
+
+            lastTipIndex = newIndex;
+            const t = currentEligibleTips[newIndex];
+
+            const container = document.getElementById('prominent-tip-content');
+            const tag = document.getElementById('tip-category-tag');
+
+            // PHASE 1: Exit Animation
+            container.classList.remove('tip-animate-in');
+            container.classList.add('tip-animate-out');
+
+            setTimeout(() => {
+                // PHASE 2: Update Content & Styles
+                tag.innerText = t.cat;
+                tag.style.background = t.color;
+                
+                // Handle High-Contrast for white chips
+                tag.style.color = (t.color.toLowerCase() === '#ffffff' || t.color.toLowerCase() === '#fff') 
+                    ? '#000000' 
+                    : '#ffffff';
+
+                container.innerHTML = `
+                    <div style="width: 64px; height: 64px; border-radius: 16px; background: ${t.color}15; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid ${t.color}30;">
+                        <i class="fa-solid ${t.icon}" style="color: ${t.color}; font-size: 1.8rem;"></i>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 1.1rem; font-family: 'Syne'; margin-bottom: 4px; color: var(--text);">${t.title}</h4>
+                        <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">${t.text}</p>
+                    </div>
+                `;
+
+                // PHASE 3: Entrance Animation
+                container.classList.remove('tip-animate-out');
+                container.classList.add('tip-animate-in');
+                
+            }, 250); // Wait for exit animation to finish
+        }
+
+        let pieChart = null;
+
+        function updateLoadPieChart(phy) {
+            const card = document.getElementById('load-pie-card');
+            const ctx = document.getElementById('loadPieChart').getContext('2d');
+            
+            // 1. DATA AGGREGATION (High-Contrast Category Mapping)
+            const groups = [
+                { label: 'Cooling (AC/Fans)', val: phy.ac + phy.fans, color: '#00f2ff' },    // Neon Cyan (Cold)
+                { label: 'Refrigeration', val: phy.fridge, color: '#10b981' },             // Emerald Green (Fresh)
+                { label: 'Heavy (Pump/Wash)', val: phy.water_pump + phy.washing, color: '#f59e0b' }, // Amber/Orange (Power)
+                { label: 'Kitchen/Misc', val: phy.kitchen + phy.person_base, color: '#8b5cf6' },    // Purple (Domestic)
+                { label: 'System Waste (UPS)', val: phy.ups, color: '#ff4d4d' }             // Bright Red (Loss)
+            ];
+
+            // 2. DYNAMIC FILTERING (Prevents empty slices and cluttered legends)
+            const activeGroups = groups.filter(g => g.val > 0.1); 
+
+            if (activeGroups.length === 0) {
+                card.style.display = 'none';
+                return;
+            }
+
+            card.style.display = 'block';
+            if (pieChart) pieChart.destroy();
+
+            // 3. CHART INITIALIZATION
+            pieChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: activeGroups.map(g => g.label),
+                    datasets: [{
+                        data: activeGroups.map(g => g.val),
+                        backgroundColor: activeGroups.map(g => g.color),
+                        borderWidth: 0,
+                        hoverOffset: 20,
+                        borderRadius: 5, // Slightly rounded slices for a modern feel
+                        spacing: 4       // Small gaps between slices to separate colors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%', // Modern thin ring
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#f0fdf4', // White-ish text
+                                usePointStyle: true,
+                                pointStyle: 'rectRounded',
+                                padding: 12,
+                                font: { size: 9, family: 'DM Sans', weight: '600' }
+                            }
+                        },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: 'rgba(13, 26, 18, 0.98)',
+                            titleFont: { size: 12, family: 'Syne' },
+                            bodyFont: { size: 11 },
+                            padding: 12,
+                            displayColors: true,
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: (context) => {
+                                    const total = activeGroups.reduce((a, b) => a + b.val, 0);
+                                    const pct = ((context.raw / total) * 100).toFixed(1);
+                                    return ` ${context.label}: ${context.raw.toFixed(1)} kWh (${pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        let currentSolarRes = null; // Global reference for the slider
+
+        function simulateSolarImpact(res) {
+            currentSolarRes = res; // Store for slider use
+            document.getElementById('solar-sim-card').style.display = 'block';
+            updateSolarSimulation(); // Initial run
+        }
+
+        function updateSolarSimulation() {
+            if (!currentSolarRes) return;
+
+            const res = currentSolarRes;
+            const shiftPct = parseInt(document.getElementById('load-shift-slider').value);
+            const units = res.kwh;
+            
+            // 1. NEPRA 2026 CONSTANTS
+            const currentAvgRate = res.bill.energy_cost / units;
+            const buybackRate = 11.0; 
+            const systemCostPerKw = 175000;
+
+            // 2. MATH
+            const recommendedKw = (units / 125).toFixed(1); 
+            const selfUseUnits = units * (shiftPct / 100);
+            const gridExportUnits = units - selfUseUnits;
+
+            // Savings calculation: Self-used units save the FULL bill rate, 
+            // Exported units only earn Rs. 11.
+            const monthlySavings = (selfUseUnits * currentAvgRate) + (gridExportUnits * buybackRate);
+            const paybackYears = ((recommendedKw * systemCostPerKw) / (monthlySavings * 12)).toFixed(1);
+
+            // 3. DYNAMIC UI VERDICTS
+            const badge = document.getElementById('verdict-badge');
+            const advice = document.getElementById('solar-advice-box');
+            
+            if (shiftPct < 35) {
+                badge.innerText = "Poor ROI";
+                badge.style.color = "#f87171";
+                advice.innerHTML = "❌ <b>Inefficient:</b> You're using solar as a battery. Selling to grid at Rs. 11 while buying at Rs. 45+ is a loss.";
+            } else if (shiftPct < 65) {
+                badge.innerText = "Balanced";
+                badge.style.color = "#fbbf24";
+                advice.innerHTML = "⚖️ <b>Good:</b> You're using half your solar power directly. Shift your washing machine to 1 PM for more profit.";
+            } else {
+                badge.innerText = "Solar Master";
+                badge.style.color = "var(--g3)";
+                advice.innerHTML = "🚀 <b>Optimized:</b> You're running heavy loads during peak sunlight. This is the fastest way to pay off your system!";
+            }
+
+            // 4. APPLY TO DOM
+            document.getElementById('solar-savings').innerText = "Rs. " + Math.round(monthlySavings).toLocaleString();
+            document.getElementById('solar-kw').innerText = recommendedKw + " kW";
+            document.getElementById('self-use-units').innerText = Math.round(selfUseUnits) + " kWh";
+            document.getElementById('solar-payback-text').innerHTML = `Recovery: <b style="color:var(--g3)">${paybackYears} Years</b>`;
         }
 
         function openBreakdownModal() {
@@ -1031,6 +1768,97 @@
         function closeBreakdownModal() {
             document.getElementById('breakdownModal').style.display = 'none';
             document.body.classList.remove('modal-open');
+        }
+
+        /**
+         * AI Personality Engine: Generates data-driven status strings
+         */
+        function getEngineContext(d, result = null, state = 'idle') {
+            const historyCount = (d.bill_history || []).filter(b => parseFloat(b.units) > 5).length;
+            const disco = d.disco || "Standard";
+            const load = parseFloat(d.sanctioned_load) || 0;
+            const month = new Date().getMonth() + 1;
+            const isSummer = [4, 5, 6, 7, 8, 9].includes(month);
+
+            // --- STATE: PREDICTING (Randomized Technical Variety) ---
+            if (state === 'predicting') {
+                const variants = [
+                    `Executing Random Forest ensemble for ${disco} grid...`,
+                    `Synthesizing signatures for ${d.property_area} sq.ft structural load...`,
+                    "Calculating seasonal duty-cycles and slab boundaries...",
+                    "Merging historical drift with real-time thermal physics...",
+                    "Analyzing appliance participation across 24h forecast window..."
+                ];
+                return { mode: "Neural Inference Active", desc: variants[Math.floor(Math.random() * variants.length)] };
+            }
+
+            // --- STATE: DONE (Success context) ---
+            if (state === 'done' && result) {
+                const drift = result.bill.drift.trend;
+                const kwh = result.kwh;
+                let desc = `Prediction finalized at <strong>${kwh} kWh</strong>. `;
+                
+                if (drift === 'increasing') desc += "Calibrated for <strong>upward</strong> consumption drift.";
+                else if (drift === 'decreasing') desc += "Detected <strong>efficiency gains</strong> in recent patterns.";
+                else desc += "Aligned with stable historical baseline.";
+
+                return { mode: "Calibration Complete", desc: desc };
+            }
+
+            // --- STATE: IDLE (Data-Aware defaults) ---
+            let mode = "System Standby";
+            let desc = "Foundational context synchronized.";
+
+            // Logic Tree for variety
+            if (historyCount === 0) {
+                mode = "Structural Synthesis";
+                desc = `No history detected. Synthesizing <strong>${disco}</strong> load based on <strong>${d.property_area} sq.ft</strong> property area.`;
+            } else if (historyCount < 4) {
+                mode = "Pattern Acquisition";
+                desc = `learning lifestyle signatures from <strong>${historyCount}</strong> bill(s). Matching signatures with structural baseloads.`;
+            } else if (historyCount >= 11) {
+                mode = "High-Fidelity Twin";
+                desc = "12-month verified cycle. Performing high-precision regression with full seasonal error correction.";
+            } else {
+                mode = "Seasonal Calibration";
+                desc = `Engine synced. Mapping <strong>${disco}</strong> climate transitions against historical usage patterns.`;
+            }
+
+            // --- ADDED DATA-DRIVEN NUANCES ---
+            if (d.u_qty > 0) desc += " Accounting for <strong>UPS charging losses</strong>.";
+            if (load >= 5) desc += " Monitoring <strong>High-Capacity</strong> fixed charge thresholds.";
+            if (d.user_category === 'lifeline') desc += " Prioritizing <strong>50-unit slab</strong> protection.";
+            
+            // Regional Overlays
+            if (disco === 'K-Electric' && isSummer) desc += " Including <strong>Coastal Humidity</strong> scaling.";
+            if (disco === 'LESCO' && isSummer) desc += " Adjusting for <strong>Urban Heat Island</strong> effects.";
+
+            return { mode, desc };
+        }
+
+        /**
+         * Central Engine Display Manager
+         * @param {string} mode - The bold header text
+         * @param {string} desc - The detailed description (supports HTML)
+         * @param {boolean} isProcessing - Whether to show the active pulse
+         */
+        function updateEngineDisplay(mode, desc, isProcessing = false) {
+            const modeEl = document.getElementById('engine-mode-display');
+            const descEl = document.getElementById('engine-desc-display');
+            
+            // Add fade-out effect
+            modeEl.classList.add('engine-fade-out');
+            descEl.classList.add('engine-fade-out');
+
+            setTimeout(() => {
+                const dotHtml = `<span class="status-dot ${isProcessing ? 'pulse-active' : ''}"></span>`;
+                modeEl.innerHTML = dotHtml + mode;
+                descEl.innerHTML = desc;
+
+                // Remove fade-out to trigger fade-in
+                modeEl.classList.remove('engine-fade-out');
+                descEl.classList.remove('engine-fade-out');
+            }, 400);
         }
 
         function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }

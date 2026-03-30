@@ -111,12 +111,24 @@ def apply_seasonal_scaling(appliance_kwh: dict, month: int) -> dict:
 #  Grounded in real Pakistani residential consumption.
 # ─────────────────────────────────────────
 
+
+# Regional Archetypes for Pakistan
+DISCO_PROFILES = {
+    "K-Electric": {"base": 8.0, "fan_eff": 0.080, "area_rate": 0.005, "desc": "Coastal/Humid"},
+    "LESCO":      {"base": 9.0, "fan_eff": 0.085, "area_rate": 0.006, "desc": "Urban/High Heat"},
+    "IESCO":      {"base": 10.0, "fan_eff": 0.075, "area_rate": 0.006, "desc": "Urban/Colder Winters"},
+    "MEPCO":      {"base": 6.0, "fan_eff": 0.090, "area_rate": 0.004, "desc": "Rural/Extreme Heat"},
+    "PESCO":      {"base": 5.5, "fan_eff": 0.080, "area_rate": 0.004, "desc": "Semi-Urban"},
+    "QESCO":      {"base": 5.0, "fan_eff": 0.070, "area_rate": 0.003, "desc": "High Altitude/Dry"},
+    "DEFAULT":    {"base": 8.0, "fan_eff": 0.080, "area_rate": 0.005, "desc": "Standard"}
+}
+
 # Per-person monthly kWh (no AC): lights + phone + shared TV + misc
 # Pakistani urban average for basic electrical needs
-PERSON_BASE_KWH = 14.0   # kWh/person/month
+PERSON_BASE_KWH = 8.0   # kWh/person/month
 
 # Area lighting overhead: corridors, exterior, common areas
-AREA_LIGHT_RATE = 0.006  # kWh per sq.ft per month
+AREA_LIGHT_RATE = 0.005  # kWh per sq.ft per month
 AREA_LIGHT_CAP  = 15.0   # kWh/month ceiling
 
 # Fan power draw rates (kW effective average)
@@ -125,7 +137,7 @@ FAN_DC_RATE_KW = 0.035  # 35W Inverter Fan
 
 # Daily fan hours by month (Pakistani climate — Karachi/Lahore blend)
 FAN_DAILY_HOURS = {
-    1: 2,  2: 3,  3: 7,  4: 11, 5: 16, 6: 18,
+    1: 2,  2: 4,  3: 8,  4: 12, 5: 16, 6: 18,
     7: 18, 8: 17, 9: 13, 10: 8, 11: 4, 12: 2
 }
 
@@ -183,27 +195,34 @@ def compute_true_baseload(u: dict, month: int) -> dict:
     This replaces the broken `mean_hourly × 720` baseline that had
     a hardcoded 100 kWh floor when no appliances were entered.
     """
+    # ── STEP 1: REGIONAL PROFILE LOOKUP ──
+    # Default to K-Electric if DISCO is missing
+    disco_name = u.get('disco', 'K-Electric')
+    profile = DISCO_PROFILES.get(disco_name, DISCO_PROFILES["DEFAULT"])
+
+    # Extract dynamic regional constants
+    reg_base_kwh = profile["base"]       # Replacing hardcoded PERSON_BASE_KWH
+    reg_light_rate = profile["area_rate"] # Replacing hardcoded AREA_LIGHT_RATE
+    reg_fan_ac_kw = profile["fan_eff"]   # Replacing hardcoded FAN_AC_RATE_KW
+
     person_count  = max(safe_get(u, 'person_count', 1.0), 1.0)
     property_area = max(safe_get(u, 'property_area', 500.0), 100.0)
 
-    # ── Base: person-driven lights, devices, misc ──
-    person_base = person_count * PERSON_BASE_KWH
+    # ── STEP 2: BASE & AREA LOADS (Regional) ──
+    person_base = person_count * reg_base_kwh
+    area_light  = min(property_area * reg_light_rate, AREA_LIGHT_CAP)
 
-    # ── Area: common-area lighting overhead ──
-    area_light  = min(property_area * AREA_LIGHT_RATE, AREA_LIGHT_CAP)
-
-    # ── Fans ──
+    # ── STEP 3: FANS (Kept your AC/DC split logic) ──
     f_ac_qty = safe_get(u, 'fan_ac_qty', 0.0)
     f_dc_qty = safe_get(u, 'fan_dc_qty', 0.0)
     
-    # If both are 0, fallback to 1 fan per person (assumed AC type)
     if f_ac_qty == 0 and f_dc_qty == 0:
         f_ac_qty = max(safe_get(u, 'person_count', 1.0), 1.0)
 
     fan_daily_h = FAN_DAILY_HOURS.get(month, 8)
     
-    # Calculate each type separately
-    fan_ac_kwh = f_ac_qty * FAN_AC_RATE_KW * fan_daily_h * 30
+    # AC Fans use the Regional Efficiency, DC Fans stay at high-efficiency 35W
+    fan_ac_kwh = f_ac_qty * reg_fan_ac_kw * fan_daily_h * 30
     fan_dc_kwh = f_dc_qty * FAN_DC_RATE_KW * fan_daily_h * 30
     fan_total_kwh = fan_ac_kwh + fan_dc_kwh
 
@@ -438,6 +457,37 @@ def get_lstm_seed(house_id: str, user_mean: float, month: int) -> np.ndarray:
     except Exception as e:
         print(f"[WARN] LSTM seed fallback: {e}")
         return _synthetic_seed(user_mean, month)
+    
+# ── HELPER: The "Handshake" Math (Keeps both routes identical) ──
+def calculate_hybrid_units(u, physics, rf_kwh, month):
+    ac_qty = safe_get(u, 'ac_qty', 0.0)
+    ac_scale = get_seasonal_ac_scale(month)
+    
+    # 1. Base Blend
+    weights = get_blend_weights(u, month)
+    blended = (physics['total'] * weights['physics']) + (rf_kwh * weights['rf'])
+    
+    # 2. Routine
+    routine_factor = {"standard": 1.0, "morning_active": 1.04, "evening_active": 1.08, "all_day": 1.15}.get(u.get('user_routine'), 1.0)
+    blended *= routine_factor
+    
+    # 3. History Calibration
+    valid_history = [b for b in u.get('bill_history', []) if float(b.get('units', 0)) > 5]
+    hist_avg = compute_recency_weighted_avg(valid_history)
+    if hist_avg > 0:
+        hist_clamped = max(physics['total'] * 0.40, min(hist_avg, physics['total'] * 2.50))
+        drift = compute_usage_drift(valid_history)
+        h_w = 0.40 if drift['trend'] != 'stable' else 0.30
+        return (blended * (1 - h_w)) + (hist_clamped * h_w)
+    return blended
+
+def get_blend_weights(u, month):
+    ac_qty = safe_get(u, 'ac_qty', 0.0)
+    f_qty = safe_get(u, 'f_qty', 0.0)
+    ac_scale = get_seasonal_ac_scale(month)
+    if not (ac_qty > 0 or f_qty > 0): return {"physics": 0.70, "rf": 0.30}
+    if ac_qty > 0 and ac_scale < 0.05: return {"physics": 0.65, "rf": 0.35}
+    return {"physics": 0.45, "rf": 0.55}
 
 
 # ─────────────────────────────────────────
@@ -495,272 +545,103 @@ def forecast_24h():
 
 @app.route('/api/predict_bill', methods=['POST'])
 def predict_user_bill():
-    """
-    v2.3 — Pakistan-Calibrated Prediction Pipeline
-
-    3-way blend: Physics(50-70%) + RF(30-55%) + History(20-45%)
-    Weights shift based on appliance inventory completeness and season.
-    """
+    """v2.5 — Optimized Synchronized Engine (Single Month)"""
     try:
-        data         = request.json
-        uid          = data['uid']
+        data = request.json
+        uid = data['uid']
         target_month = int(data.get('month', get_current_month()))
 
         user_doc = db.collection('users').document(uid).get()
-        if not user_doc.exists:
-            return jsonify({"error": "Profile not found"}), 404
+        if not user_doc.exists: return jsonify({"error": "Profile not found"}), 404
         u = user_doc.to_dict()
 
-        # ── STEP 1: Physics baseline (first principles) ──
-        physics     = compute_true_baseload(u, target_month)
-        physics_kwh = physics["total"]
-        ac_scale    = get_seasonal_ac_scale(target_month)
-        month_name  = calendar.month_name[target_month]
-        sanc_load   = safe_get(u, 'sanctioned_load', 1.0)
-
-        # ── STEP 2: RF prediction ──
-        person_count = max(safe_get(u, 'person_count', 1.0), 1.0)
-        p_area       = safe_get(u, 'property_area', 500.0) or 500.0
-        ac_qty       = safe_get(u, 'ac_qty', 0.0)
-        f_qty        = safe_get(u, 'f_qty', 0.0)
-        u_qty        = safe_get(u, 'u_qty', 0.0)
-        floors       = safe_get(u, 'floors', 1.0)
-        routine      = u.get('user_routine', 'standard')
-
-        appliance_kwh_raw = {
-            'ac_monthly':           safe_get(u, 'ac_monthly'),
-            'refrigerator_monthly': safe_get(u, 'refrigerator_monthly'),
-            'kitchen_monthly':      safe_get(u, 'kitchen_monthly'),
-            'ups_monthly':          safe_get(u, 'ups_monthly'),
-            'wp_monthly':           safe_get(u, 'wp_monthly'),
-            'weekend_usage':        safe_get(u, 'mean_hourly', 0.05),
-        }
-        appliance_kwh = apply_seasonal_scaling(appliance_kwh_raw, target_month)
-
+        # ── 1. UNIFIED PHYSICS ──
+        physics = compute_true_baseload(u, target_month)
+        
+        # ── 2. UNIFIED RF INFERENCE (The 13-Feature Contract) ──
         feature_vector = {feat: 0.0 for feat in bill_feats}
         feature_vector.update({
-            'ac_monthly':           appliance_kwh['ac_monthly'],
-            'kitchen_monthly':      appliance_kwh['kitchen_monthly'],
-            'refrigerator_monthly': appliance_kwh['refrigerator_monthly'],
-            'ups_monthly':          appliance_kwh['ups_monthly'],
-            'wp_monthly':           appliance_kwh['wp_monthly'],
-            'weekend_usage':        appliance_kwh['weekend_usage'],
-            'month_num':            float(target_month),
-            'person_count':         person_count,
-            'property_area':        p_area,
-            'meta_ac_count':        ac_qty,
-            'meta_fridge_count':    f_qty,
-            'meta_ups_count':       u_qty,
-            'floors':               floors,
+            'ac_monthly': physics['ac'], 'kitchen_monthly': physics['kitchen'],
+            'refrigerator_monthly': physics['fridge'], 'ups_monthly': physics['ups'],
+            'wp_monthly': physics['water_pump'], 'weekend_usage': safe_get(u, 'mean_hourly', 0.05),
+            'month_num': float(target_month), 'person_count': max(safe_get(u, 'person_count', 1.0), 1.0),
+            'property_area': safe_get(u, 'property_area', 500.0), 'meta_ac_count': safe_get(u, 'ac_qty'),
+            'meta_fridge_count': safe_get(u, 'f_qty'), 'meta_ups_count': safe_get(u, 'u_qty', 0.0),
+            'floors': safe_get(u, 'floors', 1.0)
         })
-        rf_pred_kwh = float(rf_model.predict(pd.DataFrame([feature_vector]))[0])
+        rf_kwh = float(rf_model.predict(pd.DataFrame([feature_vector]))[0])
 
-        # ── STEP 3: Routine multiplier (conservative) ──
-        routine_map = {
-            "standard": 1.00, "morning_active": 1.04,
-            "evening_active": 1.08, "all_day": 1.15,
-        }
-        routine_factor = routine_map.get(routine, 1.00)
+        # ── 3. UNIFIED BLENDING ──
+        final_units = calculate_hybrid_units(u, physics, rf_kwh, target_month)
 
-        # ── STEP 4: Adaptive blend ──
-        # Key insight: the more appliance data we have, the more we trust RF.
-        # In winter with AC declared but not running, trust physics more.
-        has_major_appliances = (ac_qty > 0 or f_qty > 0)
-        is_winter_with_ac    = (ac_qty > 0 and ac_scale < 0.05)
+        # ── 4. NEPRA ──
+        cat = u.get('user_category', 'lifeline')
+        sanc_load = safe_get(u, 'sanctioned_load', 1.0)
+        bill_res = nepra.calculate_bill(units=final_units, load_kw=sanc_load, user_category=cat)
 
-        if not has_major_appliances:
-            # No major appliances: physics is far more reliable than RF
-            physics_w, rf_w = 0.70, 0.30
-            blend_note = "No major appliances — physics-dominant"
-        elif is_winter_with_ac:
-            # RF was trained on summer peaks and may overestimate AC in winter
-            physics_w, rf_w = 0.65, 0.35
-            blend_note = f"Winter month — AC contribution zeroed by physics"
-        else:
-            # Full appliance set in active season: RF has strong seasonal signal
-            physics_w, rf_w = 0.45, 0.55
-            blend_note = "Active season — RF-dominant"
-
-        blended_kwh = (physics_kwh * physics_w + rf_pred_kwh * rf_w) * routine_factor
-
-        # ── STEP 5: History calibration ──
-        # Only use entries with >5 kWh (filters placeholder zeros from form)
-        bill_history  = u.get('bill_history', [])
-        valid_history = [b for b in bill_history if float(b.get('units', 0)) > 5]
-
-        hist_avg = compute_recency_weighted_avg(valid_history)
-        drift_info = compute_usage_drift(valid_history)
-
-        if hist_avg > 0:
-            # Sanity clamp: history can't be <40% or >250% of physics
-            hist_clamped = max(physics_kwh * 0.40, min(hist_avg, physics_kwh * 2.50))
-            if drift_info['trend'] == 'stable':
-                hist_w, blend_w = 0.30, 0.70
-            else:
-                hist_w, blend_w = 0.40, 0.60  # more history weight if trend detected
-            final_kwh        = (blended_kwh * blend_w) + (hist_clamped * hist_w)
-            calibration_mode = f"{blend_note} + History ({drift_info['trend']})"
-        else:
-            final_kwh        = blended_kwh
-            calibration_mode = blend_note
-
-        # ── STEP 6: NEPRA billing ──
-        cat      = u.get('user_category', 'lifeline')
-        bill_res = nepra.calculate_bill(units=final_kwh, load_kw=sanc_load, user_category=cat)
-
-        # Enrich response
-        bill_res['engine_mode'] = calibration_mode
-        bill_res['seasonal_context'] = {
-            'month':    month_name,
-            'ac_scale': round(ac_scale, 2),
-            'fan_hours_today': AC_SEASONAL_DAILY_HOURS.get(target_month, 0),
-        }
-        bill_res['physics_breakdown']  = physics
-        bill_res['rf_prediction_kwh']  = round(rf_pred_kwh, 2)
-        bill_res['physics_kwh']        = round(physics_kwh, 2)
-        bill_res['blend_weights']      = {"physics": physics_w, "rf": rf_w}
-        bill_res['drift']              = drift_info
-        bill_res['history_months_used']= len(valid_history)
-
-        # Save to Firestore
-        db.collection('users').document(uid).collection('history').add({
-            "timestamp":       firestore.SERVER_TIMESTAMP,
-            "month_predicted": target_month,
-            "kwh_predicted":   round(final_kwh, 2),
-            "kwh_physics":     round(physics_kwh, 2),
-            "kwh_rf":          round(rf_pred_kwh, 2),
-            "bill_estimate":   float(bill_res['total_bill']),
-            "factors": {
-                "people": person_count, "area": p_area,
-                "routine": routine, "ac_qty": ac_qty,
-                "month": month_name, "blend": calibration_mode,
-            }
-        })
+        valid_hist_count = len([b for b in u.get('bill_history', []) if float(b.get('units', 0)) > 5])
 
         return jsonify({
-            "status": "success",
-            "month":  month_name,
-            "kwh":    round(final_kwh, 2),
-            "bill":   bill_res
+            "status": "success", 
+            "kwh": round(final_units, 2),
+            "bill": { 
+                **bill_res, 
+                "physics_breakdown": physics, 
+                "rf_prediction_kwh": round(rf_kwh, 2),
+                "blend_weights": get_blend_weights(u, target_month), 
+                "drift": compute_usage_drift(u.get('bill_history', [])),
+                "history_months_used": valid_hist_count, 
+                "seasonal_context": {
+                    "month": calendar.month_name[target_month], 
+                    "ac_scale": get_seasonal_ac_scale(target_month), 
+                    "fan_hours_today": FAN_DAILY_HOURS.get(target_month, 0)
+                }
+            }
         })
-
     except Exception as e:
-        import traceback; traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        import traceback; traceback.print_exc(); return jsonify({"error": str(e)}), 500
 
 
 @app.route('/api/seasonal_preview', methods=['POST'])
 def seasonal_preview():
-    """12-month simulation — strictly synchronized with predict_bill v2.3 logic."""
+    """v2.5 — Optimized Synchronized Engine (12-Month Simulation)"""
     try:
         uid = request.json.get('uid')
         user_doc = db.collection('users').document(uid).get()
-        if not user_doc.exists:
-            return jsonify({"error": "Profile not found"}), 404
+        if not user_doc.exists: return jsonify({"error": "Profile not found"}), 404
         u = user_doc.to_dict()
-
-        # ── PRE-CALCULATION: History & Routine (Constant across all months) ──
-        sanc_load = safe_get(u, 'sanctioned_load', 1.0)
-        cat = u.get('user_category', 'lifeline')
-        ac_qty = safe_get(u, 'ac_qty', 0.0)
-        f_qty = safe_get(u, 'f_qty', 0.0)
-        
-        routine = u.get('user_routine', 'standard')
-        routine_factor = {"standard": 1.00, "morning_active": 1.04, "evening_active": 1.08, "all_day": 1.15}.get(routine, 1.00)
-
-        # Process History once
-        bill_history = u.get('bill_history', [])
-        valid_history = [b for b in bill_history if float(b.get('units', 0)) > 5]
-        hist_avg = compute_recency_weighted_avg(valid_history)
-        drift_info = compute_usage_drift(valid_history)
 
         monthly_preview = []
         for m in range(1, 13):
-            # 1. Physics
+            # Same Physics, Same RF Features, Same Blending as Single Month
             physics = compute_true_baseload(u, m)
-            physics_kwh = physics["total"]
-            ac_scale = get_seasonal_ac_scale(m)
-
-            # 2. RF Prediction
-            appliance_kwh_raw = {
-                'ac_monthly': safe_get(u, 'ac_monthly'),
-                'refrigerator_monthly': safe_get(u, 'refrigerator_monthly'),
-                'kitchen_monthly': safe_get(u, 'kitchen_monthly'),
-                'ups_monthly': safe_get(u, 'ups_monthly'),
-                'wp_monthly': safe_get(u, 'wp_monthly'),
-                'weekend_usage': safe_get(u, 'mean_hourly', 0.05),
-            }
-            appliance_kwh = apply_seasonal_scaling(appliance_kwh_raw, m)
-
+            
             feature_vector = {feat: 0.0 for feat in bill_feats}
             feature_vector.update({
-                'ac_monthly': appliance_kwh['ac_monthly'],
-                'kitchen_monthly': appliance_kwh['kitchen_monthly'],
-                'refrigerator_monthly': appliance_kwh['refrigerator_monthly'],
-                'ups_monthly': appliance_kwh['ups_monthly'],
-                'wp_monthly': appliance_kwh['wp_monthly'],
-                'weekend_usage': appliance_kwh['weekend_usage'],
-                'month_num': float(m),
-                'person_count': max(safe_get(u, 'person_count', 1.0), 1.0),
-                'property_area': safe_get(u, 'property_area', 500.0) or 500.0,
-                'meta_ac_count': ac_qty,
-                'meta_fridge_count': f_qty,
-                'meta_ups_count': safe_get(u, 'u_qty', 0.0),
-                'floors': safe_get(u, 'floors', 1.0),
+                'ac_monthly': physics['ac'], 'kitchen_monthly': physics['kitchen'],
+                'refrigerator_monthly': physics['fridge'], 'ups_monthly': physics['ups'],
+                'wp_monthly': physics['water_pump'], 'weekend_usage': safe_get(u, 'mean_hourly', 0.05),
+                'month_num': float(m), 'person_count': max(safe_get(u, 'person_count', 1.0), 1.0),
+                'property_area': safe_get(u, 'property_area', 500.0), 'meta_ac_count': safe_get(u, 'ac_qty'),
+                'meta_fridge_count': safe_get(u, 'f_qty'), 'meta_ups_count': safe_get(u, 'u_qty', 0.0),
+                'floors': safe_get(u, 'floors', 1.0)
             })
             rf_kwh = float(rf_model.predict(pd.DataFrame([feature_vector]))[0])
 
-            # 3. Adaptive Blend (Physics vs RF) - Sync with predict_bill
-            has_major = (ac_qty > 0 or f_qty > 0)
-            is_winter_ac = (ac_qty > 0 and ac_scale < 0.05)
-            
-            if not has_major:
-                pw, rw = 0.70, 0.30
-            elif is_winter_ac:
-                pw, rw = 0.65, 0.35
-            else:
-                pw, rw = 0.45, 0.55
-
-            blended_kwh = (physics_kwh * pw + rf_kwh * rw) * routine_factor
-
-            # 4. History Calibration - Sync with predict_bill
-            if hist_avg > 0:
-                # Clamp history to month-specific physics limits
-                hist_clamped = max(physics_kwh * 0.40, min(hist_avg, physics_kwh * 2.50))
-                hist_w, base_w = (0.40, 0.60) if drift_info['trend'] != 'stable' else (0.30, 0.70)
-                final_kwh = (blended_kwh * base_w) + (hist_clamped * hist_w)
-            else:
-                final_kwh = blended_kwh
-
-            # 5. NEPRA Billing
-            bill_res = nepra.calculate_bill(units=final_kwh, load_kw=sanc_load, user_category=cat)
+            final_units = calculate_hybrid_units(u, physics, rf_kwh, m)
+            bill_res = nepra.calculate_bill(units=final_units, load_kw=safe_get(u, 'sanctioned_load', 1.0), user_category=u.get('user_category', 'lifeline'))
             
             monthly_preview.append({
-                "month": m,
-                "month_name": calendar.month_abbr[m],
-                "kwh": round(final_kwh, 1),
-                "bill_pkr": float(bill_res['total_bill']),
-                "is_peak": m in [5, 6, 7, 8, 9]
+                "month": m, "month_name": calendar.month_abbr[m], "kwh": round(final_units, 1),
+                "bill_pkr": float(bill_res['total_bill']), "is_peak": m in [5, 6, 7, 8, 9]
             })
 
-        # Summary Analytics
-        annual_bill = sum(p['bill_pkr'] for p in monthly_preview)
-        peak_m = max(monthly_preview, key=lambda x: x['kwh'])
-
-        return jsonify({
-            "status": "success",
-            "monthly": monthly_preview,
-            "summary": {
-                "annual_kwh": round(sum(p['kwh'] for p in monthly_preview), 1),
-                "annual_bill": round(annual_bill, 0),
-                "avg_monthly_bill": round(annual_bill / 12, 0),
-                "peak_month": peak_m['month_name'],
-                "peak_kwh": peak_m['kwh'],
-            }
-        })
+        return jsonify({ "status": "success", "monthly": monthly_preview, "summary": {
+            "annual_bill": round(sum(p['bill_pkr'] for p in monthly_preview), 0),
+            "peak_month": max(monthly_preview, key=lambda x: x['kwh'])['month_name']
+        }})
     except Exception as e:
-        import traceback; traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        import traceback; traceback.print_exc(); return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':

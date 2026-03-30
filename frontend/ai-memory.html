@@ -229,6 +229,10 @@
                     <div class="data-value" id="disp-fans" style="display: flex; align-items: center; justify-content: space-between;">--</div>
                 </div>
                 <div class="data-item">
+                    <div class="data-label" id="label-k"><i class="fa fa-utensils"></i> Kitchen</div>
+                    <div class="data-value" id="disp-k">--</div>
+                </div>
+                <div class="data-item">
                     <div class="data-label" id="label-wm"><i class="fa fa-tshirt"></i> Washing Machine</div>
                     <div class="data-value" id="disp-wm">--</div>
                 </div>
@@ -403,9 +407,10 @@
             // ─── 3. APPLIANCES (AC, Fridge, Washer, Pump, UPS) ───
             renderAppliance('ac', 'ac', 'AC', 'fa fa-snowflake', d.ac_monthly);
             renderAppliance('fridge', 'f', 'Fridge', 'fa fa-box', d.refrigerator_monthly);
-            renderAppliance('wm', 'wm', 'Washer', 'fa fa-soap', d.wm_monthly);
+            renderAppliance('wm', 'wm', 'Washing Machine', 'fa fa-soap', d.wm_monthly);
             renderAppliance('wp', 'wp', 'Pump', 'fa fa-water', d.wp_monthly);
             renderAppliance('ups', 'u', 'UPS', 'fa fa-car-battery', d.ups_monthly);
+            renderAppliance('k', 'k', 'Kitchen', 'fa fa-utensils', d.kitchen_monthly);
 
             // ─── 4. FANS (SPECIAL DUAL DISPLAY - QUANTITIES LEFT, KWH RIGHT) ───
             const fAc = d.fan_ac_qty || 0;
