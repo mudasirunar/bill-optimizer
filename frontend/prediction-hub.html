@@ -108,6 +108,11 @@
             filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.5));
         }
 
+        /* This forces the first letter of every word to be Capitalized globally */
+        #user-name-display, #greeting-display {
+            text-transform: capitalize !important;
+        }
+        
         /* Make legend text wrap better on small screens */
         canvas {
             max-width: 100% !important;
@@ -211,6 +216,71 @@
         }
 
         @media (max-width: 900px) { .main-container { grid-template-columns: 1fr; } }
+
+
+        .pulse-savings {
+            animation: savings-glow 2s infinite;
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        @keyframes savings-glow {
+            0% { transform: scale(1); color: var(--g3); text-shadow: 0 0 0px var(--g3); }
+            50% { transform: scale(1.05); color: #34d399; text-shadow: 0 0 10px var(--g3); }
+            100% { transform: scale(1); color: var(--g3); text-shadow: 0 0 0px var(--g3); }
+        }
+
+        #demand-pulse-card {
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            border: 1px solid var(--border);
+            background: rgba(13, 26, 18, 0.4);
+        }
+        #demand-pulse-card:hover {
+            transform: translateY(-8px);
+            background: rgba(16, 185, 129, 0.08);
+            border-color: var(--g3);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 0 0 20px rgba(52, 211, 153, 0.1);
+            cursor: pointer;
+        }
+
+        /* Animation for sidebar cards appearing */
+        .sidebar-slide-in {
+            animation: sidebar-entry 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+            overflow: hidden;
+        }
+
+        @keyframes sidebar-entry {
+            from { 
+                opacity: 0; 
+                transform: translateY(-20px); 
+                max-height: 0; 
+                margin-bottom: 0;
+                padding-top: 0;
+                padding-bottom: 0;
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+                max-height: 500px; 
+                margin-bottom: 24px;
+                padding-top: 20px;
+                padding-bottom: 20px;
+            }
+        }
+
+        /* Climatic Gauge Style */
+        .intensity-track {
+            width: 100%; height: 6px; background: var(--surface2); 
+            border-radius: 10px; margin: 12px 0; position: relative;
+        }
+        .intensity-fill {
+            height: 100%; border-radius: 10px; width: 0%;
+            background: linear-gradient(90deg, #34d399, #fbbf24, #f87171);
+            transition: width 1.5s cubic-bezier(0.19, 1, 0.22, 1);
+            box-shadow: 0 0 10px var(--glow);
+        }
 
         /* Break Down Modal */
         .help-trigger {
@@ -340,6 +410,7 @@
                     <a href="dashboard.html"><i class="fa fa-home"></i> Dashboard</a>
                     <a href="setup-profile.html"><i class="fa fa-cog"></i> Setup Profile</a>
                     <a href="ai-memory.html"><i class="fa fa-brain"></i> AI Memory</a>
+                    <a href="nepra-info.html"><i class="fa fa-landmark"></i> NEPRA Info</a>
                     <hr>
                     <a href="#" onclick="logout()" class="logout-link"><i class="fa fa-sign-out-alt"></i> Logout</a>
                 </div>
@@ -401,7 +472,10 @@
         </div>
 
         <div class="section-card" style="position: relative;">
-            <h3 style="font-family:'Syne'; margin-bottom:20px">Annual Energy Roadmap</h3>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                <h3 style="font-family:'Syne'; margin-bottom:0">Annual Energy Roadmap</h3>
+                <div id="subsidy-status-badge"></div>
+            </div>
             
             <div class="chart-container" style="position: relative; height: 280px; width: 100%;">
                 
@@ -419,7 +493,24 @@
                     </a>
                 </div>
 
-                <canvas id="usageChart"></canvas>
+                <div style="position:relative; height:260px; width:100%;">
+                    <canvas id="usageChart"></canvas>
+                </div>
+            </div>
+
+            <div id="efficiency-console" style="margin-top: 20px; padding: 15px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); display:none;">
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <div id="efficiency-icon-box" style="width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                        </div>
+                    <div style="flex: 1;">
+                        <h4 id="efficiency-title" style="font-family:'Syne'; font-size: 0.9rem; margin-bottom: 4px; color: var(--text);">Analyzing Efficiency...</h4>
+                        <p id="efficiency-desc" style="font-size: 0.75rem; color: var(--text-dim); line-height: 1.4;"></p>
+                    </div>
+                    <div id="savings-projection" style="text-align: right; min-width: 100px;">
+                        <small style="display:block; font-size: 0.6rem; text-transform: uppercase; color: var(--text-dim);">Potential Savings</small>
+                        <span id="projected-savings-val" style="font-family:'Syne'; font-weight: 800; color: var(--g3);">Rs. 0</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -556,9 +647,52 @@
                 </a>
             </div>
 
+            <div class="section-card" id="demand-pulse-card" style="display:none; padding: 24px;" onclick="window.location.href='load-forecaster.html'">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+                    <h4 style="font-family:'Syne'; font-size:0.8rem; color:var(--text); text-transform: uppercase; letter-spacing: 1px;">
+                        <i class="fa-solid fa-chart-simple" style="color:var(--g3); margin-right: 8px;"></i> Behavioral Signal
+                    </h4>
+                    <div style="display:flex; align-items:center; gap:6px; background: rgba(52,211,153,0.1); padding: 4px 10px; border-radius: 20px;">
+                        <span class="status-dot pulse-active" style="width:6px; height:6px; margin:0;"></span>
+                        <span style="font-size: 0.55rem; color: var(--g3); font-weight: 800; text-transform: uppercase;">LSTM Active</span>
+                    </div>
+                </div>
+                
+                <div style="height: 120px; width: 100%; position: relative;">
+                    <canvas id="pulseChart"></canvas>
+                </div>
+
+                <div style="margin-top: 18px; padding-top: 15px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display:flex; flex-direction:column;">
+                        <span style="font-size: 0.55rem; color: var(--text-dim); text-transform: uppercase;">Matched Profile</span>
+                        <span id="pulse-archetype" style="font-size: 0.75rem; color: var(--text); font-weight: 700;">--</span>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size: 0.65rem; color: var(--g3); font-weight: 700;">Analyze Peak <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.6rem; margin-left:4px;"></i></span>
+                    </div>
+                </div>
+            </div>
+
             <div class="section-card" id="load-pie-card" style="display:none; padding:20px;">
                 <h4 style="font-family:'Syne'; font-size:0.8rem; margin-bottom:15px;"><i class="fa fa-chart-pie"></i> Load Distribution</h4>
                 <div style="height:180px;"><canvas id="loadPieChart"></canvas></div>
+            </div>
+
+            <div class="section-card" id="climatic-card" style="display:none; padding: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                    <h4 style="font-family:'Syne'; font-size:0.75rem; color:var(--text); text-transform: uppercase; letter-spacing: 0.5px;">
+                        <i id="climate-icon" class="fa-solid fa-snowflake" style="color:var(--g3); margin-right: 6px;"></i> Climatic Factor
+                    </h4>
+                    <span id="intensity-pct" style="font-family:'Syne'; font-size: 0.9rem; font-weight: 800; color: var(--g3);">0%</span>
+                </div>
+
+                <div class="intensity-track" style="width: 100%; height: 6px; background: var(--surface2); border-radius: 10px; margin: 12px 0;">
+                    <div id="intensity-bar" class="intensity-fill" style="height: 100%; border-radius: 10px; width: 0%; background: linear-gradient(90deg, #34d399, #fbbf24, #f87171); transition: width 1.5s ease; box-shadow: 0 0 10px rgba(52, 211, 153, 0.2);"></div>
+                </div>
+
+                <p id="climate-insight" style="font-size: 0.68rem; color: var(--text-dim); line-height: 1.5; margin-top: 10px;">
+                    Syncing regional climate data...
+                </p>
             </div>
 
             <div id="data-gap-card" class="section-card" style="display: none; border-color: var(--warn); background: rgba(251, 191, 36, 0.05); margin-top: 10px; padding: 20px;">
@@ -624,6 +758,11 @@
         let myChart = null;
         let annualForecastData = null; 
 
+        const SUBSIDY_GAP = {
+            lifeline:  32,
+            protected: 21,
+        };
+
         firebase.auth().onAuthStateChanged(user => {
             if (!user) { window.location.href = "index.html"; }
             else {
@@ -649,6 +788,13 @@
                 return;
             }
 
+            let targetMonth = new Date().getMonth() + 1; 
+            if (u.bill_history && u.bill_history.length > 0) {
+                const sorted = [...u.bill_history].sort((a, b) => b.month.localeCompare(a.month));
+                const [year, month] = sorted[0].month.split('-').map(Number);
+                targetMonth = (month % 12) + 1; 
+            }
+
             btn.disabled = true;
             loader.style.display = 'block';
             btnText.innerText = "Analyzing Patterns...";
@@ -660,7 +806,7 @@
                 const response = await fetch('http://127.0.0.1:5000/api/predict_bill', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ uid: userUid })
+                    body: JSON.stringify({ uid: userUid, month: targetMonth })
                 });
                 
                 const result = await response.json();
@@ -726,17 +872,17 @@
                         engineDesc = "No AC detected. AI is focusing on your constant appliance signatures (Fridge, Fans, and Standby power).";
                     }
 
-                    const successContext = getEngineContext(u, result, 'done');
-                    updateEngineDisplay(successContext.mode, successContext.desc, false);
-
 
                     updateLoadPieChart(result.bill.physics_breakdown);
-                    await fetchAnnualPreview(userData.bill_history);
                     generateAISuggestions(result);
                     simulateSolarImpact(result);
 
+                    const successContext = getEngineContext(u, result, 'done');
+                    updateEngineDisplay(successContext.mode, successContext.desc, false);
+
                     setTimeout(() => {
-                        loadInferenceData(); 
+                        const idleContext = getEngineContext(u);
+                        updateEngineDisplay(idleContext.mode, idleContext.desc, false);
                     }, 7000);
     
                 } else {
@@ -863,12 +1009,12 @@
 
             const context = getEngineContext(d); 
             updateEngineDisplay(context.mode, context.desc, false);
-
-            fetchAnnualPreview(d.bill_history || []);
+            fetchAnnualPreview(d.bill_history || [], d);
+            loadDemandPulse()
         }
 
         // Fetch the 12-month data and hide loader when done
-        async function fetchAnnualPreview(billHistory) {
+        async function fetchAnnualPreview(billHistory, userDoc) {
             const loader = document.getElementById('chart-loader');
             if (loader) loader.style.display = 'flex';
 
@@ -882,7 +1028,7 @@
                 
                 if(data.status === "success") {
                     annualForecastData = data.monthly;
-                    updateAnnualChart(data.monthly, billHistory);
+                    updateAnnualChart(data.monthly, billHistory, userDoc);
                     return true;
                 } else {
                     // Backend says no profile
@@ -899,100 +1045,772 @@
             }
         }
 
-        //  The missing function that draws the line chart
-        function updateAnnualChart(monthlyData, billHistory) {
+        function updateAnnualChart(monthlyData, billHistory, userDoc) {
             const ctx = document.getElementById('usageChart').getContext('2d');
-            if(myChart) myChart.destroy();
-
-            // 1. Identify the "Next Month" after history for rolling logic
-            let startMonth;
-            if (billHistory && billHistory.length > 0) {
-                const sortedHistory = [...billHistory].sort((a, b) => b.month.localeCompare(a.month));
-                const lastMonthVal = parseInt(sortedHistory[0].month.split('-')[1]);
-                startMonth = (lastMonthVal % 12) + 1;
-            } else {
-                startMonth = new Date().getMonth() + 1;
-            }
-
-            // 2. Rotate data so the Predicted month is index 0
-            const startIndex = monthlyData.findIndex(d => d.month === startMonth);
+            if (myChart) myChart.destroy();
+        
+            // ── 1. Context & Limits ──
+            const catText    = document.getElementById('st-cat').innerText.toLowerCase();
+            const limit      = catText.includes('lifeline') ? 100 : 200;
+            const windowSize = catText.includes('lifeline') ? 12 : 6;
+        
+            let startMonth = (billHistory && billHistory.length > 0)
+                ? (parseInt(billHistory.sort((a, b) => b.month.localeCompare(a.month))[0].month.split('-')[1]) % 12) + 1
+                : new Date().getMonth() + 1;
+        
+            const startIndex  = monthlyData.findIndex(d => d.month === startMonth);
             const rollingData = [...monthlyData.slice(startIndex), ...monthlyData.slice(0, startIndex)];
-
-            // ─── FIX 1: Convert full names to 3-letter abbreviations ───
-            const labels = rollingData.map(d => d.month_name.substring(0, 3)); 
+        
             const bills = rollingData.map(d => d.bill_pkr);
-            const kwhs = rollingData.map(d => d.kwh);
-
+            const kwhs  = rollingData.map(d => d.kwh);
+        
+            // ── 2. Breach Detection (Red Dot) ──
+            // First future month (index > 0) where consumption goes ABOVE limit.
+            // Only mark once — the moment protection breaks.
+            let breachIndex = -1;
+            for (let i = 1; i < rollingData.length; i++) {
+                if (rollingData[i].kwh > limit) {
+                    breachIndex = i;
+                    break;  // only the first breach gets the marker
+                }
+            }
+        
+            // ── 3. Recovery Detection (Blue Dot) ──
+            // Only relevant if currently over-limit — find first future month
+            // where the full observation window stays under limit.
+            let simulatedHistory = (billHistory || []).map(b => parseFloat(b.units));
+            let recoveryIndex    = -1;
+        
+            if (kwhs[0] > limit) {
+                for (let i = 1; i < rollingData.length; i++) {
+                    simulatedHistory.push(rollingData[i].kwh);
+                    const window = simulatedHistory.slice(-windowSize);
+                    if (window.length === windowSize && window.every(u => u <= limit)) {
+                        recoveryIndex = i;
+                        break;
+                    }
+                }
+            }
+        
+            // ── 4. Mutual exclusivity: if currently safe but breach comes first,
+            //       don't show recovery (there's nothing to recover yet).
+            //       If currently over-limit, breach already happened so don't re-mark it.
+            if (kwhs[0] > limit) {
+                breachIndex = -1;   // already breached — no future breach marker needed
+            }
+        
+            // ── 5. Scale ──
+            const minVal   = Math.min(...bills);
+            const maxVal   = Math.max(...bills);
+            const dataRange = maxVal - minVal;
+            let step = 1000;
+            if (dataRange < 1200) step = 200;
+            else if (dataRange < 3000) step = 500;
+            const finalMin = Math.floor((minVal - step * 0.8) / step) * step;
+            const finalMax = Math.ceil((maxVal + step * 0.8) / step) * step;
+        
+            // ── 6. Per-point styling ──
+            // Default: small green dot. Blue at recovery. Red at breach. Larger at both.
+            const pointRadius = (context) => {
+                const i = context.dataIndex;
+                if (i === recoveryIndex || i === breachIndex) return 9;
+                return 4;
+            };
+        
+            const pointBgColor = (context) => {
+                const i = context.dataIndex;
+                if (i === recoveryIndex) return '#3b82f6';   // blue — subsidy recovery
+                if (i === breachIndex)   return '#ef4444';   // red  — protection breach
+                return '#10b981';                            // green — normal
+            };
+        
+            const pointBorderColor = (context) => {
+                const i = context.dataIndex;
+                if (i === recoveryIndex) return 'rgba(59,130,246,0.3)';
+                if (i === breachIndex)   return 'rgba(239,68,68,0.3)';
+                return '#fff';
+            };
+        
+            const pointBorderWidth = (context) => {
+                const i = context.dataIndex;
+                if (i === recoveryIndex || i === breachIndex) return 3;
+                return 1.5;
+            };
+        
+            const hoverRadius = (context) => {
+                const i = context.dataIndex;
+                if (i === recoveryIndex || i === breachIndex) return 12;
+                return 6;
+            };
+        
+            // ── 7. Update efficiency panel ──
+            updateEfficiencyUI(
+                rollingData[0].applied_status || 'non_protected',  // <-- Now passing the PREDICTED status
+                recoveryIndex,
+                rollingData,
+                limit,
+                windowSize,
+                userDoc || {}
+            );
+        
+            // ── 8. Render chart ──
             myChart = new Chart(ctx, {
-                type: 'line', 
+                type: 'line',
                 data: {
-                    labels: labels,
+                    labels:   rollingData.map(d => d.month_name.substring(0, 3)),
                     datasets: [{
-                        data: bills,
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 4,
-                        pointBackgroundColor: '#10b981',
-                        borderWidth: 3
+                        data:              bills,
+                        borderColor:       '#10b981',
+                        backgroundColor:   'rgba(16, 185, 129, 0.08)',
+                        fill:              true,
+                        tension:           0.4,
+                        pointRadius:       pointRadius,
+                        pointBackgroundColor: pointBgColor,
+                        pointBorderColor:  pointBorderColor,
+                        pointBorderWidth:  pointBorderWidth,
+                        hoverRadius:       hoverRadius,
+                        borderWidth:       3,
                     }]
                 },
                 options: {
-                    responsive: true,
+                    responsive:          true,
                     maintainAspectRatio: false,
-                    plugins: { 
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: 'rgba(13, 26, 18, 0.95)',
-                            padding: 12,
-                            displayColors: false,
+                            enabled:         true,
+                            backgroundColor: 'rgba(13, 26, 18, 0.98)',
+                            titleFont:       { size: 13, family: 'Syne', weight: 'bold' },
+                            bodyFont:        { size: 12, family: 'DM Sans' },
+                            padding:         12,
+                            displayColors:   false,
                             callbacks: {
+                                // Add marker labels in tooltip title
+                                title: (items) => {
+                                    const i    = items[0].dataIndex;
+                                    const name = rollingData[i].month_name;
+                                    if (i === recoveryIndex) return `${name}  🔵 Subsidy Recovered`;
+                                    if (i === breachIndex)   return `${name}  🔴 Protection Breached`;
+                                    return name;
+                                },
                                 label: (context) => {
-                                    const valPKR = context.raw.toLocaleString();
-                                    const valKWh = kwhs[context.dataIndex];
-                                    return [
-                                        ` Estimated Bill: Rs. ${valPKR}`,
-                                        ` Predicted Load: ${valKWh} kWh`
+                                    const i       = context.dataIndex;
+                                    const val     = context.parsed.y;
+                                    const unitVal = kwhs[i];
+                                    const lines   = [
+                                        ` Cost: Rs. ${val.toLocaleString()}`,
+                                        ` Load: ${unitVal} kWh`,
                                     ];
+                                    if (i === breachIndex) {
+                                        lines.push(` ⚠ Crossed ${limit}-unit limit`);
+                                    }
+                                    if (i === recoveryIndex) {
+                                        lines.push(` ✓ ${windowSize}-month window complete`);
+                                    }
+                                    return lines;
                                 }
                             }
                         }
                     },
                     scales: {
-                        y: { 
-                            grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, 
-                            ticks: { color: '#4b7a5e', font: { size: 10 } } 
+                        y: {
+                            min:  finalMin < 0 ? 0 : finalMin,
+                            max:  finalMax,
+                            grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+                            ticks: {
+                                color:    '#4b7a5e',
+                                stepSize: step,
+                                callback: (v) => 'Rs. ' + v.toLocaleString()
+                            }
                         },
-                        x: { 
-                            grid: { display: false }, 
-                            // ─── FIX 2: Ensure text is horizontal and perfectly aligned ───
-                            ticks: { 
-                                color: '#4b7a5e', 
-                                font: { size: 11, weight: '600' },
-                                maxRotation: 0, // Force labels to stay horizontal
-                                minRotation: 0,
-                                autoSkip: false // Show every month since they are short now
-                            } 
+                        x: {
+                            grid:  { display: false },
+                            ticks: { color: '#4b7a5e', font: { weight: '600' } }
                         }
                     }
                 }
             });
+        
+            // ── 9. Legend pills below chart ──
+            // Show only the markers that are actually present
+            _renderChartLegend(recoveryIndex, breachIndex);
+        }
+        
+        
+        // ── Legend renderer ──
+        // Adds/removes small pill labels beneath the chart explaining the markers.
+        // Call this only from updateAnnualChart — it manages its own container.
+        function _renderChartLegend(recoveryIndex, breachIndex) {
+            const containerId = 'chart-marker-legend';
+            let el = document.getElementById(containerId);
+        
+            // Create container if it doesn't exist
+            if (!el) {
+                el = document.createElement('div');
+                el.id = containerId;
+                el.style.cssText = [
+                    'display:flex', 'gap:14px', 'margin-top:10px',
+                    'justify-content:flex-end', 'flex-wrap:wrap',
+                ].join(';');
+                // Insert after the canvas wrapper
+                const chartWrap = document.getElementById('usageChart')?.closest('.chart-wrap, .card-body, div');
+                if (chartWrap) chartWrap.appendChild(el);
+            }
+        
+            el.innerHTML = '';  // clear previous
+        
+            const pill = (color, glowColor, text) => {
+                const span = document.createElement('span');
+                span.style.cssText = [
+                    `background:${color}20`,
+                    `border:1px solid ${color}60`,
+                    'border-radius:20px',
+                    'padding:3px 10px',
+                    'font-size:0.68rem',
+                    'font-weight:700',
+                    'letter-spacing:0.06em',
+                    `color:${color}`,
+                    'display:inline-flex',
+                    'align-items:center',
+                    'gap:5px',
+                ].join(';');
+                span.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:${color};box-shadow:0 0 6px ${glowColor};display:inline-block"></span>${text}`;
+                return span;
+            };
+        
+            if (recoveryIndex > -1) {
+                el.appendChild(pill('#3b82f6', 'rgba(59,130,246,0.6)', 'SUBSIDY RECOVERY'));
+            }
+            if (breachIndex > -1) {
+                el.appendChild(pill('#ef4444', 'rgba(239,68,68,0.6)', 'PROTECTION BREACH'));
+            }
         }
 
-        
+       function updateEfficiencyUI(category, recoveryIndex, rollingData, limit, windowSize, userDoc = {}) {
+            const consoleEl = document.getElementById('efficiency-console');
+            const badgeEl   = document.getElementById('subsidy-status-badge');
+            const titleEl   = document.getElementById('efficiency-title');
+            const descEl    = document.getElementById('efficiency-desc');
+            const iconBox   = document.getElementById('efficiency-icon-box');
+            const savingsEl = document.getElementById('projected-savings-val');
 
-        // Keep your existing animateValue
-        function animateValue(id, start, end, duration) {
-            const obj = document.getElementById(id);
-            let startTimestamp = null;
-            const step = (timestamp) => {
-                if (!startTimestamp) startTimestamp = timestamp;
-                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
-                if (progress < 1) window.requestAnimationFrame(step);
+            if (!rollingData || rollingData.length === 0) return;
+            consoleEl.style.display = 'block';
+            titleEl.style.color = descEl.style.color = savingsEl.style.color = '#ffffff';
+
+            // ══════════════════════════════════════════════════════
+            //  STEP 1: EXTRACT ALL USER DATA UPFRONT
+            //  Every message below MUST use these — never assume.
+            // ══════════════════════════════════════════════════════
+            const currentKwh  = Math.round(rollingData[0].kwh);
+            const peakKwh     = Math.round(Math.max(...rollingData.map(d => d.kwh)));
+            const peakMonth   = rollingData.find(d => Math.round(d.kwh) === peakKwh)?.month_name || '';
+            const annualKwh   = Math.round(rollingData.reduce((s, d) => s + d.kwh, 0));
+            const annualBill  = Math.round(rollingData.reduce((s, d) => s + d.bill_pkr, 0));
+            const gapToLimit  = Math.round(limit - currentKwh);
+            const overBy      = Math.round(currentKwh - limit);
+            const subsidyRate = SUBSIDY_GAP[category] || 0;
+            const monthlySave = Math.round(currentKwh * subsidyRate);
+            const annualSave  = Math.round(annualKwh * subsidyRate);
+            const isSubsidised = category !== 'non_protected';
+
+            // ── Appliances: strictly from user profile ──
+            const acQty    = parseInt(userDoc.ac_qty)  || 0;
+            const acType   = userDoc.ac_type           || 'standard';
+            const fQty     = parseInt(userDoc.f_qty)   || 0;
+            const fanQty   = parseInt(userDoc.fan_qty) || 0;
+            const wpQty    = parseInt(userDoc.wp_qty)  || 0;
+            const uQty     = parseInt(userDoc.u_qty)   || 0;
+            const wmQty    = parseInt(userDoc.wm_qty)  || 0;
+            const persons  = parseInt(userDoc.person_count) || 1;
+            const area     = parseInt(userDoc.property_area) || 0;
+            const routine  = userDoc.user_routine      || 'standard';
+            const disco    = userDoc.disco             || 'your DISCO';
+
+            // ── Pre-computed savings strings (only used if appliance exists) ──
+            const acHourlySave  = acQty  > 0 ? Math.round(acQty * (acType === 'inverter' ? 0.75 : 1.5) * 30) : 0;
+            const fanDailySave  = fanQty > 0 ? Math.round(fanQty * 0.06 * 2 * 30) : 0; // 2h/day reduction
+            const wpMonthlySave = wpQty  > 0 ? Math.round(wpQty * 0.75 * 0.5 * 30) : 0; // 30min less/day
+
+            // ── Build appliance-aware saving tip (used across multiple cases) ──
+            // ONLY mentions appliances the user actually has
+            function getTip(targetKwh) {
+                const tips = [];
+                if (acQty > 0)   tips.push(`reducing ${acQty} AC${acQty > 1 ? 's' : ''} by 1h/day saves ~<b>${acHourlySave} kWh</b>`);
+                if (fanQty > 0)  tips.push(`running ${fanQty} fan${fanQty > 1 ? 's' : ''} 2h less/day saves ~<b>${fanDailySave} kWh</b>`);
+                if (wpQty > 0)   tips.push(`cutting motor runtime by 30min/day saves ~<b>${wpMonthlySave} kWh</b>`);
+                if (tips.length === 0) tips.push('check always-on devices and lighting');
+                return tips.slice(0, 2).join('; ') + '.'; // max 2 tips, keeps it brief
+            }
+
+            // ── Badge ──
+            const LABELS = {
+                lifeline:      { text: 'LIFELINE',    color: '#059669' },
+                protected:     { text: 'PROTECTED',   color: '#0284c7' },
+                non_protected: { text: 'UNPROTECTED', color: '#dc2626' },
             };
-            window.requestAnimationFrame(step);
+            const badge = LABELS[category] || LABELS.non_protected;
+            badgeEl.innerHTML = `<span class="status-badge" style="background:${badge.color};color:white;padding:4px 12px;border-radius:6px;font-size:0.7rem;font-weight:800;border:1px solid rgba(255,255,255,0.2)">${badge.text}</span>`;
+
+            // ══════════════════════════════════════════════════════
+            //  STEP 2: CASE TREE — every branch uses real data only
+            // ══════════════════════════════════════════════════════
+
+            // ── A: LIFELINE — safe ──
+            if (category === 'lifeline' && currentKwh <= 80) {
+                iconBox.innerHTML = '<i class="fa-solid fa-leaf" style="color:#34d399"></i>';
+                titleEl.innerText = 'Lifeline Secured';
+                descEl.innerHTML  = `Using <b>${currentKwh} units</b> — well within the 100-unit ceiling. 
+                    Saving <b style="color:#34d399">Rs. ${monthlySave.toLocaleString()}/month</b> 
+                    (Rs. ${annualSave.toLocaleString()}/year) vs standard rates.
+                    ${fanQty > 0 ? `Your ${fanQty} fan${fanQty > 1 ? 's' : ''} are your main load — keep runtime efficient.` : ''}`;
+                savingsEl.innerText = 'Rs. ' + monthlySave.toLocaleString();
+            }
+
+            // ── B: LIFELINE — at risk ──
+            else if (category === 'lifeline' && currentKwh <= 100) {
+                iconBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#fbbf24"></i>';
+                titleEl.innerText = 'Lifeline — Ceiling Close';
+                descEl.innerHTML  = `<b>${gapToLimit} units</b> left before the 100-unit limit triggers a 12-month NEPRA window. 
+                    To stay safe: ${getTip(gapToLimit)} 
+                    Subsidy at stake: <b style="color:#fbbf24">Rs. ${monthlySave.toLocaleString()}/month</b>.`;
+                savingsEl.innerText = 'Rs. ' + monthlySave.toLocaleString();
+            }
+
+            // ── C: PROTECTED — comfortable ──
+            else if (category === 'protected' && currentKwh <= 160) {
+                iconBox.innerHTML = '<i class="fa-solid fa-shield" style="color:#34d399"></i>';
+                titleEl.innerText = 'Protected — On Track';
+                descEl.innerHTML  = `Using <b>${currentKwh} units</b> — <b>${gapToLimit} units</b> below the 200-unit limit. 
+                    ${peakKwh <= 200 
+                        ? `Peak month (<b>${peakMonth}</b>) is <b>${peakKwh} units</b> — still within limits.` 
+                        : `Watch <b>${peakMonth}</b> — peak hits <b>${peakKwh} units</b>, close to the ceiling.`}
+                    Saving <b style="color:#34d399">Rs. ${monthlySave.toLocaleString()}/month</b>.`;
+                savingsEl.innerText = 'Rs. ' + monthlySave.toLocaleString();
+            }
+
+            // ── D: PROTECTED — at risk ──
+            else if (category === 'protected' && currentKwh <= 200) {
+                iconBox.innerHTML = '<i class="fa-solid fa-shield" style="color:#fbbf24"></i>';
+                titleEl.innerText = 'Protected — Monitor Peak Month';
+                descEl.innerHTML  = `<b>${gapToLimit} units</b> of buffer. Peak month <b>${peakMonth}</b> at <b>${peakKwh} units</b> 
+                    risks breaching the 200-unit Protected limit.
+                    To protect your subsidy: ${getTip(overBy)}
+                    Monthly saving at risk: <b style="color:#fbbf24">Rs. ${monthlySave.toLocaleString()}</b>.`;
+                savingsEl.innerText = 'Rs. ' + monthlySave.toLocaleString();
+            }
+
+            // ── E: OVER LIMIT — recovery predicted ──
+            else if (isSubsidised && recoveryIndex > 0) {
+                const recoveryMonth = rollingData[recoveryIndex]?.month_name || 'upcoming';
+                iconBox.innerHTML = '<i class="fa-solid fa-clock-rotate-left" style="color:#3b82f6"></i>';
+                titleEl.innerText = 'Recovery Predicted';
+                descEl.innerHTML  = `Over the <b>${limit}-unit</b> limit — NEPRA's ${windowSize}-month observation window is active. 
+                    Subsidy projected to return in <b style="color:#3b82f6">${recoveryMonth}</b> (${recoveryIndex} months away). 
+                    On recovery: <b style="color:#3b82f6">Rs. ${Math.round(limit * subsidyRate).toLocaleString()}/month</b> saving resumes.`;
+                savingsEl.innerText = 'Rs. ' + Math.round(limit * subsidyRate).toLocaleString();
+            }
+
+            // ── F: OVER LIMIT — no recovery ──
+            else if (isSubsidised && currentKwh > limit) {
+                iconBox.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color:#f87171"></i>';
+                titleEl.innerText = `Over Limit by ${overBy} Units`;
+                descEl.innerHTML  = `Need to cut <b>${overBy} units/month</b> for ${windowSize} consecutive months to reclaim ${badge.text}. 
+                    ${getTip(overBy)}
+                    Penalty vs subsidised rate: <b style="color:#f87171">Rs. ${Math.round(overBy * subsidyRate).toLocaleString()}/month</b>.`;
+                savingsEl.innerText = 'Rs. 0';
+            }
+
+            // ── G: NON-PROTECTED — high (slab 5+) ──
+            else if (category === 'non_protected' && currentKwh > 300) {
+                const potentialSave = Math.round((currentKwh - 200) * (19.55 - 12.15));
+                iconBox.innerHTML = '<i class="fa-solid fa-fire" style="color:#f97316"></i>';
+                titleEl.innerText = 'High Consumption — Expensive Slab';
+                descEl.innerHTML  = `<b>${currentKwh} units</b> puts you in NEPRA's Rs. 19.55/unit slab. 
+                    Dropping below 200 units saves ~<b style="color:#f97316">Rs. ${potentialSave.toLocaleString()}/month</b>.
+                    ${acQty > 0 && acType !== 'inverter' 
+                        ? `Your ${acQty} fixed-speed AC${acQty > 1 ? 's' : ''} — switching to inverter could cut 30–40% of AC load.` 
+                        : getTip(currentKwh - 200)}
+                    Annual bill: <b>Rs. ${annualBill.toLocaleString()}</b>.`;
+                savingsEl.innerText = 'Rs. ' + potentialSave.toLocaleString();
+            }
+
+            // ── I: NON-PROTECTED — qualifies for Lifeline ──
+            else if (category === 'non_protected' && currentKwh < 100) {
+                iconBox.innerHTML = '<i class="fa-solid fa-lightbulb" style="color:#fbbf24"></i>';
+                titleEl.innerText = 'You May Qualify for Lifeline';
+                descEl.innerHTML  = `Using only <b>${currentKwh} units</b> — below the 100-unit Lifeline threshold. 
+                    Contact <b>${disco}</b> to apply — potential saving: 
+                    <b style="color:#fbbf24">Rs. ${Math.round(currentKwh * 32).toLocaleString()}/month</b> 
+                    (Rs. ${Math.round(currentKwh * 32 * 12).toLocaleString()}/year).`;
+                savingsEl.innerText = 'Rs. ' + Math.round(currentKwh * 32).toLocaleString();
+            }
+
+            // ── H: NON-PROTECTED — can upgrade to Protected ──
+            else if (category === 'non_protected' && currentKwh <= 200) {
+                const monthsUnder = rollingData.filter(d => d.kwh <= 200).length;
+                iconBox.innerHTML = '<i class="fa-solid fa-arrow-trend-up" style="color:#818cf8"></i>';
+                titleEl.innerText = 'Protected Status Within Reach';
+                descEl.innerHTML  = `<b>${currentKwh} units</b> — within the 200-unit Protected threshold. 
+                    Maintain this for <b>6 consecutive months</b> to qualify. 
+                    Months projected under limit: <b>${monthsUnder}/12</b>. 
+                    Potential saving: <b style="color:#818cf8">Rs. ${Math.round(currentKwh * 21).toLocaleString()}/month</b>.`;
+                savingsEl.innerText = 'Rs. ' + Math.round(currentKwh * 21).toLocaleString();
+            }
+
+            // ── J: NON-PROTECTED — standard ──
+            else {
+                iconBox.innerHTML = '<i class="fa-solid fa-bolt" style="color:#94a3b8"></i>';
+                titleEl.innerText = 'Standard Rate Active';
+                descEl.innerHTML  = `Using <b>${currentKwh} units</b> at standard NEPRA rates. 
+                    ${peakKwh > 700 ? `<b>${peakMonth}</b> hits <b>${peakKwh} units</b> — Rs. 22.65/unit slab. ` : ''}
+                    Annual projection: <b>${annualKwh} kWh</b> (~Rs. ${annualBill.toLocaleString()}/year).
+                    ${acQty > 0 && acType !== 'inverter' ? `Inverter AC upgrade could reduce peak months by 25–35%.` : ''}`;
+                savingsEl.innerText = 'Rs. 0';
+            }
+        }
+
+        // Month → season label for Pakistan
+        function getPakSeason(month) {
+            if ([12, 1, 2].includes(month))     return 'winter';
+            if ([3, 4].includes(month))         return 'spring';
+            if ([5, 6, 7, 8, 9].includes(month)) return 'summer';
+            return 'autumn';
+        }
+        
+        // AC intensity tier
+        function getIntensityTier(pct) {
+            if (pct === 0)   return 'none';
+            if (pct < 15)    return 'minimal';
+            if (pct < 40)    return 'low';
+            if (pct < 65)    return 'moderate';
+            if (pct < 85)    return 'high';
+            return 'peak';
+        }
+        
+        function buildClimateInsight(data, u) {
+            const intensity   = Math.round((data.ac_scale || 0) * 100);
+            const month       = data.month || (new Date().getMonth() + 1);
+            const disco       = u.disco || 'National Grid';
+            const hasAC       = (u.ac_qty || 0) > 0;
+            const acQty       = u.ac_qty || 0;
+            const acType      = u.ac_type || 'standard';
+            const fQty        = u.f_qty || 0;
+            const fanQty      = u.fan_qty || 0;
+            const personCount = u.person_count || 1;
+            const acScale     = data.ac_scale || 0;
+        
+            const season      = getPakSeason(month);
+            const tier        = getIntensityTier(intensity);
+            const monthName   = new Date(2024, month - 1, 1).toLocaleString('default', { month: 'long' });
+            const iconEl      = document.getElementById('climate-icon');
+            const insightEl   = document.getElementById('climate-insight');
+        
+            // ── Icon selection ──
+            const ICONS = {
+                none:     'fa-solid fa-snowflake',
+                minimal:  'fa-solid fa-cloud-sun',
+                low:      'fa-solid fa-sun',
+                moderate: 'fa-solid fa-temperature-half',
+                high:     'fa-solid fa-temperature-full',
+                peak:     'fa-solid fa-fire-flame-curved',
+            };
+            iconEl.className = ICONS[tier] || 'fa-solid fa-bolt';
+        
+            // ── Build the insight message ──
+            let insight = '';
+        
+            // ══════════════════════════════════════════
+            //  WINTER BLOCK (December, January, February)
+            // ══════════════════════════════════════════
+            if (season === 'winter') {
+        
+                if (disco === 'IESCO' || disco === 'PESCO') {
+                    if (month === 1) {
+                        insight = `<b>Northern Pakistan peak cold</b> — January in the ${disco} region regularly drops to near-zero at night. 
+                            Water geysers and room heaters dominate consumption right now. 
+                            A 1500W geyser running 45 minutes/day adds <b>~34 kWh/month</b>. 
+                            If you have a gas connection, switching geyser load to gas could halve your winter bill.`;
+                    } else {
+                        insight = `Cold-wave pattern active across the <b>${disco}</b> service area. 
+                            Resistance heating loads (geysers, heaters, irons) are running concurrently. 
+                            Your fridge is operating at maximum efficiency in this cold — 
+                            compressor duty-cycle drops by ~20% vs summer, saving ~<b>8 kWh/month</b> automatically.`;
+                    }
+                }
+        
+                else if (disco === 'K-Electric') {
+                    insight = `Karachi's <b>mild winter</b> means minimal thermal stress — daytime temperatures stay 18–24°C. 
+                        ${hasAC ? 'Your AC is consuming near-zero energy this month — the model has correctly zeroed its contribution.' : 'Fan and lighting loads are minimal.'}
+                        The hidden winter cost for Karachi is the <b>UPS charging cycle</b> — load-shedding continues year-round. 
+                        ${u.u_qty > 0 ? `Your ${u.u_qty} UPS unit(s) are estimated to add ~${Math.round(u.u_qty * 15)} kWh this month.` : ''}`;
+                }
+        
+                else if (disco === 'QESCO') {
+                    insight = `Quetta's <b>extreme winter</b> is active — temperatures can fall to -5°C. 
+                        At high altitude, resistance heating is unavoidable and significantly more costly than gas. 
+                        Every electric heater running 4h/day adds ~<b>72 kWh/month</b>. 
+                        Your AC compressor efficiency also drops by ~15% in sub-zero conditions if used for heating.`;
+                }
+        
+                else if (disco === 'MEPCO' || disco === 'HESCO') {
+                    insight = `<b>${monthName} fog season</b> active in the ${disco} region. 
+                        Reduced daylight increases artificial lighting hours by ~2h/day, adding ~<b>6 kWh/month</b> per room. 
+                        Your fridge is running at peak mechanical efficiency in this cold ambient — 
+                        compressor is cycling 25% less than it does in July.`;
+                }
+        
+                else {
+                    insight = `<b>Winter baseline</b> active — AC loads are at zero across Pakistan. 
+                        Your dominant consumption this month is fans, lighting, kitchen appliances, and UPS charging. 
+                        ${fanQty > 0 ? `With ${fanQty} fans running ~2h/day in winter, fan contribution is only ~${Math.round(fanQty * 0.06 * 2 * 30)} kWh.` : ''}
+                        This is the most cost-efficient month of the year for most households.`;
+                }
+            }
+        
+            // ══════════════════════════════════════════
+            //  SPRING BLOCK (March, April)
+            // ══════════════════════════════════════════
+            else if (season === 'spring') {
+        
+                if (month === 3) {
+                    insight = `<b>March pre-heat ramp</b> — temperatures in ${disco} are rising from winter baseline. 
+                        Fan usage is increasing (~${fanQty > 0 ? fanQty : Math.round(personCount * 1.5)} fans starting to run 7–8h/day). 
+                        AC is not yet needed but fridge duty-cycle is beginning to climb.
+                        ${hasAC ? 'Pre-service your AC now — a dirty filter at season start costs 10–15% efficiency.' : ''}
+                        Expect your bill to rise ~15–25% vs January as fans displace the winter baseline.`;
+                }
+        
+                else if (month === 4) {
+                    if (disco === 'MEPCO' || disco === 'HESCO') {
+                        insight = `<b>April heat arrives early</b> in the ${disco} (Multan/Sindh) belt — temperatures regularly hit 40°C. 
+                            ${hasAC ? `Your ${acQty} AC(s) may begin operating 2–3h in the afternoon. April AC contribution is modelled at ~${intensity}% of peak.` : 'Without AC, fan saturation is already high — fans running 11–12h/day.'}
+                            Fridge duty-cycle is climbing fast — expect +10 kWh vs March.`;
+                    } else {
+                        insight = `<b>Spring warmth</b> building in ${disco}. Fans are running full-time during day hours. 
+                            ${hasAC ? `AC is contributing ~${intensity}% of its peak summer load — ~${Math.round(acQty * 1.2 * 2.5 * 30)} kWh this month.` : 'No AC — fan saturation is the main load driver.'}
+                            This is the last affordable month before summer slab escalation.`;
+                    }
+                }
+            }
+        
+            // ══════════════════════════════════════════
+            //  SUMMER BLOCK (May–September)
+            // ══════════════════════════════════════════
+            else if (season === 'summer') {
+        
+                // ── PEAK (June, July, August) ──
+                if ([6, 7, 8].includes(month)) {
+        
+                    if (disco === 'K-Electric') {
+                        if (month === 7 || month === 8) {
+                            insight = `Karachi <b>monsoon humidity</b> detected — relative humidity 80–95%. 
+                                Your AC compressor is working <b>20–35% harder</b> to remove moisture from the air before cooling it. 
+                                ${acType === 'inverter' ? 'Your inverter AC manages this better than fixed-speed, but dehumidification still increases runtime.' : 'A fixed-speed AC in humidity is significantly less efficient — consider inverter upgrade.'}
+                                ${fQty > 0 ? `Fridge door seals are critical in humidity — a worn seal adds ~8 kWh/month per unit.` : ''}
+                                K-Electric load-shedding peaks in July–August, increasing UPS charge cycles.`;
+                        } else {
+                            insight = `Karachi's <b>peak dry heat</b> in June — humidity is low but temperatures hit 38–42°C. 
+                                AC compressors are running near-continuously in afternoon hours. 
+                                ${hasAC ? `Your ${acQty} ${acType} AC(s) are projected at ~${Math.round(acQty * (acType === 'inverter' ? 0.75 : 1.5) * 10 * 30)} kWh this month — the single largest load in your home.` : 'Without AC, fan saturation at 18h+/day is adding heavy load.'}`;
+                        }
+                    }
+        
+                    else if (disco === 'MEPCO') {
+                        insight = `<b>Multan extreme heat</b> — temperatures reach 45–48°C in ${monthName}. 
+                            This is one of the hottest inhabited zones on Earth during summer. 
+                            Your fridge duty-cycle has increased by ~${Math.round(15 + (intensity / 5))}% vs winter — it's fighting ambient kitchen temperatures above 40°C. 
+                            ${hasAC ? `AC efficiency drops ~8% for every 5°C above rated ambient (35°C). At 45°C, your AC is ~16% less efficient than its rated COP.` : 'Without AC, heat stress is significant — fan effectiveness drops above 40°C wet-bulb.'}
+                            Consider thermal curtains on west-facing windows to reduce solar gain by 30%.`;
+                    }
+        
+                    else if (disco === 'HESCO') {
+                        insight = `<b>Sindh summer peak</b> in ${monthName} — ${disco} region has some of Pakistan's highest grid stress. 
+                            Extended load-shedding during summer afternoons means your UPS system is cycling more frequently. 
+                            ${u.u_qty > 0 ? `Your ${u.u_qty} UPS unit(s) are estimated to add ~${Math.round(u.u_qty * 0.4 * 4 * 30)} kWh extra this month vs winter.` : ''}
+                            ${hasAC ? 'AC compressors restarting after each load-shedding cycle draw a surge current spike — inverter ACs handle this more efficiently.' : ''}`;
+                    }
+        
+                    else if (disco === 'LESCO' || disco === 'FESCO') {
+                        insight = `<b>Urban heat island</b> active in ${disco} (${disco === 'LESCO' ? 'Lahore' : 'Faisalabad'}). 
+                            Dense concrete construction retains daytime heat into the night — your home stays 3–5°C warmer than surrounding rural areas even at midnight. 
+                            ${hasAC ? `This forces AC to run longer into the night — evening AC runtime is ~2h more than equivalent rural households.` : 'Night fans are running at full speed later than they should — building mass is holding heat.'}
+                            ${month === 6 ? 'Pre-monsoon dry heat is most severe in June — relief comes with July rains.' : 'Monsoon moisture is reducing peak temperatures slightly but increasing humidity load.'}`;
+                    }
+        
+                    else if (disco === 'IESCO') {
+                        insight = `<b>Islamabad summer heat</b> — the capital zone has better tree cover than Lahore but summer still peaks at 40–43°C. 
+                            ${hasAC ? `Your AC is at ${intensity}% of peak seasonal output this month.` : ''}
+                            Higher elevation (550m) means your AC compressor works slightly more efficiently than at sea level — 
+                            rated capacity is ~5% better than Karachi equivalent. 
+                            July monsoon will bring brief relief but increases humidity load on AC.`;
+                    }
+        
+                    else if (disco === 'PESCO') {
+                        insight = `<b>KPK summer</b> in ${monthName} — temperatures in Peshawar hit 40°C+, though northern PESCO zones are milder. 
+                            ${hasAC ? 'AC usage is at seasonal peak.' : 'Without AC, evaporative coolers (air coolers) are common — they use ~150W vs 1500W for AC.'}
+                            Evening demand peaks sharply in PESCO areas as households return and run appliances simultaneously — 
+                            grid stress is highest between 7–11 PM.`;
+                    }
+        
+                    else if (disco === 'QESCO') {
+                        insight = `Quetta's <b>high-altitude summer</b> — temperatures are 8–12°C lower than Sindh/Punjab at the same latitude. 
+                            Your AC demand is lower than equivalent households in Lahore or Karachi. 
+                            ${hasAC ? `AC efficiency at 1500m altitude is slightly lower than rated — thinner air reduces heat exchanger effectiveness by ~3%.` : 'The moderate climate means your cooling costs are the lowest of any Pakistani city.'}
+                            Water pump efficiency is also marginally reduced at altitude.`;
+                    }
+        
+                    else {
+                        insight = `<b>Pakistan summer peak</b> — AC loads are at maximum intensity across the national grid. 
+                            ${hasAC ? `Your ${acQty} AC unit(s) are the dominant load this month at ${intensity}% peak output.` : 'Without AC, fan saturation (18h+/day) is driving your load.'}
+                            This is the month to maximise inverter AC benefits, thermal curtains, and off-peak load shifting.`;
+                    }
+                }
+        
+                // ── SHOULDER SUMMER (May, September) ──
+                else if (month === 5) {
+                    insight = `<b>May heat ramp</b> — Pakistan's pre-summer spike. 
+                        ${disco === 'MEPCO' || disco === 'HESCO' ? 'Southern regions are already at summer peak — 44°C days are common in Multan and Sindh by mid-May.' : `${disco} temperatures are climbing fast toward summer peak.`}
+                        ${hasAC ? `AC is at ${intensity}% of peak — running ~${Math.round(acQty * (acType === 'inverter' ? 0.75 : 1.5) * AC_SEASONAL_DAILY_HOURS[5] * 30)} kWh this month.` : ''}
+                        Bills typically jump <b>40–80% from April to May</b> — this is the sharpest single-month increase of the year.`;
+                }
+        
+                else if (month === 9) {
+                    insight = `<b>September cooldown begins</b> in ${disco}. 
+                        AC usage is dropping from peak — intensity is at ${intensity}% vs 100% in June. 
+                        ${hasAC ? `Your AC is transitioning from continuous to intermittent operation — runtime reduces by ~2h/day vs August.` : ''}
+                        Fridge duty-cycle is beginning to ease. 
+                        ${disco === 'K-Electric' ? 'Karachi monsoon tails off in September — humidity is still elevated until mid-month.' : 'Temperatures should drop below 35°C by end of September in most regions.'}
+                        Expect a 20–35% bill reduction vs July–August.`;
+                }
+            }
+        
+            // ══════════════════════════════════════════
+            //  AUTUMN BLOCK (October, November)
+            // ══════════════════════════════════════════
+            else if (season === 'autumn') {
+        
+                if (month === 10) {
+                    insight = `<b>October transition</b> — the most pleasant month in Pakistan's grid calendar. 
+                        AC loads have dropped to ~${intensity}% — ${disco === 'MEPCO' || disco === 'HESCO' ? 'Southern regions still see 35°C days, so occasional AC is expected.' : 'AC is largely off.'}
+                        Fan hours are reducing. Your bill this month is likely the lowest of the second half-year. 
+                        ${fQty > 0 ? 'Fridge efficiency is recovering — duty-cycle dropping toward winter minimum.' : ''}
+                        This is the ideal month to assess whether your summer average kept you within NEPRA's protected threshold.`;
+                }
+        
+                else if (month === 11) {
+                    insight = `<b>November — pre-winter baseline</b> forming in ${disco}. 
+                        ${disco === 'IESCO' || disco === 'PESCO' ? 'Northern zones are already experiencing cold nights — geyser season begins.' : 'Southern Pakistan stays warm — minimal heating loads.'}
+                        AC is fully off in most households. Dominant loads shift back to lighting (longer nights) and kitchen appliances. 
+                        ${fanQty > 0 ? `Your ${fanQty} fans are now running ~4h/day — only 22% of peak summer hours.` : ''}
+                        Annual bill will be near its seasonal minimum over the next 3 months.`;
+                }
+            }
+        
+            // ── Fallback ──
+            if (!insight) {
+                insight = `<b>Seasonal load model active</b> — AC intensity at ${intensity}% of peak. 
+                    ${hasAC ? `Your ${acQty} AC unit(s) are contributing proportionally to the seasonal calendar.` : 'Fan and base loads are the primary drivers this month.'}`;
+            }
+        
+            insightEl.innerHTML = insight;
+        
+            // ── Update intensity bar ──
+            const pctEl  = document.getElementById('intensity-pct');
+            const barEl  = document.getElementById('intensity-bar');
+            if (pctEl) pctEl.innerText = intensity + '%';
+            if (barEl) barEl.style.width = intensity + '%';
+        }
+        
+        
+        // ───────────────────────────────────────────────────────────────
+        //  INTEGRATION: Updated loadDemandPulse()
+        //  Replace the original with this version.
+        // ───────────────────────────────────────────────────────────────
+        // Expose AC seasonal hours so insight engine can use them
+        const AC_SEASONAL_DAILY_HOURS = {
+            1: 0.0, 2: 0.0, 3: 0.5, 4: 2.5, 5: 7.0, 6: 10.0,
+            7: 9.5, 8: 9.0, 9: 6.5, 10: 2.0, 11: 0.3, 12: 0.0
+        };
+        
+        let pulseChart = null;
+        
+        async function loadDemandPulse() {
+            const pulseCard   = document.getElementById('demand-pulse-card');
+            const climateCard = document.getElementById('climatic-card');
+            const ctx         = document.getElementById('pulseChart').getContext('2d');
+        
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/forecast_24h', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ uid: userUid })
+                });
+                const data = await response.json();
+        
+                if (data.status !== 'success') throw new Error(data.error || 'API error');
+        
+                pulseCard.style.display   = 'block';
+                climateCard.style.display = 'block';
+        
+                // ── Load user doc for context ──
+                const userSnap = await db.collection('users').doc(userUid).get();
+                const u        = userSnap.data() || {};
+        
+                // ── Build climate message ──
+                buildClimateInsight(data, u);
+        
+                // ── Archetype label ──
+                document.getElementById('pulse-archetype').innerText =
+                    data.archetype.replace('House', 'Model #');
+        
+                // ── LSTM bar chart ──
+                const gradient = ctx.createLinearGradient(0, 0, 0, 120);
+                gradient.addColorStop(0, '#34d399');
+                gradient.addColorStop(1, 'rgba(5, 150, 105, 0.1)');
+        
+                if (pulseChart) pulseChart.destroy();
+                pulseChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels:   data.hours,
+                        datasets: [{
+                            data:            data.forecast,
+                            backgroundColor: gradient,
+                            borderRadius:    3,
+                            barPercentage:   0.7
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                enabled: true,
+                                backgroundColor: 'rgba(13, 26, 18, 0.98)',
+                                callbacks: {
+                                    title: (items) => {
+                                        const h = parseInt(items[0].label);
+                                        return `Time: ${h % 12 || 12}:00 ${h >= 12 ? 'PM' : 'AM'}`;
+                                    },
+                                    label: (c) => ` Predicted Load: ${c.raw.toFixed(2)} kW`
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { display: false },
+                            y: { display: false, suggestedMax: Math.max(...data.forecast) * 1.3 }
+                        }
+                    }
+                });
+        
+            } catch (e) {
+                console.error('Demand Pulse Error:', e);
+                if (pulseCard)   pulseCard.style.display   = 'none';
+                if (climateCard) climateCard.style.display = 'none';
+            }
         }
 
         // ─── INFERENCE ANALYSIS MODAL LOGIC (v2.6 Synchronized) ───
@@ -1013,9 +1831,14 @@
             }
 
             // Proportional split of the remaining percentage
-            const remaining = 100 - hW;
-            const pW = Math.round(res.bill.blend_weights.physics * remaining);
-            const rW = Math.round(res.bill.blend_weights.rf * remaining);
+            const remainingSpace = 100 - hW; 
+            const rawPhys = res.bill.blend_weights.physics; // e.g. 0.8
+            const rawRF = res.bill.blend_weights.rf;        // e.g. 0.2
+            const totalModelWeight = rawPhys + rawRF;
+
+            // SCALE the physics/rf to fill exactly the 'remainingSpace'
+            const pW = Math.round((rawPhys / totalModelWeight) * remainingSpace);
+            const rW = remainingSpace - pW;
 
             // 2. Physics & Calculation Helpers
             const foundationTotal = phy.person_base + phy.area_lighting;
@@ -1517,67 +2340,63 @@
             const card = document.getElementById('load-pie-card');
             const ctx = document.getElementById('loadPieChart').getContext('2d');
             
-            // 1. DATA AGGREGATION (High-Contrast Category Mapping)
+            // 1. DATA AGGREGATION
             const groups = [
-                { label: 'Cooling (AC/Fans)', val: phy.ac + phy.fans, color: '#00f2ff' },    // Neon Cyan (Cold)
-                { label: 'Refrigeration', val: phy.fridge, color: '#10b981' },             // Emerald Green (Fresh)
-                { label: 'Heavy (Pump/Wash)', val: phy.water_pump + phy.washing, color: '#f59e0b' }, // Amber/Orange (Power)
-                { label: 'Kitchen/Misc', val: phy.kitchen + phy.person_base, color: '#8b5cf6' },    // Purple (Domestic)
-                { label: 'System Waste (UPS)', val: phy.ups, color: '#ff4d4d' }             // Bright Red (Loss)
-            ];
+                { label: 'Cooling (AC/Fans)', val: (phy.ac || 0) + (phy.fans || 0), color: '#00f2ff' },
+                { label: 'Refrigeration', val: phy.fridge || 0, color: '#10b981' },
+                { label: 'Heavy (Pump/Wash)', val: (phy.water_pump || 0) + (phy.washing || 0), color: '#f59e0b' },
+                { label: 'Kitchen/Misc', val: (phy.kitchen || 0) + (phy.person_base || 0), color: '#8b5cf6' },
+                { label: 'System Waste (UPS)', val: phy.ups || 0, color: '#ff4d4d' }
+            ].filter(g => g.val > 0.1); 
 
-            // 2. DYNAMIC FILTERING (Prevents empty slices and cluttered legends)
-            const activeGroups = groups.filter(g => g.val > 0.1); 
-
-            if (activeGroups.length === 0) {
+            if (groups.length === 0) {
                 card.style.display = 'none';
                 return;
             }
 
+            // --- TRIGGER SLIDE-IN ANIMATION ---
+            card.classList.remove('sidebar-slide-in'); // Reset animation if it was already visible
+            void card.offsetWidth; // Trigger reflow to restart CSS animation
+            card.classList.add('sidebar-slide-in');
             card.style.display = 'block';
+
             if (pieChart) pieChart.destroy();
 
-            // 3. CHART INITIALIZATION
+            // 2. CHART INITIALIZATION
             pieChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: activeGroups.map(g => g.label),
+                    labels: groups.map(g => g.label),
                     datasets: [{
-                        data: activeGroups.map(g => g.val),
-                        backgroundColor: activeGroups.map(g => g.color),
+                        data: groups.map(g => g.val),
+                        backgroundColor: groups.map(g => g.color),
                         borderWidth: 0,
-                        hoverOffset: 20,
-                        borderRadius: 5, // Slightly rounded slices for a modern feel
-                        spacing: 4       // Small gaps between slices to separate colors
+                        hoverOffset: 15,
+                        borderRadius: 5,
+                        spacing: 3
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '75%', // Modern thin ring
+                    cutout: '75%',
                     plugins: {
                         legend: {
                             position: 'bottom',
                             labels: {
-                                color: '#f0fdf4', // White-ish text
+                                color: '#86efac',
                                 usePointStyle: true,
                                 pointStyle: 'rectRounded',
-                                padding: 12,
+                                padding: 10,
                                 font: { size: 9, family: 'DM Sans', weight: '600' }
                             }
                         },
                         tooltip: {
                             enabled: true,
                             backgroundColor: 'rgba(13, 26, 18, 0.98)',
-                            titleFont: { size: 12, family: 'Syne' },
-                            bodyFont: { size: 11 },
-                            padding: 12,
-                            displayColors: true,
-                            borderColor: 'rgba(255,255,255,0.1)',
-                            borderWidth: 1,
                             callbacks: {
                                 label: (context) => {
-                                    const total = activeGroups.reduce((a, b) => a + b.val, 0);
+                                    const total = groups.reduce((a, b) => a + b.val, 0);
                                     const pct = ((context.raw / total) * 100).toFixed(1);
                                     return ` ${context.label}: ${context.raw.toFixed(1)} kWh (${pct}%)`;
                                 }
@@ -1859,6 +2678,18 @@
                 modeEl.classList.remove('engine-fade-out');
                 descEl.classList.remove('engine-fade-out');
             }, 400);
+        }
+
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
         }
 
         function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }

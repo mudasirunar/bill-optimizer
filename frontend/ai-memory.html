@@ -64,13 +64,173 @@
         .model-badge { display: inline-flex; align-items: center; gap: 7px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--g3); background: rgba(52,211,153,0.07); border: 1px solid var(--border); padding: 5px 12px; border-radius: 20px; }
 
         .main-container { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 40px 5%; }
-        .section-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; padding: 32px; margin-bottom: 24px; backdrop-filter: blur(14px); animation: fadeUp 0.7s 0.2s both; }
-        
+        .section-card { 
+            background: var(--card-bg); 
+            border: 1px solid var(--border); 
+            border-radius: 20px; 
+            padding: 32px; 
+            margin-bottom: 24px; 
+            backdrop-filter: blur(14px); 
+            animation: fadeUp 0.7s 0.2s both;
+            position: relative;
+            overflow: hidden; 
+        }
+
+        /* 2. THE SCANNER BEAM (Merged & Optimized) */
+        .section-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 150px;
+            background: linear-gradient(
+                to bottom,
+                transparent 0%,
+                rgba(52, 211, 153, 0.05) 30%,
+                rgba(52, 211, 153, 0.4) 50%, /* High Visibility Core */
+                rgba(52, 211, 153, 0.05) 70%,
+                transparent 100%
+            );
+            z-index: 1;
+            pointer-events: none;
+            
+            /* Start hidden and above the card */
+            opacity: 0;
+            transform: translateY(-100%);
+            display: none;
+        }
+
+        /* 3. TRIGGER (Sequential Timing) 
+        We use a 10s total cycle. Each card takes 1.5s to scan.
+        */
+        .data-ready .section-card::after {
+            display: block;
+            animation: neural-scan 10s infinite linear backwards;
+        }
+
+        /* Staggered Delays: 0s -> 1.5s -> 3.0s -> 4.5s -> 6.0s */
+        .data-ready .section-card:nth-of-type(1)::after { animation-delay: 0s; }
+        .data-ready .section-card:nth-of-type(2)::after { animation-delay: 1.5s; }
+        .data-ready .section-card:nth-of-type(3)::after { animation-delay: 3s; }
+        .data-ready .section-card:nth-of-type(4)::after { animation-delay: 4.5s; }
+        .data-ready .section-card:nth-of-type(5)::after { animation-delay: 6s; }
+
+        /* 4. ANIMATION LOGIC 
+        15% of 10s = 1.5 seconds. This is the travel time.
+        */
+        @keyframes neural-scan {
+            0% { 
+                transform: translateY(-100%); 
+                opacity: 0; 
+            }
+            1% { 
+                opacity: 1; 
+            }
+            15% { 
+                transform: translateY(400%); /* Moves past the bottom */
+                opacity: 0; 
+            }
+            100% { 
+                transform: translateY(400%); 
+                opacity: 0; 
+            }
+        }
+
         .card-heading { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
-        .card-icon { width: 42px; height: 42px; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.18); border-radius: 11px; display: flex; align-items: center; justify-content: center; color: var(--g3); }
+        .card-icon { width: 42px; height: 42px; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.18); border-radius: 11px; display: flex; align-items: center; justify-content: center; color: var(--g3); position: relative; overflow: hidden;}
+
+        .card-empty-state {
+            text-align: center;
+            padding: 30px 20px;
+            color: var(--text-dim);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-empty-state i {
+            font-size: 2rem;
+            opacity: 0.2;
+            color: var(--g3);
+        }
+
+        .card-empty-state p {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        /* Ensure the wrapper can hide the grid if needed */
+        .hidden-element {
+            display: none !important;
+        }
+
+        /* ─── MISSING CONTEXT PULSE ─── */
+        .missing-context {
+            color: #f87171; /* Soft Red/Orange */
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            animation: alert-pulse 2s infinite ease-in-out;
+            background: rgba(248, 113, 113, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(248, 113, 113, 0.2);
+        }
+
+        @keyframes alert-pulse {
+            0% { opacity: 0.5; transform: scale(0.98); }
+            50% { opacity: 1; transform: scale(1); text-shadow: 0 0 8px rgba(248, 113, 113, 0.4); }
+            100% { opacity: 0.5; transform: scale(0.98); }
+        }
+
+        /* ─── CARD LOADING STATE ─── */
+        .card-body-content {
+            transition: opacity 0.4s ease;
+            opacity: 0; /* Hidden until data loads */
+        }
+
+        .data-ready .card-body-content {
+            opacity: 1;
+        }
+
+        .card-loader-inline {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--g3);
+            font-size: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            transition: opacity 0.3s ease;
+        }
+
+        .data-ready .card-loader-inline {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
 
         .memory-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-        .data-item { background: rgba(5, 20, 10, 0.4); border: 1px solid var(--border); padding: 18px; border-radius: 12px; }
+        .data-item { 
+            background: rgba(5, 20, 10, 0.4); 
+            border: 1px solid var(--border); 
+            padding: 14px 18px; /* Slightly reduced padding */
+            border-radius: 12px; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; /* Centers content if only 1 row exists */
+            min-height: 95px; /* Ensures all cards stay aligned even with 1 vs 2 rows */
+        }
         .data-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
         .data-value { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 700; color: var(--g3); }
         .data-sub { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; }
@@ -81,6 +241,109 @@
         td { padding: 12px; font-size: 0.9rem; border-bottom: 1px solid rgba(52,211,153,0.05); color: var(--text-muted); }
         .month-cell { font-weight: 700; color: var(--g3); font-family: 'Syne', sans-serif; }
         .data-type-tag { font-size: 0.6rem; background: var(--g1); color: white; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-left: 5px; }
+
+        /* --- Neural Maturity Card UI --- */
+        .maturity-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(3, 10, 6, 0.4) 100%);
+            border: 1px solid var(--border-hover);
+            padding: 24px !important;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .maturity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 16px;
+        }
+
+        .status-label-group { line-height: 1.2; }
+        .status-label-group small { 
+            font-size: 0.65rem; 
+            text-transform: uppercase; 
+            letter-spacing: 1.5px; 
+            color: var(--text-dim); 
+            font-weight: 700; 
+        }
+        .status-text { 
+            font-family: 'Syne', sans-serif; 
+            font-size: 1.4rem; 
+            font-weight: 800; 
+            color: var(--g3); 
+            text-transform: uppercase;
+        }
+
+        /* The Segmented Bar */
+        .maturity-bar-container {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 6px;
+            height: 12px;
+            margin-bottom: 20px;
+        }
+
+        .bar-segment {
+            background: rgba(52, 211, 153, 0.1);
+            border-radius: 2px;
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .bar-segment.active {
+            background: var(--g2);
+            box-shadow: 0 0 12px var(--glow);
+        }
+
+        .bar-segment.active.last {
+            animation: neural-pulse 2s infinite;
+        }
+
+        @keyframes neural-pulse {
+            0% { background: var(--g3); box-shadow: 0 0 8px var(--glow); }
+            50% { background: var(--g4); box-shadow: 0 0 20px var(--glow-strong); }
+            100% { background: var(--g3); box-shadow: 0 0 8px var(--glow); }
+        }
+
+        /* Briefing Box */
+        .intelligence-briefing {
+            background: rgba(5, 20, 10, 0.6);
+            border-radius: 12px;
+            padding: 16px;
+            border-left: 3px solid var(--g1);
+        }
+
+        .briefing-title {
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--g3);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .briefing-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .gap-tag {
+            display: inline-block;
+            font-size: 0.65rem;
+            background: rgba(248, 113, 113, 0.1);
+            color: #f87171;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-top: 8px;
+            font-weight: 700;
+        }
+
+        /* This forces the first letter of every word to be Capitalized globally */
+        #user-name-display, #greeting-display {
+            text-transform: capitalize !important;
+        }
 
         /* Loader & Empty State */
         #history-loader { display: flex; justify-content: center; align-items: center; padding: 40px; color: var(--g3); font-size: 1.2rem; }
@@ -120,6 +383,7 @@
                 <div class="dropdown-menu">
                     <a href="dashboard.html"><i class="fa fa-home"></i> Dashboard</a>
                     <a href="setup-profile.html"><i class="fa fa-cog"></i> Setup Profile</a>
+                    <a href="nepra-info.html"><i class="fa fa-landmark"></i> NEPRA Info</a>
                     <hr>
                     <a href="#" onclick="logout()" class="logout-link"><i class="fa fa-sign-out-alt"></i> Logout</a>
                 </div>
@@ -145,6 +409,37 @@
 
     <main class="main-container">
 
+        <div class="section-card maturity-card" id="maturity-container" style="display:none;">
+            <div class="maturity-header">
+                <div class="status-label-group">
+                    <small>Neural Memory Status</small>
+                    <div class="status-text" id="maturity-status">Initializing...</div>
+                </div>
+                <div class="data-value" id="maturity-pct" style="font-size: 1.8rem;">0%</div>
+            </div>
+
+            <div class="maturity-bar-container" id="maturity-bar">
+                <div class="bar-segment"></div>
+                <div class="bar-segment"></div>
+                <div class="bar-segment"></div>
+                <div class="bar-segment"></div>
+                <div class="bar-segment"></div>
+                <div class="bar-segment"></div>
+                <div class="bar-segment"></div>
+                <div class="bar-segment"></div>
+                <div class="bar-segment"></div>
+                <div class="bar-segment"></div>
+            </div>
+
+            <div class="intelligence-briefing">
+                <div class="briefing-title"><i class="fa fa-brain"></i> Intelligence Briefing</div>
+                <div class="briefing-text" id="maturity-briefing">
+                    Analyzing your household parameters to determine prediction confidence...
+                </div>
+                <div id="maturity-gaps"></div>
+            </div>
+        </div>
+
         <div class="section-card">
             <div class="card-heading">
                 <div class="card-icon"><i class="fa fa-microchip"></i></div>
@@ -155,18 +450,25 @@
                     </p>
                 </div>
             </div>
-            <div class="memory-grid">
-                <div class="data-item">
-                    <div class="data-label">Distribution Co.</div>
-                    <div class="data-value" id="disp-disco">--</div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label">Sanctioned Load</div>
-                    <div class="data-value" id="disp-load">--</div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label">Consumer Class</div>
-                    <div id="disp-protected">--</div>
+
+            <div class="card-loader-inline">
+                <i class="fa fa-circle-notch fa-spin"></i>
+            </div>
+
+            <div class="card-body-content" id="body-system">
+                <div class="memory-grid">
+                    <div class="data-item">
+                        <div class="data-label">Distribution Co.</div>
+                        <div class="data-value" id="disp-disco">--</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Sanctioned Load</div>
+                        <div class="data-value" id="disp-load">--</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Consumer Class</div>
+                        <div id="disp-protected">--</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -181,26 +483,33 @@
                     </p>
                 </div>
             </div>
-            <div class="memory-grid">
-                <div class="data-item">
-                    <div class="data-label">Collective Occupancy</div>
-                    <div class="data-value" id="disp-occupants">--</div>
-                    <div class="data-sub">Base-load noise scaling</div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label">Property Area</div>
-                    <div class="data-value" id="disp-area">--</div>
-                    <div class="data-sub">Structural heat gain variable</div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label">Building Levels</div>
-                    <div class="data-value" id="disp-floors">--</div>
-                    <div class="data-sub">Floor count</div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label">Active Routine</div>
-                    <div id="disp-routine" class="data-value" style="font-size: 1.1rem; text-transform: capitalize;">Not Set</div>
-                    <div class="data-sub">Peak-load alignment</div>
+
+            <div class="card-loader-inline">
+                <i class="fa fa-circle-notch fa-spin"></i>
+            </div>
+
+            <div class="card-body-content" id="body-lifestyle">
+                <div class="memory-grid">
+                    <div class="data-item">
+                        <div class="data-label">Collective Occupancy</div>
+                        <div class="data-value" id="disp-occupants">--</div>
+                        <div class="data-sub">Base-load noise scaling</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Property Area</div>
+                        <div class="data-value" id="disp-area">--</div>
+                        <div class="data-sub">Structural heat gain variable</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Building Levels</div>
+                        <div class="data-value" id="disp-floors">--</div>
+                        <div class="data-sub">Floor count</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Active Routine</div>
+                        <div id="disp-routine" class="data-value" style="font-size: 1.1rem; text-transform: capitalize;">Not Set</div>
+                        <div class="data-sub">Peak-load alignment</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -215,39 +524,46 @@
                     </p>
                 </div>
             </div>
-            <div class="memory-grid">
-                <div class="data-item">
-                    <div class="data-label" id="label-ac"><i class="fa fa-snowflake"></i> Air Conditioning</div>
-                    <div class="data-value" id="disp-ac">--</div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label" id="label-fridge"><i class="fa fa-box"></i> Refrigeration</div>
-                    <div class="data-value" id="disp-fridge">--</div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label" id="label-fans"><i class="fa fa-fan"></i> Household Fans</div>
-                    <div class="data-value" id="disp-fans" style="display: flex; align-items: center; justify-content: space-between;">--</div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label" id="label-k"><i class="fa fa-utensils"></i> Kitchen</div>
-                    <div class="data-value" id="disp-k">--</div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label" id="label-wm"><i class="fa fa-tshirt"></i> Washing Machine</div>
-                    <div class="data-value" id="disp-wm">--</div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label" id="label-wp"><i class="fa fa-water"></i> Water Pump</div>
-                    <div class="data-value" id="disp-wp">--</div>
-                </div>
-                <div class="data-item">
-                    <div class="data-label" id="label-ups"><i class="fa fa-car-battery"></i> UPS Charging</div>
-                    <div class="data-value" id="disp-ups">--</div>
-                </div>
-                <div class="data-item" style="border-color: var(--g1); background: rgba(16,185,129,0.05); grid-column: span 1;">
-                    <div class="data-label" style="color:var(--g3)"><i class="fa fa-microchip"></i> Mean Hourly Load</div>
-                    <div class="data-value" id="disp-mean">--</div>
-                    <div class="data-sub">Core prediction feature</div>
+
+            <div class="card-loader-inline">
+                <i class="fa fa-circle-notch fa-spin"></i>
+            </div>
+
+            <div class="card-body-content" id="body-appliances">
+                <div class="memory-grid">
+                    <div class="data-item">
+                        <div class="data-label" id="label-ac"><i class="fa fa-snowflake"></i> Air Conditioning</div>
+                        <div class="data-value" id="disp-ac">--</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label" id="label-fridge"><i class="fa fa-box"></i> Refrigeration</div>
+                        <div class="data-value" id="disp-fridge">--</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label" id="label-fans"><i class="fa fa-fan"></i> Household Fans</div>
+                        <div class="data-value" id="disp-fans" style="display: flex; align-items: center; justify-content: space-between;">--</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label" id="label-k"><i class="fa fa-utensils"></i> Kitchen</div>
+                        <div class="data-value" id="disp-k">--</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label" id="label-wm"><i class="fa fa-tshirt"></i> Washing Machine</div>
+                        <div class="data-value" id="disp-wm">--</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label" id="label-wp"><i class="fa fa-water"></i> Water Pump</div>
+                        <div class="data-value" id="disp-wp">--</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label" id="label-ups"><i class="fa fa-car-battery"></i> UPS Charging</div>
+                        <div class="data-value" id="disp-ups">--</div>
+                    </div>
+                    <div class="data-item" style="border-color: var(--g1); background: rgba(16,185,129,0.05); grid-column: span 1;">
+                        <div class="data-label" style="color:var(--g3)"><i class="fa fa-microchip"></i> Mean Hourly Load</div>
+                        <div class="data-value" id="disp-mean">--</div>
+                        <div class="data-sub">Core prediction feature</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -310,20 +626,94 @@
         if (user.photoURL) document.getElementById('user-pfp').src = user.photoURL;
 
         db.collection('users').doc(user.uid).get().then(doc => {
+
             const historyLoader = document.getElementById('history-loader');
             const historyTable = document.getElementById('history-table');
-            
+
             if (!doc.exists) {
-                historyLoader.innerHTML = "<div class='empty-state'>No profile data found.</div>";
-                return;
+                console.warn("AI Memory: No profile found. Initializing empty view.");
             }
 
-            const d = doc.data();
+            const d = doc.exists ? doc.data() : {};
+            document.getElementById('maturity-container').style.display = 'block';
+
+            
+
+            const hasData = (keys) => keys.some(k => d[k] !== undefined && d[k] !== null && d[k] !== "" && d[k] !== 0 && d[k] !== "0");
+
+            const emptyMsg = (text) => `
+                <div class="card-empty-state">
+                    <i class="fa fa-database"></i>
+                    <p>${text}</p>
+                    <a href="setup-profile.html" class="btn-outline" style="padding: 8px 16px; font-size: 0.7rem;">Initialize Context</a>
+                </div>`;
+                
+
+            // 1. SCORING & GAP ANALYSIS
+            let score = 0;
+            let gaps = [];
+
+            // Context (30pts)
+            if (d.disco) score += 10; else gaps.push("Regional Grid Context");
+            if (d.sanctioned_load) score += 10; else gaps.push("Load Capacity Data");
+            if (d.property_area && d.person_count) score += 10; else gaps.push("Structural Dimensions");
+
+            // Inventory (30pts)
+            const hasAC = (d.ac_std_qty > 0 || d.ac_inv_qty > 0);
+            const hasFans = (d.fan_ac_qty > 0 || d.fan_dc_qty > 0);
+            if (hasAC) score += 10; else gaps.push("AC Consumption Profile");
+            if (hasFans) score += 10; else gaps.push("Air-Flow Load Signature");
+            if (d.f_qty > 0) score += 10; else gaps.push("Refrigeration Efficiency");
+
+            // History (40pts)
+            const validHistory = (d.bill_history || []).filter(b => parseFloat(b.units) > 5);
+            const historyCount = validHistory.length;
+            score += Math.min(historyCount * 4, 40);
+
+            // Add the "Time Gap" if hardware is done but history is low
+            if (historyCount < 10 && gaps.length === 0) {
+                gaps.push(`${10 - historyCount} Months of Seasonal Data`);
+            }
+
+            // 2. GET DYNAMIC BRIEFING FROM THE BRAIN
+            const briefing = getNeuralBriefing(d, score, historyCount, gaps);
+
+            // 3. UPDATE UI
+            const pct = Math.round(score);
+            document.getElementById('maturity-pct').innerText = pct + "%";
+            document.getElementById('maturity-status').innerText = briefing.status;
+            document.getElementById('maturity-status').style.color = briefing.color;
+            document.getElementById('maturity-briefing').innerHTML = briefing.html;
+
+            // Update Bar Segments
+            const segments = document.querySelectorAll('.bar-segment');
+            const activeCount = Math.floor(pct / 10);
+            segments.forEach((s, i) => {
+                s.classList.remove('active', 'last');
+                if (i < activeCount) {
+                    s.classList.add('active');
+                    if (i === activeCount - 1) s.classList.add('last');
+                }
+            });
+
+            // Update Gaps
+            if (gaps.length > 0) {
+                document.getElementById('maturity-gaps').innerHTML = `
+                    <div style="margin-top:15px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.05)">
+                        <div style="font-size:0.65rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px">
+                            <i class="fa fa-microchip"></i> System Requirements for 100% Mastery:
+                        </div>
+                        ${gaps.map(g => `<span class="gap-tag" style="background:rgba(52,211,153,0.05); border:1px solid rgba(52,211,153,0.2); color:var(--g3)">${g}</span>`).join(" ")}
+                    </div>`;
+            }
+
 
             // ─── 1. CORE UTILITIES ───
-            const formatValue = (val, suffix = "") => {
-                if (val === undefined || val === null || val === "" || val === 0 || val === "0") return "--";
-                return val + (suffix ? ` <small>${suffix}</small>` : "");
+            const formatValue = (val, suffix = "", contextName = "DATA") => {
+                if (val === undefined || val === null || val === "" || val === 0 || val === "0") {
+                    return `<span class="missing-context">[MISSING ${contextName}]</span>`;
+                }
+                return `${val} <small>${suffix}</small>`;
             };
 
             const formatTechnicalLabel = (val) => {
@@ -375,70 +765,133 @@
                         <div style="display: flex; align-items: center; width: 100%; justify-content: space-between;">
                             <div style="font-family:'Syne'; font-weight:800; color:var(--g3); min-width:30px">${qty}x</div>
                             <span style="color:var(--border); font-weight: 300;">|</span>
-                            <div style="text-align: center; flex: 1;">${kwhDisplay}</div>
+                            <div style="text-align: center; flex: 1;">${kwhVal > 0 ? kwhVal + ' <small>kWh</small>' : formatValue(null, "", "LOAD")}</div>
                             <span style="color:var(--border); font-weight: 300;">|</span>
                             <div style="display: flex; flex-direction: column; align-items: flex-end; min-width:50px;">
-                                <div style="line-height:1">${hrsDisplay}</div>
-                                ${freqTag}
+                                <div style="line-height:1">${hrs > 0 ? hrs + ' <small>Hrs</small>' : formatValue(null, "", "TIME")}</div>
+                            </div>
+                        </div>`;
+                } else {
+                    dispEl.innerHTML = formatValue(null, "", labelText.toUpperCase());
+                }
+            };
+
+            // 1. CHECK SYSTEM CONTEXT DATA
+            const systemKeys = ['disco', 'sanctioned_load', 'user_category'];
+            if (!hasData(systemKeys)) {
+                document.getElementById('body-system').innerHTML = emptyMsg("No regional utility context found in AI memory.");
+            } else {
+                document.getElementById('disp-disco').innerHTML = formatValue(d.disco, "", "REGIONAL GRID");
+                document.getElementById('disp-load').innerHTML = formatValue(d.sanctioned_load, "kW", "CAPACITY");
+
+                // Consumer Class Fallback
+                const cat = d.user_category;
+                const catDisplay = cat === 'lifeline' ? 'Lifeline' : (cat === 'protected' ? 'Protected' : (cat ? 'Standard' : null));
+                document.getElementById('disp-protected').innerHTML = catDisplay 
+                    ? `<span class="status-badge">${catDisplay}</span>` 
+                    : formatValue(null, "", "CLASS");
+            }
+
+            // 2. CHECK LIFESTYLE DATA
+            const lifestyleKeys = ['person_count', 'property_area', 'floors', 'user_routine'];
+            if (!hasData(lifestyleKeys)) {
+                document.getElementById('body-lifestyle').innerHTML = emptyMsg("Lifestyle fingerprint is currently empty.");
+            } else {
+                document.getElementById('disp-occupants').innerHTML = formatValue(d.person_count, "", "PEOPLE");
+                document.getElementById('disp-area').innerHTML = formatValue(d.property_area, "sq.ft", "AREA");
+                document.getElementById('disp-floors').innerHTML = formatValue(d.floors, "", "LEVELS");
+                const routineMap = { 'standard': 'Standard', 'morning_active': 'Morning Heavy', 'evening_active': 'Evening Heavy', 'all_day': 'Always Active' };
+                document.getElementById('disp-routine').innerHTML = d.user_routine ? routineMap[d.user_routine] : formatValue(null, "", "ROUTINE");
+            }
+
+            // 3. CHECK APPLIANCES DATA
+            const appKeys = ['ac_std_qty', 'ac_inv_qty', 'fan_ac_qty', 'fan_dc_qty', 'f_qty', 'wm_qty', 'wp_qty', 'u_qty', 'k_qty'];
+            if (!hasData(appKeys)) {
+                document.getElementById('body-appliances').innerHTML = emptyMsg("No appliance inventory signatures detected.");
+            } else {
+                const acStdQty = d.ac_std_qty || 0;
+                const acInvQty = d.ac_inv_qty || 0;
+                const acDisp = document.getElementById('disp-ac');
+                const acLabel = document.getElementById('label-ac');
+
+                // Top Label remains clean
+                acLabel.innerHTML = `<i class="fa fa-snowflake"></i> Air Conditioning`;
+
+                if (acStdQty > 0 || acInvQty > 0) {
+                    let rowsHtml = `<div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">`;
+
+                    const renderAcRow = (qty, hrs, freq, typeLabel, powerKW) => {
+                        // Calculate kWh for this specific type for display
+                        const freqVal = parseFloat(freq) || 0;
+                        const kwh = Math.round(qty * powerKW * hrs * freqVal);
+                        const freqTag = hrs > 0 ? `<span style="font-size:0.5rem; color:var(--text-dim); text-transform:uppercase;">${formatFrequencyTag(freq)}</span>` : "";
+
+                        const kwhDisplay = kwh > 0 ? `${kwh} <small>kWh</small>` : formatValue(null, "", "kWh");
+                        const hrsDisplay = hrs > 0 ? `${hrs} <small>Hrs</small>` : formatValue(null, "", "Hrs");
+
+                        return `
+                            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; font-size: 0.85rem;">
+                                <div style="min-width:65px; line-height:1.1">
+                                    <b style="color:var(--g3)">${qty}x</b> 
+                                    <div style="font-size:0.6rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.02em">${typeLabel}</div>
+                                </div>
+                                <span style="color:var(--border); font-weight: 300;">|</span>
+                                <div style="text-align: center; flex: 1; font-family:'Syne'; font-weight:600;">
+                                    ${kwh > 0 ? kwh : '--'} <small style="font-size:0.6rem; font-weight:400; color:var(--text-dim)">kWh</small>
+                                </div>
+                                <span style="color:var(--border); font-weight: 300;">|</span>
+                                <div style="text-align: right; min-width:60px; line-height:1.1">
+                                    <div style="font-weight:600">${hrs > 0 ? hrs + ' <small>Hrs</small>' : '--'}</div>
+                                    ${freqTag}
+                                </div>
+                            </div>
+                        `;
+                    };
+
+                    if (acStdQty > 0) rowsHtml += renderAcRow(acStdQty, d.ac_std_val, d.ac_std_freq, 'Standard', 1.5);
+                    if (acInvQty > 0) rowsHtml += renderAcRow(acInvQty, d.ac_inv_val, d.ac_inv_freq, 'Inverter', 0.75);
+                    
+                    rowsHtml += `</div>`;
+                    acDisp.innerHTML = rowsHtml;
+                } else {
+                    acDisp.innerHTML = formatValue(null, "", "A/C UNITS");
+                }
+                renderAppliance('fridge', 'f', 'Fridge', 'fa fa-box', d.refrigerator_monthly);
+                renderAppliance('wm', 'wm', 'Washing Machine', 'fa fa-soap', d.wm_monthly);
+                renderAppliance('wp', 'wp', 'Pump', 'fa fa-water', d.wp_monthly);
+                renderAppliance('ups', 'u', 'UPS', 'fa fa-car-battery', d.ups_monthly);
+                renderAppliance('k', 'k', 'Kitchen', 'fa fa-utensils', d.kitchen_monthly);
+
+                // ─── 4. FANS (SPECIAL DUAL DISPLAY - QUANTITIES LEFT, KWH RIGHT) ───
+                const fAc = d.fan_ac_qty || 0;
+                const fDc = d.fan_dc_qty || 0;
+                const fanDisp = document.getElementById('disp-fans');
+
+                if (fAc > 0 || fDc > 0) {
+                    let qtyStack = `<div style="display: flex; flex-direction: column; line-height: 1.1;">`;
+                    if (fAc > 0) qtyStack += `<span><b style="color:var(--g3)">${fAc}x</b> <small style="font-size:0.6rem; color:var(--text-dim)">Standard</small></span>`;
+                    if (fDc > 0) qtyStack += `<span><b style="color:var(--g3)">${fDc}x</b> <small style="font-size:0.6rem; color:var(--text-dim)">Inverter</small></span>`;
+                    qtyStack += `</div>`;
+
+                    fanDisp.innerHTML = `
+                        <div style="display: flex; align-items: center; width: 100%; justify-content: space-between;">
+                            ${qtyStack}
+                            <div style="display:flex; align-items:center;">
+                                <span style="color:var(--border); margin: 0 12px; font-weight: 300; font-size: 1.2rem;">|</span>
+                                <div style="white-space: nowrap;">
+                                    ${Math.round(d.fan_monthly || 0)} <small style="font-size:0.7rem; color:var(--text-dim)">kWh</small>
+                                </div>
                             </div>
                         </div>
                     `;
                 } else {
-                    labelEl.innerHTML = `<i class="${icon}"></i> ${labelText}`;
-                    dispEl.innerText = "--";
+                    fanDisp.innerHTML = formatValue(null, "", "FAN INVENTORY");
                 }
-            };
 
-            // ─── 2. SYSTEM CONTEXT ───
-            document.getElementById('disp-disco').innerText = d.disco || '--';
-            document.getElementById('disp-load').innerHTML = formatValue(d.sanctioned_load, "kW");
-
-            const cat = d.user_category || 'standard';
-            const catDisplay = cat === 'lifeline' ? 'Lifeline' : (cat === 'protected' ? 'Protected' : 'Standard');
-            document.getElementById('disp-protected').innerHTML = `<span class="status-badge">${catDisplay}</span>`;
-
-            document.getElementById('disp-occupants').innerHTML = formatValue(d.person_count);
-            document.getElementById('disp-area').innerHTML = formatValue(d.property_area, "sq.ft");
-            document.getElementById('disp-floors').innerHTML = formatValue(d.floors);
-            
-            const routineMap = { 'standard': 'Standard', 'morning_active': 'Morning Heavy', 'evening_active': 'Evening Heavy', 'all_day': 'Always Active' };
-            document.getElementById('disp-routine').innerText = d.user_routine ? routineMap[d.user_routine] : 'Not Set';
-
-            // ─── 3. APPLIANCES (AC, Fridge, Washer, Pump, UPS) ───
-            renderAppliance('ac', 'ac', 'AC', 'fa fa-snowflake', d.ac_monthly);
-            renderAppliance('fridge', 'f', 'Fridge', 'fa fa-box', d.refrigerator_monthly);
-            renderAppliance('wm', 'wm', 'Washing Machine', 'fa fa-soap', d.wm_monthly);
-            renderAppliance('wp', 'wp', 'Pump', 'fa fa-water', d.wp_monthly);
-            renderAppliance('ups', 'u', 'UPS', 'fa fa-car-battery', d.ups_monthly);
-            renderAppliance('k', 'k', 'Kitchen', 'fa fa-utensils', d.kitchen_monthly);
-
-            // ─── 4. FANS (SPECIAL DUAL DISPLAY - QUANTITIES LEFT, KWH RIGHT) ───
-            const fAc = d.fan_ac_qty || 0;
-            const fDc = d.fan_dc_qty || 0;
-            const fanDisp = document.getElementById('disp-fans');
-
-            if (fAc > 0 || fDc > 0) {
-                let qtyStack = `<div style="display: flex; flex-direction: column; line-height: 1.1;">`;
-                if (fAc > 0) qtyStack += `<span><b style="color:var(--g3)">${fAc}x</b> <small style="font-size:0.6rem; color:var(--text-dim)">Standard</small></span>`;
-                if (fDc > 0) qtyStack += `<span><b style="color:var(--g3)">${fDc}x</b> <small style="font-size:0.6rem; color:var(--text-dim)">Inverter</small></span>`;
-                qtyStack += `</div>`;
-
-                fanDisp.innerHTML = `
-                    <div style="display: flex; align-items: center; width: 100%; justify-content: space-between;">
-                        ${qtyStack}
-                        <div style="display:flex; align-items:center;">
-                             <span style="color:var(--border); margin: 0 12px; font-weight: 300; font-size: 1.2rem;">|</span>
-                             <div style="white-space: nowrap;">
-                                ${Math.round(d.fan_monthly || 0)} <small style="font-size:0.7rem; color:var(--text-dim)">kWh</small>
-                             </div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                fanDisp.innerText = "--";
+                document.getElementById('disp-mean').innerHTML = d.mean_hourly 
+                    ? `${d.mean_hourly.toFixed(4)} <small>kW</small>` 
+                    : formatValue(null, "", "LOAD_FACTOR");
             }
-
-            document.getElementById('disp-mean').innerHTML = d.mean_hourly ? `${d.mean_hourly.toFixed(4)} <small>kW</small>` : "--";
 
             // ─── 5. HISTORY ───
             historyLoader.style.display = 'none';
@@ -452,11 +905,81 @@
                 historyLoader.style.display = 'block';
                 historyLoader.innerHTML = "<div class='empty-state'>No history found.</div>";
             }
+
+            setTimeout(() => {
+                document.querySelector('.main-container').classList.add('data-ready');
+            }, 400);
+
         }).catch(err => {
             console.error(err);
             document.getElementById('history-loader').innerHTML = "<div class='empty-state'>Error syncing data. Check Firestore connection.</div>";
         });
     });
+
+    /**
+     * THE NEURAL BRAIN: Logic Pool for Dynamic Messaging
+     * Add more cases here in the future to expand the AI's "vocabulary"
+     */
+    function getNeuralBriefing(data, score, historyCount, gaps) {
+        const hasHighLoads = (data.ac_std_qty > 0 || data.ac_inv_qty > 0 || data.f_qty > 0);
+        const isInefficient = (data.ac_std_qty > 0 || data.f_type === 'old');
+        const isNew = historyCount < 2;
+
+        // Case 1: Initial/Empty Profile
+        if (score < 30) {
+            return {
+                status: "Neural Vacuum", color: "#f87171",
+                html: "The AI memory bank is <b>Empty</b>. Without structural data, we are relying on blind national averages. Prediction accuracy is currently <b>Critically Low</b>."
+            };
+        }
+
+        // Case 2: Missing High-Consumption Signatures
+        if (!hasHighLoads) {
+            return {
+                status: "Signature Deficit", color: "#fbbf24",
+                html: "Context synced, but we are missing <b>High-Load Signatures</b> (AC/Fridge). The AI can predict your base lighting, but it cannot model your peak summer slab risks."
+            };
+        }
+
+        // Case 3: High Hardware, Low History (The "User's State")
+        if (score >= 60 && historyCount < 5) {
+            return {
+                status: "Cognitive Alignment", color: "#34d399",
+                html: "Hardware inventory is <b>fully mapped</b>. The AI now understands your 'Theoretical Peak,' but it needs more history to calculate your <b>Behavioral Offset</b> (lifestyle habits)."
+            };
+        }
+
+        // Case 4: Detects Inefficiency Bottlenecks
+        if (isInefficient && score > 70) {
+            return {
+                status: "Efficiency Latency", color: "#fbbf24",
+                html: "Neural mapping complete. Models show <b>Non-Inverter bottlenecks</b> in your memory. While the AI is confident, it expects high volatility in your summer transition months."
+            };
+        }
+
+        // Case 5: Near Mastery
+        if (score >= 85 && score < 100) {
+            return {
+                status: "High-Fidelity", color: "#10b981",
+                html: "System is reaching <b>High-Fidelity</b>. We have enough data to predict slab breaches with 90%+ confidence. Adding the remaining months of history will finalize your digital twin."
+            };
+        }
+
+        // Case 6: Full Mastery
+        if (score >= 100) {
+            return {
+                status: "Neural Mastery", color: "#10b981",
+                html: "<b>Full Environmental Awareness.</b> The AI has perfectly synthesized 12 months of behavior with your physical hardware. You are receiving the highest precision models possible."
+            };
+        }
+
+        // Default Fallback
+        return {
+            status: "Memory Syncing", color: "#34d399",
+            html: "The AI is processing your household footprint. Data quality is sufficient for <b>Standard Regression</b>, but higher temporal depth will improve accuracy."
+        };
+    }
+
 
     function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }
 </script>

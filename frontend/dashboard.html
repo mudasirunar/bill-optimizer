@@ -223,6 +223,9 @@
         .card-action i { transition: transform 0.25s; }
         .card:hover .card-action i { transform: translateX(4px); }
 
+        #user-name-display, #greeting-display {
+            text-transform: capitalize !important;
+        }
         /* ─── TIP CARD ─── */
         .static-card {
             margin-top: 44px; border-radius: 18px; padding: 24px 28px;
@@ -326,6 +329,7 @@
                 <div class="dropdown-menu">
                     <a href="setup-profile.html"><i class="fa fa-cog"></i> Setup Profile</a>
                     <a href="ai-memory.html"><i class="fa fa-brain"></i> AI Memory</a>
+                    <a href="nepra-info.html"><i class="fa fa-landmark"></i> NEPRA Info</a>
                     <hr>
                     <a href="#" onclick="logout()" class="logout-link"><i class="fa fa-sign-out-alt"></i> Logout</a>
                 </div>
@@ -336,7 +340,9 @@
     <header class="hero-section">
         <div class="hero-orb"></div>
         <div class="hero-content">
-            <span class="welcome-tag"><span class="pulse-dot"></span>&nbsp; Welcome back</span>
+            <span class="welcome-tag">
+                <span class="pulse-dot"></span>&nbsp; 
+                <span id="greeting-display">Welcome</span> </span>
             <h1>Smart Power for<br><span class="highlight">Pakistan</span></h1>
             <p>Predict, Simulate, and Optimize. Your AI companion for navigating NEPRA 2026 tariffs.</p>
             <div class="hero-stats">
@@ -374,13 +380,6 @@
                 <p>Simulate individual appliances and find hidden savings in your daily usage.</p>
                 <div class="card-action">Try Simulator <i class="fa fa-arrow-right"></i></div>
             </div>
-            <div class="card" onclick="window.location.href='nepra-info.html'">
-                <div class="card-status status-info">Manual</div>
-                <div class="card-icon"><i class="fa fa-landmark"></i></div>
-                <h3>NEPRA Info</h3>
-                <p>Official 2026 tariff structures, slabs, and rebased rates at a glance.</p>
-                <div class="card-action">View Rates <i class="fa fa-arrow-right"></i></div>
-            </div>
         </div>
 
         <!-- TIP CARD — shell transitions separately from inner content -->
@@ -410,7 +409,6 @@
         <i class="fa fa-chevron-up"></i>
     </button>
 
-    <script src="js/firebase-config.js"></script>
     <script src="js/auth.js"></script>
     <script>
     /* ════════════════════════════════════════════════════
@@ -437,7 +435,6 @@
     function buildPersonalisedPool(d) {
         const pool = [];
         const histMonths = (d.bill_history || []).length;
-        // Need ≥2 months for a reliable average
         const avgUnits = histMonths >= 2 ? (d.historical_avg_units || 0) : 0;
         const hasHistory = histMonths >= 2 && avgUnits > 0;
 
@@ -592,8 +589,9 @@
     firebase.auth().onAuthStateChanged(user => {
         if (!user) { window.location.href = "index.html"; return; }
 
-        document.getElementById('user-name-display').innerText =
-            user.displayName || user.email.split('@')[0];
+        const initialName = user.displayName ? user.displayName.split(' ')[0] : user.email.split('@')[0];
+        document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
+        document.getElementById('greeting-display').innerText = `Welcome, ${initialName}`;
         if (user.photoURL) document.getElementById('user-pfp').src = user.photoURL;
 
         // Show general tips immediately — no spinner, no delay
@@ -604,10 +602,30 @@
         db.collection('users').doc(user.uid).get().then(doc => {
             if (!doc.exists) return;
             const d = doc.data();
-            // Only upgrade if the user has put in at least something useful
+
+            // ── GREETING LOGIC ──
+            let firstName = "";
+            
+            if (d.firstName) {
+                // NEW USERS: Use the explicit field we added to signup
+                firstName = d.firstName;
+            } else if (user.displayName) {
+                // OLD USERS: Split their full name string and take the first part
+                firstName = user.displayName.split(' ')[0];
+            } else {
+                // FALLBACK: Part of the email
+                firstName = user.email.split('@')[0];
+            }
+            
+            // Update the Hero Greeting with the clean First Name
+            document.getElementById('greeting-display').innerText = `Welcome back, ${firstName}`;
+
+            // Update Nav name (Keep full name here for professionalism)
+            document.getElementById('user-name-display').innerText = d.displayName || user.displayName || user.email.split('@')[0];
+            
             const hasData = (d.sanctioned_load > 0) || ((d.bill_history || []).length > 0) || ((d.ac_qty || 0) > 0);
             if (hasData) startTipEngine(d);
-        }).catch(() => { /* offline — keep general tips */ });
+        }).catch(err => console.warn("Sync error:", err));
     });
 
     function logout() {

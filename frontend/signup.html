@@ -198,6 +198,25 @@
             margin-bottom: 26px; margin-top: 4px;
         }
 
+        /* ─── PASSWORD RULES HINT ─── */
+        .password-rules {
+            display: none; /* Shown via JS onFocus */
+            font-size: 0.68rem;
+            color: var(--g4);
+            margin-top: 8px;
+            line-height: 1.4;
+            padding: 8px 12px;
+            background: rgba(52, 211, 153, 0.05);
+            border-radius: 8px;
+            border-left: 2px solid var(--g2);
+            animation: fadeInRules 0.3s ease;
+        }
+
+        @keyframes fadeInRules {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* Two-col row */
         .input-row {
             display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
@@ -238,6 +257,34 @@
             color: var(--text); font-family: 'DM Sans', sans-serif;
             font-size: 0.9rem; outline: none;
             transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+        }
+
+        .divider {
+            display: flex; align-items: center; gap: 12px;
+            margin: 20px 0; font-size: 0.75rem;
+            color: var(--text-dim); letter-spacing: 0.05em;
+        }
+        .divider::before, .divider::after {
+            content: ''; flex: 1;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-google {
+            width: 100%; padding: 12px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 11px;
+            color: var(--text-muted); font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem; font-weight: 500; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+        }
+        .btn-google:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: var(--border-hover);
+            box-shadow: 0 0 18px var(--glow);
+            transform: translateY(-1px);
+            color: var(--text);
         }
         
         /* ── FIX: Hides the native Edge/IE password reveal eye icon ── */
@@ -381,10 +428,17 @@
                 <span id="error-text"></span>
             </div>
 
-            <div class="input-group">
-                <label>Full Name</label>
-                <input type="text" id="name" placeholder="Ali Hassan"
-                    onkeydown="if(event.key==='Enter') document.getElementById('email').focus()">
+            <div class="input-row">
+                <div class="input-group">
+                    <label>First Name</label>
+                    <input type="text" id="fname" placeholder="Ali" 
+                        onkeydown="if(event.key==='Enter') document.getElementById('lname').focus()">
+                </div>
+                <div class="input-group">
+                    <label>Last Name</label>
+                    <input type="text" id="lname" placeholder="Hassan"
+                        onkeydown="if(event.key==='Enter') document.getElementById('email').focus()">
+                </div>
             </div>
 
             <div class="input-group">
@@ -396,9 +450,10 @@
             <div class="input-group">
                 <label>Password</label>
                 <div class="field-wrapper">
-                    <input type="password" id="pass" placeholder="Min. 6 characters"
+                    <input type="password" id="pass" placeholder="••••••••"
                         oninput="checkStrength(this.value)"
-                        onkeydown="if(event.key==='Enter') document.getElementById('confirm-pass').focus()">
+                        onkeydown="if(event.key==='Enter') document.getElementById('confirm-pass').focus()"
+                        onfocus="showRules(true)" onblur="showRules(false)">
                     <i class="fa fa-eye toggle-password" onclick="togglePass('pass', this)"></i>
                 </div>
                 <div class="strength-bar" id="strength-bar">
@@ -407,19 +462,29 @@
                     <div class="strength-seg" id="s3"></div>
                     <div class="strength-seg" id="s4"></div>
                 </div>
+                <p id="pass-rules" class="password-rules">
+                    <i class="fa fa-info-circle"></i> Use 8+ characters with 1 capital and 1 digit.
+                </p>
             </div>
 
             <div class="input-group">
                 <label>Confirm Password</label>
                 <div class="field-wrapper">
-                    <input type="password" id="confirm-pass" placeholder="Repeat password"
-                        onkeydown="if(event.key==='Enter') submitSignup()">
+                    <input type="password" id="confirm-pass" placeholder="••••••••" 
+                    onfocus="showRules(true)" onblur="showRules(false)" onkeydown="if(event.key==='Enter') submitSignup()">
                     <i class="fa fa-eye toggle-password" onclick="togglePass('confirm-pass', this)"></i>
                 </div>
             </div>
 
             <button class="btn-primary" onclick="submitSignup()">
-                <i class="fa fa-bolt" style="margin-right:6px;font-size:0.85em"></i> Create Account
+                <i class="fa fa-bolt" style="margin-right:6px;"></i> Create Account
+            </button>
+
+            <div class="divider">OR</div>
+
+            <button class="btn-google" onclick="handleGoogleLogin()">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="17">
+                Sign up with Google
             </button>
 
             <p class="terms-note">By signing up you agree to our Terms of Service and Privacy Policy.</p>
@@ -429,6 +494,7 @@
     </div>
 
     <script>
+        function showRules(visible) { document.getElementById('pass-rules').style.display = visible ? 'block' : 'none'; }
         function togglePass(id, icon) {
             const input = document.getElementById(id);
             if (input.type === 'password') {
@@ -456,11 +522,27 @@
 
         function submitSignup() {
             handleSignUp(
-                document.getElementById('name').value,
+                document.getElementById('fname').value,
+                document.getElementById('lname').value,
                 document.getElementById('email').value,
                 document.getElementById('pass').value,
                 document.getElementById('confirm-pass').value
             );
+        }
+
+        // Update checkStrength to match new 8-char rule
+        function checkStrength(val) {
+            const segs = [document.getElementById('s1'), document.getElementById('s2'), document.getElementById('s3'), document.getElementById('s4')];
+            segs.forEach(s => s.className = 'strength-seg');
+            if (!val) return;
+            let score = 0;
+            if (val.length >= 8) score++;
+            if (/[A-Z]/.test(val)) score++;
+            if (/[0-9]/.test(val)) score++;
+            if (/[^A-Za-z0-9]/.test(val)) score++;
+            
+            const cls = score <= 1 ? 'weak' : score <= 2 ? 'medium' : 'strong';
+            for (let i = 0; i < score; i++) segs[i].classList.add(cls);
         }
     </script>
 

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Setup Profile | Bill Optimizer</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png?v=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -48,9 +49,60 @@
             background-size: 48px 48px; pointer-events: none;
         }
 
+        /* ─── DYNAMIC FLOATING COMPLETENESS ─── */
+        /* ─── UNIFIED PROGRESS TRACKER (Static & Floating) ─── */
+.completeness-wrap {
+    text-align: right;
+    flex-shrink: 0;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                opacity 0.3s, 
+                padding 0.3s;
+    z-index: 1100; /* Stays above everything */
+}
+
+/* State when docked in the header */
+.completeness-label { 
+    font-size: 0.72rem; 
+    color: var(--text-dim); 
+    margin-bottom: 6px; 
+    text-transform: uppercase; 
+    letter-spacing: 0.08em; 
+}
+
+/* State when floating on scroll */
+.completeness-wrap.floating {
+    position: fixed;
+    top: 80px; /* Safely below the 68px Navbar */
+    right: 5%;
+    background: rgba(13, 26, 18, 0.85); /* Dark Glass Effect */
+    backdrop-filter: blur(12px);
+    padding: 12px 18px;
+    border-radius: 22px;
+    border: 1px solid var(--border-hover);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px var(--glow);
+    transform: scale(0.8); /* Slightly smaller to save space */
+}
+
+.completeness-wrap.floating .completeness-label {
+    font-size: 0.55rem;
+    margin-bottom: 2px;
+    color: var(--g3);
+    font-weight: 800;
+}
+
+/* Mobile tweak: Moves progress to bottom right for thumb access */
+@media (max-width: 640px) {
+    .completeness-wrap.floating {
+        top: auto;
+        bottom: 30px; 
+        right: 20px;
+        transform: scale(0.85);
+    }
+}
+
         /* ─── NAVBAR ─── */
         .navbar {
-            position: sticky; top: 0; z-index: 1000;
+            position: sticky; top: 0; z-index: 1200;
             height: 68px; display: flex; align-items: center; justify-content: space-between;
             padding: 0 5%;
             background: rgba(3,10,6,0.75); backdrop-filter: blur(20px) saturate(180%);
@@ -97,7 +149,7 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px var(--glow);
             opacity: 0; visibility: hidden; pointer-events: none;
             transform: translateY(-8px) scale(0.97);
-            transition: opacity 0.22s ease, transform 0.22s ease, visibility 0s linear 0.22s; z-index: 999;
+            transition: opacity 0.22s ease, transform 0.22s ease, visibility 0s linear 0.22s; z-index: 1300;
         }
         .profile-dropdown:hover .dropdown-menu, .profile-dropdown:focus-within .dropdown-menu {
             opacity: 1; visibility: visible; pointer-events: all;
@@ -144,8 +196,6 @@
         .page-header p { color: var(--text-dim); font-size: 0.92rem; max-width: 480px; }
 
         /* Completeness badge */
-        .completeness-wrap { text-align: right; flex-shrink: 0; }
-        .completeness-label { font-size: 0.72rem; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.08em; }
         .completeness-ring {
             width: 64px; height: 64px; margin: 0 auto;
             position: relative; display: flex; align-items: center; justify-content: center;
@@ -545,6 +595,10 @@
             padding-right: 45px !important;
         }
 
+        .input-wrap input {
+            padding-right: 50px !important;
+        }
+
         /* Styling the frequency select to match inputs */
         .freq-select {
             font-size: 0.8rem !important;
@@ -628,6 +682,11 @@
         }
         .model-badge i { font-size: 0.65rem; }
 
+        /* This forces the first letter of every word to be Capitalized globally */
+        #user-name-display, #greeting-display {
+            text-transform: capitalize !important;
+        }
+
         /* ─── DIVIDER ─── */
         .section-divider {
             display: flex; align-items: center; gap: 14px; margin-bottom: 20px;
@@ -684,6 +743,7 @@
                 <div class="dropdown-menu">
                     <a href="dashboard.html"><i class="fa fa-home"></i> Dashboard</a>
                     <a href="ai-memory.html"><i class="fa fa-brain"></i> AI Memory</a>
+                    <a href="nepra-info.html"><i class="fa fa-landmark"></i> NEPRA Info</a>
                     <hr>
                     <a href="#" onclick="logout()" class="logout-link"><i class="fa fa-sign-out-alt"></i> Logout</a>
                 </div>
@@ -865,21 +925,29 @@
 
            <div class="form-grid">
                 <div class="input-group full-width">
-                    <label><i class="fa fa-snowflake"></i> Air Conditioners</label>
-                    <div class="appliance-row" style="grid-template-columns: 0.8fr 1.2fr 1fr 1.2fr;">
-                        <input type="number" id="ac_qty" placeholder="Qty" oninput="toggleApplianceRow('ac')">
-                        
-                        <select id="ac_type" class="freq-select" onchange="updateCompleteness()">
-                            <option value="standard">Standard</option>
-                            <option value="inverter">DC Inverter</option>
-                        </select>
+                    <label><i class="fa fa-snowflake"></i> Standard AC </label>
+                        <div class="appliance-row" style="grid-template-columns: 0.8fr 1fr 1.2fr;">
+                            <input type="number" id="ac_std_qty" placeholder="Qty" oninput="toggleApplianceRow('ac_std')">
+                            <div class="input-wrap">
+                                <input type="number" id="ac_std_val" placeholder="Usage" oninput="toggleApplianceRow('ac_std')" class="has-unit">
+                                <span class="input-unit">Hrs</span>
+                            </div>
+                            <select id="ac_std_freq" class="freq-select" onchange="updateCompleteness()">
+                                <option value="30">Daily</option>
+                                <option value="4.3">Weekly</option>
+                            </select>
+                        </div>
+                    </div>
 
+                <div class="input-group full-width">
+                    <label><i class="fa fa-bolt-lightning"></i> Inverter AC </label>
+                    <div class="appliance-row" style="grid-template-columns: 0.8fr 1fr 1.2fr;">
+                        <input type="number" id="ac_inv_qty" placeholder="Qty" oninput="toggleApplianceRow('ac_inv')">
                         <div class="input-wrap">
-                            <input type="number" id="ac_val" placeholder="Usage" oninput="toggleApplianceRow('ac')" class="has-unit">
+                            <input type="number" id="ac_inv_val" placeholder="Usage" oninput="toggleApplianceRow('ac_inv')" class="has-unit">
                             <span class="input-unit">Hrs</span>
                         </div>
-
-                        <select id="ac_freq" class="freq-select" onchange="updateCompleteness()">
+                        <select id="ac_inv_freq" class="freq-select" onchange="updateCompleteness()">
                             <option value="30">Daily</option>
                             <option value="4.3">Weekly</option>
                         </select>
@@ -1116,7 +1184,7 @@
 
     <!-- TOAST -->
     <div class="toast" id="toast">
-        <i class="fa fa-check-circle"></i>
+        <i id="toast-icon" class="fa fa-check-circle"></i>
         <span id="toast-msg">Saved!</span>
     </div>
 
@@ -1155,7 +1223,7 @@
             else setCategory('lifeline');
 
             // 4. Load Appliance Details (Synchronized with UI changes)
-            const appliances = ['ac', 'f', 'wp', 'k', 'u', 'wm'];
+            const appliances = ['ac_std', 'ac_inv', 'f', 'wp', 'k', 'u', 'wm'];
             appliances.forEach(prefix => {
                 setValue(prefix + '_qty', d[prefix + '_qty'], '');
                 setValue(prefix + '_val', d[prefix + '_val'], '');
@@ -1199,41 +1267,82 @@
         });
     });
 
-    function setFormState(loading) {
+    function setFormState(loading, isSyncing = false) {
         const container = document.querySelector('.main-container');
         const syncBtn = document.getElementById('syncBtn');
-        const allInputs = document.querySelectorAll('input, select, .btn-add-month, .category-option');
+        const addBtn = document.getElementById('addMonthBtn');
+        const allInputs = document.querySelectorAll('input, select, .category-option');
 
         if (loading) {
+            // Trigger the grey-out effect
             container.classList.add('is-loading');
             syncBtn.disabled = true;
-            syncBtn.innerHTML = '<i class="fa fa-circle-notch fa-spin"></i> Initializing Memory...';
+            if (addBtn) addBtn.disabled = true;
+
+            if (!isSyncing) {
+                syncBtn.innerHTML = '<i class="fa fa-circle-notch fa-spin"></i> Initializing Memory...';
+            }
         } else {
+            // Remove grey-out and restore text
             container.classList.remove('is-loading');
             syncBtn.disabled = false;
+            if (addBtn) addBtn.disabled = false;
             syncBtn.innerHTML = '<i class="fa fa-brain"></i> Sync AI Memory';
         }
-        allInputs.forEach(el => el.disabled = loading);
+
+        // Disable all fields so they are unclickable
+        allInputs.forEach(el => {
+            if (el.tagName === "INPUT" || el.tagName === "SELECT") {
+                el.disabled = loading;
+            } else {
+                // For category divs
+                el.style.pointerEvents = loading ? "none" : "auto";
+            }
+        });
     }
 
     function updateCompleteness() {
         let score = 0;
-        const totalPoints = 9;
+        // Total Points: 3 (Tariff) + 4 (Lifestyle) + 7 (Inventory) + 1 (History) = 15
+        const totalPoints = 15; 
+        
         const gv = (id) => document.getElementById(id)?.value || "";
         const v  = (id) => parseFloat(document.getElementById(id)?.value) || 0;
 
+        // --- 1. Location & Tariff (3 pts) ---
         if (gv('disco') !== "") score++;
         if (v('load') > 0) score++;
         if (selectedCategory) score++;
+
+        // --- 2. Household Dynamics (4 pts) ---
         if (v('person_count') > 0) score++;
         if (gv('user_routine') !== "") score++;
         if (v('property_area') > 0) score++;
         if (gv('floors') !== "") score++;
         
-        // Point 8: Fans (Counts if either Standard or Inverter is provided)
+        // --- 3. Household Inventory (7 pts) ---
+        // Fans (AC or DC)
         if (v('fan_ac_qty') > 0 || v('fan_dc_qty') > 0) score++;
+        
+        // Air Conditioners (Standard or Inverter)
+        if (v('ac_std_qty') > 0 || v('ac_inv_qty') > 0) score++;
 
-        // Point 9: History (At least one valid month)
+        // Refrigerator
+        if (v('f_qty') > 0) score++;
+
+        // Washing Machine
+        if (v('wm_qty') > 0) score++;
+
+        // Water Pump
+        if (v('wp_qty') > 0) score++;
+
+        // UPS System
+        if (v('u_qty') > 0) score++;
+
+        // Kitchen Appliances
+        if (v('k_qty') > 0) score++;
+
+        // --- 4. Historical Record (1 pt) ---
         const histRow = document.querySelector('.bill-history-row');
         if (histRow) {
             const m = histRow.querySelector('.hist-month').value;
@@ -1241,19 +1350,22 @@
             if (m !== "" && parseFloat(u) > 0) score++;
         }
 
+        // --- Calculate & Update Ring ---
         const pct = Math.round((score / totalPoints) * 100);
         const ring = document.getElementById('ringFill');
-        if (ring) ring.style.strokeDashoffset = 163 - (pct / 100) * 163;
+        if (ring) {
+            // 163 is the dash-offset for your SVG circle
+            ring.style.strokeDashoffset = 163 - (pct / 100) * 163;
+        }
         document.getElementById('pctLabel').textContent = pct + '%';
-        
     }
 
     async function saveProfile() {
         const user = firebase.auth().currentUser;
         if (!user) return;
 
+        setFormState(true, true);
         const btn = document.getElementById('syncBtn');
-        btn.disabled = true;
         btn.innerHTML = '<i class="fa fa-circle-notch fa-spin"></i> Syncing...';
 
         try {
@@ -1265,8 +1377,9 @@
             // ─── 2. APPLIANCE CALCULATIONS (As per your Logic) ───
             
             // AC: Hours-based scaling
-            const ac_load    = gv('ac_type') === 'inverter' ? 0.75 : 1.5; 
-            const ac_monthly = v('ac_qty') * ac_load * getSafeVal('ac') * v('ac_freq');
+            const ac_std_monthly = v('ac_std_qty') * 1.50 * getSafeVal('ac_std') * v('ac_std_freq');
+            const ac_inv_monthly = v('ac_inv_qty') * 0.75 * getSafeVal('ac_inv') * v('ac_inv_freq');
+            const total_ac_monthly = ac_std_monthly + ac_inv_monthly;
 
             // Refrigerator (Explicit Duty Cycle Model)
             const f_type = gv('f_type');
@@ -1301,7 +1414,7 @@
             const person_baseload = Math.max(v('person_count'), 1) * 14.0;
             const area_baseload   = Math.min((v('property_area') || 500) * 0.006, 15.0);
             
-            const mean_hourly = (ac_monthly + f_monthly + wp_monthly + k_monthly + 
+            const mean_hourly = (total_ac_monthly + f_monthly + wp_monthly + k_monthly + 
                                 u_monthly + wm_monthly + total_fan_monthly + 
                                 person_baseload + area_baseload) / 720;
 
@@ -1330,7 +1443,9 @@
                 fan_qty:          v('fan_qty'),
 
                 // Raw inputs sanitized for AI (No Contradictions)
-                ac_qty: v('ac_qty'), ac_type: gv('ac_type'), ac_val: getSafeVal('ac'), ac_freq: v('ac_freq'),
+                ac_std_qty: v('ac_std_qty'), ac_std_val: getSafeVal('ac_std'), ac_std_freq: v('ac_std_freq'),
+                ac_inv_qty: v('ac_inv_qty'), ac_inv_val: getSafeVal('ac_inv'), ac_inv_freq: v('ac_inv_freq'),
+                ac_qty: v('ac_std_qty') + v('ac_inv_qty'),
                 f_qty:  v('f_qty'),  f_type:  gv('f_type'),  f_val:  getSafeVal('f'), f_freq: v('f_freq'),
                 wm_qty: v('wm_qty'), wm_type: gv('wm_type'), wm_val: getSafeVal('wm'), wm_freq: v('wm_freq'),
                 wp_qty: v('wp_qty'), wp_type: gv('wp_type'), wp_val:  getSafeVal('wp'), wp_freq: v('wp_freq'),
@@ -1339,12 +1454,12 @@
                 fan_ac_qty: v('fan_ac_qty'), fan_dc_qty: v('fan_dc_qty'), fan_qty: v('fan_ac_qty') + v('fan_dc_qty'),
 
                 // Computed Monthly kWh for RF Features
-                ac_monthly,
+                ac_monthly:           total_ac_monthly,
                 refrigerator_monthly: f_monthly,
                 kitchen_monthly:      k_monthly,
                 ups_monthly:          u_monthly,
-                wp_monthly:           wp_monthly, // water pump
-                wm_monthly:           wm_monthly, // washing machine
+                wp_monthly:           wp_monthly, 
+                wm_monthly:           wm_monthly, 
                 fan_monthly:          total_fan_monthly,
 
                 // Derived Anchors
@@ -1357,24 +1472,24 @@
             // ─── 6. CLOUD SYNC & REDIRECT ───
             
             // Save to Firestore first (Primary Truth)
-            await db.collection('users').doc(user.uid).set(data, { merge: true });
+            try {
+                await fetch('http://localhost:5000/api/setup_profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid: user.uid, data }),
+                    signal: AbortSignal.timeout(3000) // Don't hang if Flask is off
+                });
+            } catch (apiErr) {
+                console.warn("Flask API offline, but profile saved to Cloud.");
+            }
 
-            // Fire-and-forget Flask notification (No hanging)
-            fetch('http://localhost:5000/api/setup_profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid: user.uid, data })
-            }).catch(() => console.log("Flask offline — Firestore save succeeded"));
-
-            // Visual Feedback & Snappy Redirect
             showToast('AI Memory Updated!');
             setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
 
         } catch (e) {
             console.error("Sync Error:", e);
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa fa-brain"></i> Sync AI Memory';
-            showToast('Sync failed!', 'error');
+            setFormState(false); 
+            showToast('Sync failed!', 'error'); // This will now show the X icon
         }
     }
 
@@ -1463,11 +1578,27 @@
         rows.forEach((r, i) => r.querySelector('.action-holder').style.display = (i === 0) ? 'none' : 'flex');
     }
 
-    function showToast(m, t='success') {
+    function showToast(m, t = 'success') {
         const toast = document.getElementById('toast');
-        document.getElementById('toast-msg').innerText = m;
+        const msg = document.getElementById('toast-msg');
+        const icon = document.getElementById('toast-icon');
+
+        // Set Message
+        msg.innerText = m;
+
+        // Reset and Set Classes/Icons
         toast.className = 'toast ' + t + ' show';
-        setTimeout(() => toast.classList.remove('show'), 3000);
+        
+        if (t === 'error') {
+            icon.className = 'fa fa-circle-xmark'; // The X icon
+        } else {
+            icon.className = 'fa fa-check-circle'; // The Tick icon
+        }
+
+        // Hide after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
     }
 
     function openLoadHelp() { document.getElementById('loadHelpModal').style.display = 'flex'; }
@@ -1475,6 +1606,32 @@
     function openUnitHelp() { document.getElementById('unitHelpModal').style.display = 'flex'; }
     function closeUnitHelp() { document.getElementById('unitHelpModal').style.display = 'none'; }
     function logout() { firebase.auth().signOut().then(() => window.location.href = "index.html"); }
+
+    // ─── FLOATING PROGRESS TRACKER LOGIC ───
+    const progressWrap = document.querySelector('.completeness-wrap');
+    const headerRow = document.querySelector('.header-row');
+    const pageHeader = document.querySelector('.page-header');
+
+    window.addEventListener('scroll', () => {
+        // Determine when the header has scrolled out of view
+        // Navbar height (68) + extra padding
+        const triggerThreshold = pageHeader.offsetTop + pageHeader.offsetHeight - 80;
+
+        if (window.scrollY > triggerThreshold) {
+            if (!progressWrap.classList.contains('floating')) {
+                // MOVE TO BODY: This escapes the CSS Transform Trap of the header
+                document.body.appendChild(progressWrap);
+                progressWrap.classList.add('floating');
+            }
+        } else {
+            if (progressWrap.classList.contains('floating')) {
+                // SNAP BACK: Returns to its original place in the header
+                headerRow.appendChild(progressWrap);
+                progressWrap.classList.remove('floating');
+            }
+        }
+    });
+
 </script>
 </body>
 </html>

@@ -103,6 +103,10 @@
         .user-info span { font-weight: 600; font-size: 0.9rem; display: block; color: var(--text); }
         .user-info small { font-size: 0.72rem; color: var(--text-muted); }
 
+        /* This forces the first letter of every word to be Capitalized globally */
+        #user-name-display, #greeting-display {
+            text-transform: capitalize !important;
+        }
         .profile-dropdown { position: relative; }
         .profile-dropdown::after {
             content: '';
