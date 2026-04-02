@@ -170,3 +170,53 @@ auth.onAuthStateChanged((user) => {
         }
     }
 });
+
+
+/**
+ * Real-Time Path Engine
+ * Logic: Dashboard > [The Actual Last Page You Visited] > [Current Page]
+ */
+function initDynamicBreadcrumb(currentPageTitle) {
+    const breadcrumbEl = document.getElementById('dynamic-breadcrumb');
+    if (!breadcrumbEl) return;
+
+    const ref = document.referrer;
+    const currentPath = window.location.pathname;
+
+    // 1. Map of filenames to Readable Titles
+    const pageMap = {
+        'prediction-hub.html': 'Prediction Hub',
+        'load-forecaster.html': 'Load Forecaster',
+        'appliance-simulator.html': 'Appliance Simulator',
+        'ai-memory.html': 'AI Memory',
+        'setup-profile.html': 'Setup Profile',
+        'nepra-info.html': 'NEPRA Info'
+    };
+
+    // Start with Dashboard as the permanent root
+    let navHTML = `<a href="dashboard.html">Dashboard</a>`;
+
+    // 2. Identify the Referrer (Where you just came from)
+    let lastPageFile = null;
+    let lastPageTitle = null;
+
+    for (const [file, title] of Object.entries(pageMap)) {
+        if (ref.includes(file)) {
+            lastPageFile = file;
+            lastPageTitle = title;
+            break;
+        }
+    }
+
+ 
+    if (lastPageFile && !ref.includes('dashboard.html') && !currentPath.includes(lastPageFile)) {
+        navHTML += ` <i class="fa fa-chevron-right" style="font-size:0.5rem; margin:0 8px"></i> 
+                     <a href="${lastPageFile}">${lastPageTitle}</a>`;
+    }
+
+    // 4. Add Final Tail (Current Page)
+    navHTML += ` <i class="fa fa-chevron-right" style="font-size:0.5rem; margin:0 8px"></i> 
+                 <span>${currentPageTitle}</span>`;
+
+    breadcrumbEl.innerHTML = navHTML;
+}

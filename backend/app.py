@@ -235,9 +235,6 @@ def compute_true_baseload(u: dict, month: int) -> dict:
     fans_kwh = (std_fans * 0.080 + inv_fans * 0.035) * fan_h * 30 * 0.70
  
     # ── AIR CONDITIONING ──
-    # FIX: actual daily hours = user_hours × seasonal_scale
-    # In April (scale=0.20): user's "8hrs/day" → 1.6 actual hrs/day
-    # In June  (scale=1.00): user's "8hrs/day" → 8.0 actual hrs/day
     std_qty  = safe_get(u, 'ac_std_qty', 0.0)
     std_h    = safe_get(u, 'ac_std_val', 0.0)
     std_act  = std_h * ac_sc
@@ -246,7 +243,6 @@ def compute_true_baseload(u: dict, month: int) -> dict:
     inv_qty  = safe_get(u, 'ac_inv_qty', 0.0)
     inv_h    = safe_get(u, 'ac_inv_val', 0.0)
     inv_act  = inv_h * ac_sc
-    # Inverter modulates: 0.40kW at min load (cool night) → 0.75kW at full load (peak summer)
     inv_kw   = 0.40 + (0.35 * ac_sc)
     inv_kwh  = inv_qty * inv_kw * inv_act * 30
  
@@ -256,23 +252,26 @@ def compute_true_baseload(u: dict, month: int) -> dict:
     # FIX: fridge is always-on. Its energy = duty cycle × rated power × 720h
     # That averages to 43 kWh/mo (old) or 24 kWh/mo (inverter).
     # Small summer bump: compressor works harder when ambient temp is high.
-    f_base   = FRIDGE_MONTHLY_KWH.get(u.get('f_type', 'old'), 43.0)
-    f_kwh    = safe_get(u, 'f_qty', 0.0) * f_base * (1.0 + FRIDGE_SUMMER_BUMP * ac_sc)
+    f_base   = 43.0 if u.get('f_type') == 'old' else 24.0
+    f_kwh    = safe_get(u, 'f_qty', 0.0) * f_base * (1.0 + 0.15 * ac_sc)
  
-    # ── WATER PUMP ──
-    # wp_type is HP value (0.5, 1.0, 1.5, 2.0) → convert to kW
+    # ── 5. WATER PUMP (CRITICAL FREQUENCY FIX) ──
     wp_kw    = safe_get(u, 'wp_type', 1.0) * 0.746
-    wp_kwh   = safe_get(u, 'wp_qty', 0.0) * wp_kw * safe_get(u, 'wp_val', 0.0) * 30
+    # Use wp_freq (30 for Daily, 4.3 for Weekly, 1 for Monthly)
+    wp_freq  = safe_get(u, 'wp_freq', 30.0) 
+    wp_kwh   = safe_get(u, 'wp_qty', 0.0) * wp_kw * safe_get(u, 'wp_val', 0.0) * wp_freq
  
-    # ── KITCHEN ──
-    k_kwh    = safe_get(u, 'k_qty', 0.0) * 1.20 * safe_get(u, 'k_val', 0.0) * 30
- 
-    # ── WASHING MACHINE ── frequency-based (wm_freq is uses/month equivalent)
+    # ── 6. KITCHEN & WASHING (FREQUENCY FIX) ──
+    k_freq   = safe_get(u, 'k_freq', 30.0)
+    k_kwh    = safe_get(u, 'k_qty', 0.0) * 1.20 * safe_get(u, 'k_val', 0.0) * k_freq
+    
     wm_kw    = WM_LOAD_KW.get(u.get('wm_type', 'manual'), 0.35)
-    wm_kwh   = safe_get(u, 'wm_qty', 0.0) * wm_kw * safe_get(u, 'wm_val', 0.0) * safe_get(u, 'wm_freq', 4.3)
+    wm_freq  = safe_get(u, 'wm_freq', 4.3) # Default to weekly
+    wm_kwh   = safe_get(u, 'wm_qty', 0.0) * wm_kw * safe_get(u, 'wm_val', 0.0) * wm_freq
  
-    # ── UPS ── trickle charge model (150W avg during charge sessions)
-    ups_kwh  = safe_get(u, 'u_qty', 0.0) * UPS_AVG_CHARGE_KW * safe_get(u, 'u_val', 0.0) * 30
+    # ── 7. UPS ──
+    u_freq   = safe_get(u, 'u_freq', 30.0)
+    ups_kwh  = safe_get(u, 'u_qty', 0.0) * 0.15 * safe_get(u, 'u_val', 0.0) * u_freq
  
     total    = p_base + a_light + fans_kwh + ac_kwh + f_kwh + wp_kwh + k_kwh + wm_kwh + ups_kwh
  
@@ -605,34 +604,85 @@ def setup_profile():
 @app.route('/api/forecast_24h', methods=['POST'])
 def forecast_24h():
     try:
-        uid      = request.json.get('uid')
-        user_doc = db.collection('users').document(uid).get().to_dict()
+        data = request.json
+        uid = data.get('uid')
+        target_month = int(data.get('month', get_current_month()))
+        
+        user_doc_ref = db.collection('users').document(uid).get()
+        if not user_doc_ref.exists: return jsonify({"error": "User not found"}), 404
+        u = user_doc_ref.to_dict()
 
-        current_month   = get_current_month()
-        physics         = compute_true_baseload(user_doc, current_month)
-        user_mean       = physics["total"] / 720   # derived from physics, not stored value
-        archetype_house = find_archetype_house(user_doc)
-        seed_data       = get_lstm_seed(archetype_house, user_mean, current_month)
-        scaled_seed     = lstm_scaler.transform(seed_data)
-        input_seq       = np.reshape(scaled_seed, (1, 48, len(LSTM_FEATURES)))
-        prediction      = lstm_model.predict(input_seq, verbose=0)
+        # ─── STEP 1: GET THE MASTER GROUND TRUTH (RF MODEL) ───
+        physics = compute_true_baseload(u, target_month)
+        
+        feature_vector = {feat: 0.0 for feat in bill_feats}
+        feature_vector.update({
+            'ac_monthly': physics['ac'], 'kitchen_monthly': physics['kitchen'],
+            'refrigerator_monthly': physics['fridge'], 'ups_monthly': physics['ups'],
+            'wp_monthly': physics['water_pump'], 'weekend_usage': safe_get(u, 'mean_hourly', 0.05),
+            'month_num': float(target_month), 'person_count': max(safe_get(u, 'person_count', 1.0), 1.0),
+            'property_area': safe_get(u, 'property_area', 500.0), 'meta_ac_count': safe_get(u, 'ac_qty'),
+            'meta_fridge_count': safe_get(u, 'f_qty'), 'meta_ups_count': safe_get(u, 'u_qty', 0.0),
+            'floors': safe_get(u, 'floors', 1.0)
+        })
+        
+        # RF Prediction usually returns float64, let's cast to float for safety
+        rf_kwh_monthly = float(rf_model.predict(pd.DataFrame([feature_vector]))[0])
+        master_monthly_kwh = float(calculate_hybrid_units(u, physics, rf_kwh_monthly, target_month))
+        
+        daily_target_kwh = master_monthly_kwh / 30
 
-        ac_scale    = get_seasonal_ac_scale(current_month)
+        # ─── STEP 2: GENERATE THE NEURAL PATTERN (LSTM) ───
+        user_mean = physics["total"] / 720
+        archetype_house = find_archetype_house(u)
+        seed_data = get_lstm_seed(archetype_house, user_mean, target_month)
+        
+        scaled_seed = lstm_scaler.transform(seed_data)
+        input_seq = np.reshape(scaled_seed, (1, 48, len(LSTM_FEATURES)))
+        prediction = lstm_model.predict(input_seq, verbose=0)
+        
+        raw_lstm_values = prediction[0] 
+        raw_sum = float(np.sum(raw_lstm_values)) # FORCE TO FLOAT
+
+        # ─── STEP 3: THE MATHEMATICAL HANDSHAKE ───
+        scaling_factor = daily_target_kwh / raw_sum if raw_sum > 0 else 0
+
         forecast_kw = []
-        for i, v in enumerate(prediction[0]):
-            h       = i % 24
-            raw_val = float(v) * user_mean * 2
-            if 13 <= h <= 17 and ac_scale < 0.15:
-                raw_val *= (0.2 + ac_scale)
-            forecast_kw.append(max(0, round(raw_val, 4)))
+        for v in raw_lstm_values:
+            # v is a float32 from LSTM. We MUST cast to float()
+            aligned_val = float(v) * scaling_factor
+            forecast_kw.append(max(0, round(aligned_val, 4)))
+
+        # ─── STEP 4: NEPRA COST ───
+        history = u.get('bill_history', [])
+        sorted_hist = sorted(history, key=lambda x: x.get('month', '0000-00'))
+        actual_units_history = [float(b.get('units', 0)) for b in sorted_hist if float(b.get('units', 0)) > 5]
+        
+        cat = u.get('user_category', 'lifeline')
+        is_eligible = nepra.check_eligibility(actual_units_history, cat)
+        
+        bill_res = nepra.calculate_bill(
+            units=master_monthly_kwh, 
+            load_kw=safe_get(u, 'sanctioned_load', 1.0), 
+            user_category=cat, 
+            is_eligible=is_eligible
+        )
 
         return jsonify({
-            "status":    "success",
-            "archetype": archetype_house,
-            "month":     current_month,
-            "ac_scale":  ac_scale,
-            "forecast":  forecast_kw,
-            "hours":     list(range(24))
+            "status": "success",
+            "forecast": forecast_kw, # This is now list of standard floats
+            "hours": list(range(24)),
+            "ac_scale": float(get_seasonal_ac_scale(target_month)),
+            "archetype": str(archetype_house),
+            "month": int(target_month),
+            "finance": {
+                "daily_units": float(round(daily_target_kwh, 2)),
+                "monthly_units": float(round(master_monthly_kwh, 1)),
+                "daily_cost": float(round(bill_res['total_bill'] / 30, 2)),
+                "monthly_cost": float(bill_res['total_bill']),
+                "applied_category": str(bill_res['applied_category']),
+                "effective_rate": float(round(bill_res['energy_cost'] / master_monthly_kwh, 2)) if master_monthly_kwh > 0 else 0.0
+            }
         })
     except Exception as e:
         import traceback; traceback.print_exc()

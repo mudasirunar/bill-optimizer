@@ -753,10 +753,8 @@
 
     <!-- PAGE HEADER -->
     <div class="page-header">
-        <div class="breadcrumb">
-            <a href="dashboard.html">Dashboard</a>
-            <i class="fa fa-chevron-right"></i>
-            <span>Profile Setup</span>
+        <div id="dynamic-breadcrumb" class="breadcrumb">
+            <a href="dashboard.html">Dashboard</a> <i class="fa fa-chevron-right"></i> <span>Loading...</span>
         </div>
         <div class="header-row">
             <div>
@@ -1196,6 +1194,7 @@
 
     /* ── Auth & Loading Logic ── */
     firebase.auth().onAuthStateChanged(user => {
+        initDynamicBreadcrumb("Setup Profile");
         if (!user) { window.location.href = "index.html"; return; }
 
         setFormState(true);

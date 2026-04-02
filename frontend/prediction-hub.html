@@ -56,6 +56,15 @@
         .logout-link { color: #f87171 !important; }
         .logout-link:hover { background: rgba(239,68,68,0.1) !important; }
 
+        #month-selector option {
+            background: var(--surface);
+            color: var(--text-muted);
+        }
+        #month-selector:focus {
+            border-color: var(--g2);
+            box-shadow: 0 0 0 2px rgba(16,185,129,0.12);
+        }
+
         /* ─── PAGE HEADER ─── */
         .page-header { position: relative; z-index: 1; padding: 44px 5% 36px; border-bottom: 1px solid var(--border); animation: fadeUp 0.7s both; }
         .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--text-dim); margin-bottom: 14px; }
@@ -419,10 +428,8 @@
     </nav>
 
     <div class="page-header">
-        <div class="breadcrumb">
-            <a href="dashboard.html">Dashboard</a> 
-            <i class="fa fa-chevron-right" style="font-size:0.5rem; margin:0 8px; vertical-align: middle;"></i> 
-            <span>Prediction Hub</span>
+        <div id="dynamic-breadcrumb" class="breadcrumb">
+            <a href="dashboard.html">Dashboard</a> <i class="fa fa-chevron-right"></i> <span>Loading...</span>
         </div>
         
         <div class="page-title-row" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px;">
@@ -446,7 +453,20 @@
             <div class="section-card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px">
                 <h3 style="font-family:'Syne'">PKR Cost Forecast</h3>
-                <span id="forecast-date" style="font-size:0.8rem; color:var(--text-dim)">Initializing...</span>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="forecast-date" style="font-size:0.8rem; color:var(--text-dim)">Initializing...</span>
+                    <div id="month-selector-wrap" style="display:none;">
+                        <select id="month-selector" onchange="onMonthSelected()"
+                            style="background:var(--surface2); border:1px solid var(--border);
+                                border-radius:8px; color:var(--text-muted); font-size:0.75rem; font-weight:600;
+                                padding:5px 10px; cursor:pointer; outline:none; font-family:'DM Sans';
+                                appearance:none; -webkit-appearance:none;
+                                background-image:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 10 6%22><path fill=%2286efac%22 d=%22M0 0l5 6 5-6z%22/></svg>');
+                                background-repeat:no-repeat; background-position:right 8px center;
+                                background-size:8px; padding-right:24px;">
+                        </select>
+                    </div>
+                </div>
             </div>
 
             <div class="bill-display">
@@ -764,6 +784,7 @@
         };
 
         firebase.auth().onAuthStateChanged(user => {
+            initDynamicBreadcrumb("Prediction Hub");
             if (!user) { window.location.href = "index.html"; }
             else {
                 userUid = user.uid;
@@ -788,11 +809,21 @@
                 return;
             }
 
-            let targetMonth = new Date().getMonth() + 1; 
-            if (u.bill_history && u.bill_history.length > 0) {
-                const sorted = [...u.bill_history].sort((a, b) => b.month.localeCompare(a.month));
-                const [year, month] = sorted[0].month.split('-').map(Number);
-                targetMonth = (month % 12) + 1; 
+            // Check if user manually selected a month
+            const selectorVal = document.getElementById('month-selector')?.value;
+            let targetMonth;
+
+            if (selectorVal && selectorVal !== 'auto') {
+                // User picked a specific month
+                targetMonth = parseInt(selectorVal.split('-')[1]);
+            } else {
+                // Default: next month from last history entry
+                targetMonth = new Date().getMonth() + 1;
+                if (u.bill_history && u.bill_history.length > 0) {
+                    const sorted = [...u.bill_history].sort((a, b) => b.month.localeCompare(a.month));
+                    const [year, month] = sorted[0].month.split('-').map(Number);
+                    targetMonth = (month % 12) + 1;
+                }
             }
 
             btn.disabled = true;
@@ -847,7 +878,7 @@
                     msgText.innerHTML = `Based on your consumption pattern, you fall into the 
                         <strong style="color:var(--g3); text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">${categoryName}</strong> category. 
                         Your bill is calculated using verified 2026 tariff slabs. 
-                        Learn more about <a href="nepra-info.html" target="_blank" rel="noopener noreferrer" style="color:var(--g3); text-decoration:none; border-bottom:1px dashed var(--g3); font-weight:600;">NEPRA Categories</a>.`;
+                        Learn more about <a href="nepra-info.html" target="_blank" rel="noopener" style="color:var(--g3); text-decoration:none; border-bottom:1px dashed var(--g3); font-weight:600;">NEPRA Categories</a>.`;
 
                     // ─── 4. DETAILED BREAKDOWN & CALIBRATION SIDEBAR ───
                     document.getElementById('breakdown-card').style.display = 'block';
@@ -958,6 +989,8 @@
                 displayDate = "Current Cycle: " + new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
             }
             forecastDateEl.innerText = displayDate;
+            document.getElementById('month-selector')?.setAttribute('data-auto-label', displayDate); // store for reset
+
 
             // Sync Sidebar Context
             document.getElementById('st-load').innerText = (d.sanctioned_load || 0) + " kW";
@@ -1006,6 +1039,7 @@
             // Unlock UI
             btn.disabled = false;
             btnText.innerHTML = '<i class="fa fa-bolt"></i> Generate AI Prediction';
+            buildMonthSelector();
 
             const context = getEngineContext(d); 
             updateEngineDisplay(context.mode, context.desc, false);
@@ -1471,6 +1505,73 @@
             }
         }
 
+        // ── MONTH SELECTOR ──
+        function buildMonthSelector() {
+            const select = document.getElementById('month-selector');
+            const wrap   = document.getElementById('month-selector-wrap');
+            if (!select) return;
+
+            select.innerHTML = '';
+
+            // ── Get the auto default label ──
+            const historyEl   = document.getElementById('forecast-date');
+            const storedLabel = historyEl?.innerText || '';
+            let defaultMonthLabel = 'Current Month';
+            if (storedLabel.includes(':')) {
+                defaultMonthLabel = storedLabel.split(':')[1].trim();
+            }
+
+            const defaultOpt   = document.createElement('option');
+            defaultOpt.value   = 'auto';
+            defaultOpt.innerText = `Default (${defaultMonthLabel})`;
+            select.appendChild(defaultOpt);
+
+            // ── Determine loop start: earlier of today vs forecast default ──
+            const today      = new Date();
+            let startMonth   = today.getMonth();       // 0-indexed
+            let startYear    = today.getFullYear();
+
+            if (storedLabel.includes(':')) {
+                const parsed = new Date(storedLabel.split(':')[1].trim());
+                if (!isNaN(parsed) && parsed < today) {
+                    // forecast default is behind today — start from there
+                    startMonth = parsed.getMonth();
+                    startYear  = parsed.getFullYear();
+                }
+                // if parsed >= today, keep today as start so current month is always included
+            }
+
+            // ── Build exactly 12 months ──
+            for (let i = 0; i < 12; i++) {
+                const d        = new Date(startYear, startMonth + i, 1);
+                const monthNum = d.getMonth() + 1;
+                const yearNum  = d.getFullYear();
+                const label    = d.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+                const opt      = document.createElement('option');
+                opt.value      = `${yearNum}-${monthNum}`;
+                opt.innerText  = label;
+                select.appendChild(opt);
+            }
+
+            wrap.style.display = 'flex';
+        }
+
+        function onMonthSelected() {
+            const select   = document.getElementById('month-selector');
+            const labelEl  = document.getElementById('forecast-date');
+            const val      = select.value;
+
+            if (val === 'auto') {
+                // Restore original auto label (re-run the display date logic)
+                labelEl.innerText = select.dataset.autoLabel || 'Auto Forecast';
+            } else {
+                const [year, month] = val.split('-').map(Number);
+                const d = new Date(year, month - 1, 1);
+                labelEl.innerText = 'Forecast: ' + d.toLocaleString('default', { month: 'long', year: 'numeric' });
+            }
+        }
+
         // Month → season label for Pakistan
         function getPakSeason(month) {
             if ([12, 1, 2].includes(month))     return 'winter';
@@ -1763,7 +1864,7 @@
         
                 // ── Archetype label ──
                 document.getElementById('pulse-archetype').innerText =
-                    data.archetype.replace('House', 'Model #');
+                    data.archetype.replace('House', 'House #');
         
                 // ── LSTM bar chart ──
                 const gradient = ctx.createLinearGradient(0, 0, 0, 120);

@@ -166,6 +166,7 @@
             display: none !important;
         }
 
+
         /* ─── MISSING CONTEXT PULSE ─── */
         .missing-context {
             color: #f87171; /* Soft Red/Orange */
@@ -392,10 +393,8 @@
     </nav>
 
     <div class="page-header">
-        <div class="breadcrumb">
-            <a href="dashboard.html">Dashboard</a>
-            <i class="fa fa-chevron-right" style="font-size:0.6rem; margin:0 8px"></i>
-            <span>AI Memory</span>
+        <div id="dynamic-breadcrumb" class="breadcrumb">
+            <a href="dashboard.html">Dashboard</a> <i class="fa fa-chevron-right"></i> <span>Loading...</span>
         </div>
         <h1><span class="highlight">Stored</span> Insights</h1>
         <p style="color:var(--text-dim); margin-top:8px; max-width:600px;">
@@ -620,6 +619,7 @@
     const db = firebase.firestore();
 
     firebase.auth().onAuthStateChanged(user => {
+        initDynamicBreadcrumb("AI Memory");
         if (!user) { window.location.href = "index.html"; return; }
 
         document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
@@ -739,43 +739,47 @@
             };
 
             const renderAppliance = (prefix, dataKey, labelText, icon, monthlyVal) => {
-                const qty = d[dataKey + '_qty'] || 0;
-                const hrs = d[dataKey + '_val'] || 0;
-                const freq = d[dataKey + '_freq'] || 0;
-                const dispEl = document.getElementById('disp-' + prefix);
-                const labelEl = document.getElementById('label-' + prefix);
-                
-                if (!dispEl || !labelEl) return;
+            const qty = d[dataKey + '_qty'] || 0;
+            const hrs = d[dataKey + '_val'] || 0;
+            const freq = d[dataKey + '_freq'] || 0;
+            const dispEl = document.getElementById('disp-' + prefix);
+            const labelEl = document.getElementById('label-' + prefix);
+            
+            if (!dispEl || !labelEl) return;
 
-                if (qty > 0) {
-                    // 1. Chips
-                    let chips = createTypeChip(d[dataKey + '_type']);
-                    if (dataKey === 'u') chips += createTypeChip(d.u_battery);
-                    if (dataKey === 'wp' && d.wp_type) chips = createTypeChip(d.wp_type + " HP");
-                    labelEl.innerHTML = `<i class="${icon}"></i> ${labelText} ${chips}`;
+            if (qty > 0) {
+                // 1. Label Chips (Type/Battery)
+                let chips = createTypeChip(d[dataKey + '_type']);
+                if (dataKey === 'u') chips += createTypeChip(d.u_battery);
+                if (dataKey === 'wp' && d.wp_type) chips = createTypeChip(d.wp_type + " HP");
+                labelEl.innerHTML = `<i class="${icon}"></i> ${labelText} ${chips}`;
 
-                    // 2. Logic for Displaying "--" instead of 0
-                    const kwhVal = Math.round(monthlyVal || 0);
-                    const kwhDisplay = kwhVal > 0 ? `${kwhVal} <small style="font-size:0.6rem">kWh</small>` : "--";
-                    const hrsDisplay = hrs > 0 ? `${hrs} <small style="font-size:0.6rem">Hrs</small>` : "--";
-                    const freqTag = (hrs > 0) ? `<div style="font-size:0.55rem; color:var(--text-dim); margin-top:-2px; text-transform:uppercase; letter-spacing:0.02em">${formatFrequencyTag(freq)}</div>` : "";
+                // 2. Logic for Frequency Text
+                const freqText = formatFrequencyTag(freq);
+                const freqTag = (hrs > 0 && freqText) ? `<div style="font-size:0.55rem; color:var(--text-dim); margin-top:2px; text-transform:uppercase; letter-spacing:0.02em">${freqText}</div>` : "";
 
-                    // 3. Three-Column Layout: Qty | kWh | Usage(Stacked)
-                    dispEl.innerHTML = `
-                        <div style="display: flex; align-items: center; width: 100%; justify-content: space-between;">
-                            <div style="font-family:'Syne'; font-weight:800; color:var(--g3); min-width:30px">${qty}x</div>
-                            <span style="color:var(--border); font-weight: 300;">|</span>
-                            <div style="text-align: center; flex: 1;">${kwhVal > 0 ? kwhVal + ' <small>kWh</small>' : formatValue(null, "", "LOAD")}</div>
-                            <span style="color:var(--border); font-weight: 300;">|</span>
-                            <div style="display: flex; flex-direction: column; align-items: flex-end; min-width:50px;">
-                                <div style="line-height:1">${hrs > 0 ? hrs + ' <small>Hrs</small>' : formatValue(null, "", "TIME")}</div>
+                const kwhVal = Math.round(monthlyVal || 0);
+
+                // 3. Three-Column Layout: Qty | kWh | Usage + Frequency Text
+                dispEl.innerHTML = `
+                    <div style="display: flex; align-items: center; width: 100%; justify-content: space-between;">
+                        <div style="font-family:'Syne'; font-weight:800; color:var(--g3); min-width:30px">${qty}x</div>
+                        <span style="color:var(--border); font-weight: 300;">|</span>
+                        <div style="text-align: center; flex: 1;">
+                            ${kwhVal > 0 ? kwhVal + ' <small>kWh</small>' : formatValue(null, "", "LOAD")}
+                        </div>
+                        <span style="color:var(--border); font-weight: 300;">|</span>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; min-width:60px;">
+                            <div style="line-height:1; font-weight:600;">
+                                ${hrs > 0 ? hrs + ' <small style="font-size:0.6rem">Hrs</small>' : formatValue(null, "", "TIME")}
                             </div>
-                        </div>`;
-                } else {
-                    dispEl.innerHTML = formatValue(null, "", labelText.toUpperCase());
-                }
-            };
-
+                            ${freqTag}
+                        </div>
+                    </div>`;
+            } else {
+                dispEl.innerHTML = formatValue(null, "", labelText.toUpperCase());
+            }
+        };
             // 1. CHECK SYSTEM CONTEXT DATA
             const systemKeys = ['disco', 'sanctioned_load', 'user_category'];
             if (!hasData(systemKeys)) {
@@ -862,32 +866,46 @@
                 renderAppliance('ups', 'u', 'UPS', 'fa fa-car-battery', d.ups_monthly);
                 renderAppliance('k', 'k', 'Kitchen', 'fa fa-utensils', d.kitchen_monthly);
 
-                // ─── 4. FANS (SPECIAL DUAL DISPLAY - QUANTITIES LEFT, KWH RIGHT) ───
+                // ─── 4. FANS (FIXED COLORS: GREEN QTY | GREEN KWH) ───
                 const fAc = d.fan_ac_qty || 0;
                 const fDc = d.fan_dc_qty || 0;
                 const fanDisp = document.getElementById('disp-fans');
+                const fanLabel = document.getElementById('label-fans');
+
+                fanLabel.innerHTML = `<i class="fa fa-fan"></i> Household Fans`;
 
                 if (fAc > 0 || fDc > 0) {
-                    let qtyStack = `<div style="display: flex; flex-direction: column; line-height: 1.1;">`;
-                    if (fAc > 0) qtyStack += `<span><b style="color:var(--g3)">${fAc}x</b> <small style="font-size:0.6rem; color:var(--text-dim)">Standard</small></span>`;
-                    if (fDc > 0) qtyStack += `<span><b style="color:var(--g3)">${fDc}x</b> <small style="font-size:0.6rem; color:var(--text-dim)">Inverter</small></span>`;
-                    qtyStack += `</div>`;
+                    let fanHtml = `<div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">`;
 
-                    fanDisp.innerHTML = `
-                        <div style="display: flex; align-items: center; width: 100%; justify-content: space-between;">
-                            ${qtyStack}
-                            <div style="display:flex; align-items:center;">
-                                <span style="color:var(--border); margin: 0 12px; font-weight: 300; font-size: 1.2rem;">|</span>
-                                <div style="white-space: nowrap;">
-                                    ${Math.round(d.fan_monthly || 0)} <small style="font-size:0.7rem; color:var(--text-dim)">kWh</small>
+                    const renderFanRow = (qty, typeLabel, powerKW) => {
+                        const kwh = Math.round(qty * powerKW * 12 * 30);
+
+                        return `
+                            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; font-size: 0.85rem;">
+                                <div style="min-width:110px; line-height:1.1">
+                                    <b style="color:var(--g3)">${qty}x</b> 
+                                    <div style="font-size:0.6rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.02em">${typeLabel}</div>
+                                </div>
+                                
+                                <span style="color:var(--border); font-weight: 300;">|</span>
+                                
+                                <div style="text-align: right; flex: 1; font-family:'Syne'; font-weight:800;">
+                                    <span style="color:var(--g3); font-size: 1.1rem;">${kwh}</span> 
+                                    <small style="font-size:0.65rem; font-weight:400; color:var(--text-dim); margin-left: 2px;">kWh</small>
                                 </div>
                             </div>
-                        </div>
-                    `;
+                        `;
+                    };
+
+                    if (fAc > 0) fanHtml += renderFanRow(fAc, 'Standard AC', 0.080);
+                    if (fDc > 0) fanHtml += renderFanRow(fDc, 'Inverter DC', 0.035);
+
+                    fanHtml += `</div>`;
+                    fanDisp.innerHTML = fanHtml;
                 } else {
                     fanDisp.innerHTML = formatValue(null, "", "FAN INVENTORY");
                 }
-
+                
                 document.getElementById('disp-mean').innerHTML = d.mean_hourly 
                     ? `${d.mean_hourly.toFixed(4)} <small>kW</small>` 
                     : formatValue(null, "", "LOAD_FACTOR");

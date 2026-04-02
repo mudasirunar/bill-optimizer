@@ -473,10 +473,8 @@
 
     <!-- PAGE HEADER -->
     <div class="page-header">
-        <div class="breadcrumb">
-            <a href="dashboard.html">Dashboard</a>
-            <i class="fa fa-chevron-right"></i>
-            <span>NEPRA Info</span>
+        <div id="dynamic-breadcrumb" class="breadcrumb">
+            <a href="dashboard.html">Dashboard</a> <i class="fa fa-chevron-right"></i> <span>Loading...</span>
         </div>
         <h1><span class="highlight">NEPRA</span> Tariff Rates</h1>
         <p>Official 2026 tariff structures, consumer slabs, and rebased rates for Pakistan.</p>
@@ -719,7 +717,9 @@
     <script src="js/firebase-config.js"></script>
     <script src="js/auth.js"></script>
     <script>
+
         firebase.auth().onAuthStateChanged(user => {
+            initDynamicBreadcrumb("NEPRA Info");
             if (!user) {
                 window.location.href = "index.html";
             } else {
