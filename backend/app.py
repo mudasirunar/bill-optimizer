@@ -891,6 +891,14 @@ def simulate_bill():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
+@app.route('/')
+def home():
+    return jsonify({
+        "status": "online",
+        "project": "Bill Optimizer AI",
+        "version": "2.3 (Physics Engine Validated)"
+    })
+    
 if __name__ == '__main__':
     validate() 
     app.run(host='0.0.0.0', port=5000, debug=True)
