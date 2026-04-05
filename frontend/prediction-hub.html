@@ -866,6 +866,7 @@
         <div class="footer-tag">FYP 2026 · Smart Energy Management System</div>
     </footer>
 
+    <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
     <script>
         const db = firebase.firestore();
@@ -929,7 +930,7 @@
             updateEngineDisplay(procContext.mode, procContext.desc, true);
 
             try {
-                const response = await fetch('http://127.0.0.1:5000/api/predict_bill', {
+                const response = await fetch(`${API_BASE_URL}/api/predict_bill`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ uid: userUid, month: targetMonth })
@@ -1150,7 +1151,7 @@
             if (loader) loader.style.display = 'flex';
 
             try {
-                const res = await fetch('http://127.0.0.1:5000/api/seasonal_preview', {
+                const res = await fetch(`${API_BASE_URL}/api/seasonal_preview`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ uid: userUid })
@@ -1932,7 +1933,7 @@
             const ctx         = document.getElementById('pulseChart').getContext('2d');
         
             try {
-                const response = await fetch('http://127.0.0.1:5000/api/forecast_24h', {
+                const response = await fetch(`${API_BASE_URL}/api/forecast_24h`, {
                     method:  'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body:    JSON.stringify({ uid: userUid })

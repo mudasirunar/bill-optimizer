@@ -440,6 +440,7 @@
         <div class="footer-tag">FYP 2026 · Smart Energy Management System</div>
     </footer>
 
+    <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
     <script>
 
@@ -552,7 +553,7 @@
                 }
 
                 // 3. API Fetch
-                const response = await fetch('http://localhost:5000/api/forecast_24h', {
+                const response = await fetch(`${API_BASE_URL}/api/forecast_24h`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ uid: userUid, month: targetMonth })

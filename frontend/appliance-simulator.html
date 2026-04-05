@@ -412,6 +412,7 @@
         <div class="footer-tag">FYP 2026 · Smart Energy Management System</div>
     </footer>
 
+    <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
     <script>
     // ─── AUTH ───
@@ -485,7 +486,7 @@
 
     async function fetchCalcResult(units, load, cat, days) {
         try {
-            const res  = await fetch('http://localhost:5000/api/simulate_bill', {
+            const res  = await fetch(`${API_BASE_URL}/api/simulate_bill`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ units, load_kw: load, category: cat, is_eligible: true })
@@ -531,7 +532,7 @@
     async function updateEffectiveRateFromBackend(load, cat) {
         try {
             // We ping the backend with a standard 250 unit sample
-            const res = await fetch('http://localhost:5000/api/simulate_bill', {
+            const res = await fetch(`${API_BASE_URL}/api/simulate_bill`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ units: 250, load_kw: load, category: cat, is_eligible: true })
@@ -832,11 +833,11 @@
 
         try {
             const [baseRes, newRes] = await Promise.all([
-                fetch('http://localhost:5000/api/simulate_bill', {
+                fetch(`${API_BASE_URL}/api/simulate_bill`, {
                     method:'POST', headers:{'Content-Type':'application/json'},
                     body: JSON.stringify({ units: baseline, load_kw: load, category: cat, is_eligible: true })
                 }).then(r => r.json()),
-                fetch('http://localhost:5000/api/simulate_bill', {
+                fetch(`${API_BASE_URL}/api/simulate_bill`, {
                     method:'POST', headers:{'Content-Type':'application/json'},
                     body: JSON.stringify({ units: baseline + addedKwh, load_kw: load, category: cat, is_eligible: true })
                 }).then(r => r.json())
