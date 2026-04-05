@@ -279,6 +279,39 @@
             }
         }
 
+        #sandbox-sim-card {
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            border: 1px solid var(--border);
+            background: linear-gradient(135deg, rgba(52, 211, 153, 0.03) 0%, rgba(13, 26, 18, 0.6) 100%);
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #sandbox-sim-card:hover {
+            transform: translateY(-8px);
+            background: rgba(16, 185, 129, 0.08);
+            border-color: var(--g3);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), 0 0 20px rgba(52, 211, 153, 0.1);
+        }
+
+        /* The animated "scanning" line for the sandbox card */
+        #sandbox-sim-card::after {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(52, 211, 153, 0.03), transparent);
+            transform: rotate(45deg);
+            transition: 0.5s;
+            pointer-events: none;
+        }
+
+        #sandbox-sim-card:hover::after {
+            left: 100%;
+            transition: 0.8s;
+        }
+
         /* Climatic Gauge Style */
         .intensity-track {
             width: 100%; height: 6px; background: var(--surface2); 
@@ -377,6 +410,25 @@
             height: 100vh;
         }
 
+        #efficiency-grade-card { display: none; }
+
+        .grade-circle {
+            width: 80px; height: 80px; border-radius: 50%;
+            margin: 0 auto 15px auto;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Syne', sans-serif; font-size: 2.2rem; font-weight: 800;
+            background: rgba(16, 185, 129, 0.05);
+            border: 3px solid var(--g3);
+            color: var(--g3);
+            text-shadow: 0 0 15px var(--glow);
+            box-shadow: 0 0 20px var(--glow), inset 0 0 15px var(--glow);
+            transition: all 0.5s ease;
+        }
+
+        .grade-label {
+            text-align: center; font-size: 0.75rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);
+        }
 
          /* ─── FOOTER ─── */
         .footer {
@@ -670,7 +722,7 @@
             <div class="section-card" id="demand-pulse-card" style="display:none; padding: 24px;" onclick="window.location.href='load-forecaster.html'">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
                     <h4 style="font-family:'Syne'; font-size:0.8rem; color:var(--text); text-transform: uppercase; letter-spacing: 1px;">
-                        <i class="fa-solid fa-chart-simple" style="color:var(--g3); margin-right: 8px;"></i> Behavioral Signal
+                        <i class="fa-solid fa-wave-square" style="color:var(--g3); margin-right: 8px;"></i> Behavioral Signal
                     </h4>
                     <div style="display:flex; align-items:center; gap:6px; background: rgba(52,211,153,0.1); padding: 4px 10px; border-radius: 20px;">
                         <span class="status-dot pulse-active" style="width:6px; height:6px; margin:0;"></span>
@@ -694,8 +746,50 @@
             </div>
 
             <div class="section-card" id="load-pie-card" style="display:none; padding:20px;">
-                <h4 style="font-family:'Syne'; font-size:0.8rem; margin-bottom:15px;"><i class="fa fa-chart-pie"></i> Load Distribution</h4>
+                <h4 style="font-family:'Syne'; font-size:0.8rem; margin-bottom:15px; color:var(--text);"><i class="fa-solid fa-chart-pie" style="color:var(--g3); margin-right: 8px;"></i> Load Distribution</h4>
                 <div style="height:180px;"><canvas id="loadPieChart"></canvas></div>
+            </div>
+
+            <div class="section-card" id="efficiency-grade-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h4 style="font-family:'Syne'; font-size:0.8rem; color:var(--text); text-transform: uppercase; letter-spacing: 1px;">
+                        <i class="fa-solid fa-medal" style="color:var(--g3); margin-right: 8px;"></i> Neural Efficiency Grade
+                    </h4>
+                    <div id="grade-lock-icon"><i class="fa fa-circle-check" style="color:var(--g3); font-size:0.7rem;"></i></div>
+                </div>
+
+                <div class="grade-circle" id="efficiency-grade-val">--</div>
+                <div class="grade-label" id="efficiency-grade-label">Calculating Score...</div>
+                
+                <p id="efficiency-grade-desc" style="font-size: 0.7rem; color: var(--text-dim); text-align: center; line-height: 1.5; margin-top: 15px; border-top: 1px solid var(--border); padding-top: 12px;">
+                    Neural engine is comparing your consumption to the regional benchmark for homes of similar size.
+                </p>
+            </div>
+
+            <div class="section-card" id="sandbox-sim-card" onclick="window.location.href='appliance-simulator.html'">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h4 style="font-family:'Syne'; font-size:0.8rem; color:var(--text); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center;">
+                        <i class="fa-solid fa-microchip" style="color:var(--g3); margin-right: 10px; font-size: 1.1rem; width: 20px; text-align: center;"></i> 
+                        Neural Sandbox
+                    </h4>
+                    <span class="ai-tag" style="font-size: 0.5rem; background: var(--g1);">SIMULATOR</span>
+                </div>
+
+                <div id="sandbox-msg-container" style="min-height: 60px;">
+                    <p id="sandbox-dynamic-msg" style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+                        Loading simulation scenarios...
+                    </p>
+                </div>
+
+                <div style="margin-top: 15px; padding-top: 12px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.65rem; color: var(--g3); font-weight: 700; text-transform: uppercase;">
+                        Enter Sandbox <i class="fa-solid fa-arrow-right" style="margin-left: 5px;"></i>
+                    </span>
+                    <div style="display: flex; gap: -5px;">
+                        <i class="fa fa-plug" style="font-size: 0.7rem; color: var(--text-dim); margin-left: 4px;"></i>
+                        <i class="fa fa-bolt" style="font-size: 0.7rem; color: var(--g3); margin-left: 4px;"></i>
+                    </div>
+                </div>
             </div>
 
             <div class="section-card" id="climatic-card" style="display:none; padding: 24px;">
@@ -907,6 +1001,8 @@
                     updateLoadPieChart(result.bill.physics_breakdown);
                     generateAISuggestions(result);
                     simulateSolarImpact(result);
+                    loadDemandPulse();
+                    updateEfficiencyGrade(result.kwh);
 
                     const successContext = getEngineContext(u, result, 'done');
                     updateEngineDisplay(successContext.mode, successContext.desc, false);
@@ -942,6 +1038,7 @@
             const doc = await db.collection('users').doc(userUid).get();
             const d = doc.exists ? doc.data() : {};
 
+            updateSandboxAd(d);
             // --- 1. DATA INTEGRITY SCAN ---
             let missingFields = [];
             if (!d.sanctioned_load) missingFields.push("Sanctioned Load (Required for capacity and fixed charges)");
@@ -1039,12 +1136,11 @@
             // Unlock UI
             btn.disabled = false;
             btnText.innerHTML = '<i class="fa fa-bolt"></i> Generate AI Prediction';
-            buildMonthSelector();
+            buildMonthSelector(d);
 
             const context = getEngineContext(d); 
             updateEngineDisplay(context.mode, context.desc, false);
             fetchAnnualPreview(d.bill_history || [], d);
-            loadDemandPulse()
         }
 
         // Fetch the 12-month data and hide loader when done
@@ -1461,7 +1557,7 @@
                 const potentialSave = Math.round((currentKwh - 200) * (19.55 - 12.15));
                 iconBox.innerHTML = '<i class="fa-solid fa-fire" style="color:#f97316"></i>';
                 titleEl.innerText = 'High Consumption — Expensive Slab';
-                descEl.innerHTML  = `<b>${currentKwh} units</b> puts you in NEPRA's Rs. 19.55/unit slab. 
+                descEl.innerHTML  = `<b>${currentKwh} units</b> puts you in NEPRA's Rs. 36.46/unit slab. 
                     Dropping below 200 units saves ~<b style="color:#f97316">Rs. ${potentialSave.toLocaleString()}/month</b>.
                     ${acQty > 0 && acType !== 'inverter' 
                         ? `Your ${acQty} fixed-speed AC${acQty > 1 ? 's' : ''} — switching to inverter could cut 30–40% of AC load.` 
@@ -1506,51 +1602,43 @@
         }
 
         // ── MONTH SELECTOR ──
-        function buildMonthSelector() {
+        function buildMonthSelector(d) {
             const select = document.getElementById('month-selector');
             const wrap   = document.getElementById('month-selector-wrap');
             if (!select) return;
 
             select.innerHTML = '';
 
-            // ── Get the auto default label ──
-            const historyEl   = document.getElementById('forecast-date');
-            const storedLabel = historyEl?.innerText || '';
-            let defaultMonthLabel = 'Current Month';
-            if (storedLabel.includes(':')) {
-                defaultMonthLabel = storedLabel.split(':')[1].trim();
+            // ── STEP 1: Calculate the "True Start Month" ──
+            // This logic matches your annual chart and default prediction exactly
+            let startDate = new Date(); 
+            
+            if (d.bill_history && d.bill_history.length > 0) {
+                const sorted = [...d.bill_history].sort((a, b) => b.month.localeCompare(a.month));
+                const [y, m] = sorted[0].month.split('-').map(Number);
+                // JS Months are 0-indexed. If history is "2026-05" (May), 
+                // new Date(2026, 5, 1) automatically creates June 1st. Perfect.
+                startDate = new Date(y, m, 1); 
             }
 
-            const defaultOpt   = document.createElement('option');
-            defaultOpt.value   = 'auto';
-            defaultOpt.innerText = `Default (${defaultMonthLabel})`;
+            const defaultLabel = startDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+            // ── STEP 2: Create the Default Option ──
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = 'auto';
+            defaultOpt.innerText = `Default (${defaultLabel})`;
             select.appendChild(defaultOpt);
 
-            // ── Determine loop start: earlier of today vs forecast default ──
-            const today      = new Date();
-            let startMonth   = today.getMonth();       // 0-indexed
-            let startYear    = today.getFullYear();
+            // ── STEP 3: Build exactly 12 months starting FROM that date ──
+            for (let i = 1; i < 12; i++) {
+                const dLoop = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
+                const monthNum = dLoop.getMonth() + 1;
+                const yearNum  = dLoop.getFullYear();
+                const label    = dLoop.toLocaleString('default', { month: 'long', year: 'numeric' });
 
-            if (storedLabel.includes(':')) {
-                const parsed = new Date(storedLabel.split(':')[1].trim());
-                if (!isNaN(parsed) && parsed < today) {
-                    // forecast default is behind today — start from there
-                    startMonth = parsed.getMonth();
-                    startYear  = parsed.getFullYear();
-                }
-                // if parsed >= today, keep today as start so current month is always included
-            }
-
-            // ── Build exactly 12 months ──
-            for (let i = 0; i < 12; i++) {
-                const d        = new Date(startYear, startMonth + i, 1);
-                const monthNum = d.getMonth() + 1;
-                const yearNum  = d.getFullYear();
-                const label    = d.toLocaleString('default', { month: 'long', year: 'numeric' });
-
-                const opt      = document.createElement('option');
-                opt.value      = `${yearNum}-${monthNum}`;
-                opt.innerText  = label;
+                const opt = document.createElement('option');
+                opt.value = `${yearNum}-${monthNum}`;
+                opt.innerText = label;
                 select.appendChild(opt);
             }
 
@@ -1913,6 +2001,78 @@
                 if (climateCard) climateCard.style.display = 'none';
             }
         }
+
+        async function updateEfficiencyGrade(units) {
+            const card = document.getElementById('efficiency-grade-card');
+            const gradeVal = document.getElementById('efficiency-grade-val');
+            const gradeLabel = document.getElementById('efficiency-grade-label');
+            const gradeDesc = document.getElementById('efficiency-grade-desc');
+            
+            const doc = await db.collection('users').doc(userUid).get();
+            const u = doc.data();
+            
+            card.style.display = 'block';
+
+            if (!u.property_area || !u.person_count) {
+                gradeVal.innerText = "?";
+                gradeLabel.innerText = "Context Missing";
+                gradeDesc.innerHTML = "Complete your <b>House Area</b> and <b>Occupant Count</b> in Setup Profile to unlock your Neural Efficiency Rating.";
+                return;
+            }
+
+            const area = parseFloat(u.property_area);
+            const persons = parseInt(u.person_count);
+            const benchmark = (area * 0.15) + (persons * 25);
+            const ratio = units / benchmark;
+
+            let grade, label, color, desc;
+
+            if (ratio <= 0.8) { 
+                grade = 'A+'; 
+                label = 'Grid Master'; 
+                color = '#10b981'; 
+                // TIP: Focus on Solar / Perfection
+                desc = `<b>Incredible efficiency.</b> Your home is performing 20% better than the regional benchmark for a ${area} sq.ft house. <br><br> 🚀 <b>Elite Tip:</b> You are the perfect candidate for Solar. Use the <b>Solar Expert</b> below to see how to reach 'Net Zero' and stop paying bills entirely.`; 
+            }
+            else if (ratio <= 1.1) { 
+                grade = 'B'; 
+                label = 'Optimal'; 
+                color = '#34d399'; 
+                // TIP: Focus on Maintenance / BLDC
+                desc = `<b>Solid performance.</b> Your energy signature matches your home's capacity perfectly. <br><br> 💡 <b>Pro Tip:</b> To hit A+, check for motor friction in old ceiling fans. Swapping one standard fan for a <b>BLDC motor</b> could save you ~15 units/month.`; 
+            }
+            else if (ratio <= 1.4) { 
+                grade = 'C'; 
+                label = 'Moderate Waste'; 
+                color = '#fbbf24'; 
+                // LINK: Sandbox Audit
+                desc = `<b>Energy leaks detected.</b> You are using ~${Math.round((ratio-1)*100)}% more power than an efficient home of this size. <br><br> 🔍 <b>Action:</b> Use the <a href="appliance-simulator.html" style="color:var(--g3)"><b>Neural Sandbox</b></a> to run a 'Neural Leak' audit on your Fridge and UPS charge cycles.`; 
+            }
+            else if (ratio <= 1.8) { 
+                grade = 'D'; 
+                label = 'High Density'; 
+                color = '#f97316'; 
+                // LINK: Inverter Simulation
+                desc = `<b>Sub-optimal signature.</b> High usage density detected. You are likely facing 'Slab Shock' due to inefficient cooling. <br><br> ⚠️ <b>Urgent:</b> Open the <a href="appliance-simulator.html" style="color:var(--g3)"><b>Neural Sandbox</b></a> to simulate an <b>Inverter Upgrade</b>—it's the fastest way to drop back to a lower slab.`; 
+            }
+            else { 
+                grade = 'F'; 
+                label = 'Critical Inefficient'; 
+                color = '#f87171'; 
+                // LINK: Full Overhaul
+                desc = `<b>Heavy waste signature.</b> Your consumption is nearly double the efficiency benchmark for ${persons} occupants. <br><br> 🛠️ <b>Required:</b> You are losing thousands to old hardware. Model a total appliance refresh in the <a href="appliance-simulator.html" style="color:var(--g3)"><b>Simulator</b></a> to plan your path to a 'B' rating.`; 
+            }
+
+            // Apply Styles
+            gradeVal.style.borderColor = color;
+            gradeVal.style.color = color;
+            gradeVal.style.boxShadow = `0 0 20px ${color}33`;
+            gradeVal.innerText = grade;
+            gradeLabel.innerText = label;
+            gradeLabel.style.color = color;
+            gradeDesc.innerHTML = desc;
+        }
+
 
         // ─── INFERENCE ANALYSIS MODAL LOGIC (v2.6 Synchronized) ───
         function openInferenceModal() {
@@ -2690,6 +2850,69 @@
             document.body.classList.remove('modal-open');
         }
 
+        function updateSandboxAd(u) {
+            const msgEl = document.getElementById('sandbox-dynamic-msg');
+            if (!msgEl) return;
+
+            const acQty = parseInt(u.ac_qty) || 0;
+            const acType = u.ac_type || 'standard';
+            const uQty = parseInt(u.u_qty) || 0;
+            const units = Math.round(u.historical_avg_units || 0);
+            const category = u.user_category || 'non_protected';
+
+            // 1. Initialize the message pool with general high-tech hooks
+            let messagePool = [
+                "<b>Neural Optimization:</b> Test appliance runtimes to see if you can reclaim 'Protected' status.",
+                "Test the 'Bill Shock' of a new appliance before the summer heat hits.",
+                "<b>Predictive Sandbox:</b> Design a custom duty-cycle to stay below the 300-unit slab.",
+                "Is your Water Pump stealing your subsidy? <b>Run a 'What-If' simulation now.</b>"
+            ];
+
+            // 2. Add Hardware-Driven Messages
+            if (acQty === 0) {
+                messagePool.push("Planning to buy an AC? <b>Simulate the exact PKR impact on your specific NEPRA slab.</b>");
+            } else if (acType === 'standard') {
+                messagePool.push(`Detected ${acQty} Standard AC(s). <b>Simulate an Inverter swap to see your 2026 ROI.</b>`);
+            }
+
+            if (uQty > 0) {
+                messagePool.push("UPS signature detected. <b>Simulate shifting your charging cycle to daytime solar hours.</b>");
+            }
+
+            // 3. Add Financial/Slab Logic
+            if (units > 170 && units < 200 && category === 'protected') {
+                messagePool.push(`<b>Alert:</b> You're at ${units} units. Use the Sandbox to see which appliance pushes you over 200.`);
+            } else if (units > 270 && units < 300) {
+                messagePool.push("Close to the 300-unit jump. <b>Test a 1-hour reduction in AC use to drop your base rate.</b>");
+            }
+
+            if (units > 500) {
+                messagePool.push("High consumption signature. <b>Enter Sandbox to perform a 'Neural Leak' appliance audit.</b>");
+            }
+
+            // 4. Add Regional Climate Strategies (Only if disco is set)
+            const discoMessages = {
+                'K-Electric': "Karachi humidity detected. <b>Simulate 'Dry Mode' vs. Standard AC to see your unit recovery.</b>",
+                'LESCO': "Lahore's night heat is intense. <b>Test the PKR impact of a midnight AC timer in the Sandbox.</b>",
+                'IESCO': "Islamabad cold is approaching. <b>Simulate an Inverter AC Heat Pump vs. Electric Heaters.</b>",
+                'FESCO': "Industrial surges detected. <b>Test how shifting heavy loads to Sunday mornings saves units.</b>",
+                'MEPCO': "Multan extreme heat peak. <b>Simulate a 'White Roof' thermal reduction on your AC load.</b>",
+                'HESCO': "High solar potential in Hyderabad. <b>Simulate a 3kW Solar upgrade to wipe your daytime bill.</b>",
+                'PESCO': "Grid voltage drops detected. <b>Simulate the efficiency gain of a Digital Voltage Stabilizer.</b>",
+                'QESCO': "Quetta altitude affects pump suction. <b>Test the simulation for a high-efficiency 1HP Water Motor.</b>"
+            };
+
+            if (u.disco && discoMessages[u.disco]) {
+                messagePool.push(discoMessages[u.disco]);
+            }
+
+            // 5. RANDOM SELECTION (The "Neural Shuffle")
+            // This ensures that every page load feels fresh even if the data stays the same.
+            const finalMsg = messagePool[Math.floor(Math.random() * messagePool.length)];
+            
+            msgEl.innerHTML = finalMsg;
+        }
+
         /**
          * AI Personality Engine: Generates data-driven status strings
          */
@@ -2755,6 +2978,7 @@
 
             return { mode, desc };
         }
+
 
         /**
          * Central Engine Display Manager

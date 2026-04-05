@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appliance Simulator | Bill Optimizer</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png?v=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --g1:#059669;--g2:#10b981;--g3:#34d399;--g4:#6ee7b7;
+            --dark:#030a06;--surface:#0d1a12;--surface2:#122018;
+            --border:rgba(52,211,153,0.12);--border-hover:rgba(52,211,153,0.35);
+            --text:#f0fdf4;--text-muted:#86efac;--text-dim:#4b7a5e;
+            --glow:rgba(16,185,129,0.2);--card-bg:rgba(13,26,18,0.85);
+            --warn:#fbbf24;--error:#f87171;
+        }
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--text);min-height:100vh;overflow-x:hidden;display:flex;flex-direction:column;}
+        main{flex:1;position:relative;z-index:1;}
+        body::before{content:'';position:fixed;inset:0;z-index:0;background:radial-gradient(ellipse 80% 60% at 10% 10%,rgba(5,150,105,0.18) 0%,transparent 60%),radial-gradient(ellipse 60% 80% at 90% 80%,rgba(16,185,129,0.12) 0%,transparent 55%);pointer-events:none;}
+        body::after{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(52,211,153,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(52,211,153,0.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;}
+
+        /* NAVBAR */
+        .navbar{position:sticky;top:0;z-index:1000;height:68px;display:flex;align-items:center;justify-content:space-between;padding:0 5%;background:rgba(3,10,6,0.75);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--border);}
+        .nav-logo{font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:800;color:var(--text);display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none;}
+        .nav-logo i{width:34px;height:34px;background:linear-gradient(135deg,var(--g1),var(--g3));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;color:#fff;box-shadow:0 0 14px var(--glow);}
+        .ai-tag{font-size:0.6rem;font-weight:700;letter-spacing:0.1em;background:linear-gradient(90deg,var(--g1),var(--g3));padding:3px 8px;border-radius:20px;color:#fff;}
+        .nav-user-area{display:flex;align-items:center;gap:14px;}
+        .user-info{text-align:right;line-height:1.2;}
+        .user-info span{font-weight:600;font-size:0.9rem;display:block;text-transform:capitalize;}
+        .user-info small{font-size:0.72rem;color:var(--text-muted);}
+        .profile-dropdown{position:relative;}
+        .profile-dropdown::after{content:'';position:absolute;top:100%;right:0;width:100%;height:16px;background:transparent;}
+        .user-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;cursor:pointer;border:2px solid var(--border);transition:0.3s;}
+        .user-avatar:hover{border-color:var(--g2);box-shadow:0 0 16px var(--glow);transform:scale(1.06);}
+        .dropdown-menu{position:absolute;top:calc(100% + 8px);right:0;width:210px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:8px;box-shadow:0 20px 60px rgba(0,0,0,0.6);opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-8px);transition:0.22s;z-index:999;}
+        .profile-dropdown:hover .dropdown-menu{opacity:1;visibility:visible;pointer-events:all;transform:translateY(0);}
+        .dropdown-menu a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;color:var(--text-muted);font-size:0.875rem;text-decoration:none;transition:0.18s;}
+        .dropdown-menu a:hover{background:rgba(52,211,153,0.1);color:var(--g3);}
+        .dropdown-menu hr{border:none;border-top:1px solid var(--border);margin:6px 0;}
+        .logout-link{color:#f87171!important;}
+        .logout-link:hover{background:rgba(239,68,68,0.1)!important;}
+
+        /* HEADER */
+        .page-header{position:relative;z-index:1;padding:44px 5% 36px;border-bottom:1px solid var(--border);animation:fadeUp 0.7s both;}
+        .breadcrumb{display:flex;align-items:center;gap:8px;font-size:0.72rem;font-weight:700;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px;letter-spacing:0.08em;}
+        .breadcrumb a{color:var(--g3);text-decoration:none;transition:0.2s;}
+        .breadcrumb a:hover{opacity:0.7;}
+        .breadcrumb i{font-size:0.5rem;opacity:0.4;}
+        .page-header h1{font-family:'Syne',sans-serif;font-size:2.5rem;font-weight:800;letter-spacing:-0.03em;}
+        .highlight{background:linear-gradient(120deg,var(--g3),var(--g2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .model-badge{display:inline-flex;align-items:center;gap:7px;font-size:0.72rem;font-weight:700;text-transform:uppercase;color:var(--g3);background:rgba(52,211,153,0.07);border:1px solid var(--border);padding:5px 12px;border-radius:20px;margin-top:12px;}
+
+        /* MAIN */
+        .main-container{max-width:1300px;margin:0 auto;padding:40px 5% 80px;}
+
+        /* ═══ SECTION 1: BILL CALCULATOR ═══ */
+        .calc-section{background:var(--card-bg);border:1px solid var(--border);border-radius:24px;padding:36px;backdrop-filter:blur(14px);margin-bottom:32px;animation:fadeUp 0.7s 0.1s both;}
+        .section-header{display:flex;align-items:center;gap:14px;margin-bottom:28px;}
+        .section-icon{width:44px;height:44px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--g3);font-size:1.1rem;flex-shrink:0;}
+        .section-title h3{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;}
+        .section-title p{font-size:0.82rem;color:var(--text-dim);margin-top:2px;}
+
+        .calc-grid{display:grid;grid-template-columns:1fr 1fr 1fr 120px;gap:16px;margin-bottom:20px;}
+        @media(max-width:900px){.calc-grid{grid-template-columns:1fr 1fr;}}
+        @media(max-width:560px){.calc-grid{grid-template-columns:1fr;}}
+
+        .field-group{display:flex;flex-direction:column;gap:7px;}
+        .field-label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-dim);}
+        .field-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:11px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.9rem;outline:none;transition:0.2s;appearance:none;-webkit-appearance:none;}
+        .field-input:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(16,185,129,0.1);}
+        .field-input::placeholder{color:var(--text-dim);}
+        .select-wrap{position:relative;}
+        .select-wrap::after{content:'\f107';font-family:'Font Awesome 6 Free';font-weight:900;position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none;font-size:0.8rem;}
+
+        /* Result panel */
+        .result-panel{background:rgba(16,185,129,0.04);border:1px solid rgba(52,211,153,0.2);border-radius:18px;padding:28px;min-height:160px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;transition:0.4s;}
+        .result-panel.has-result{background:linear-gradient(135deg,rgba(5,150,105,0.1),rgba(16,185,129,0.04));}
+
+        .result-idle{text-align:center;color:var(--text-dim);}
+        .result-idle i{font-size:2rem;margin-bottom:10px;opacity:0.3;}
+        .result-idle p{font-size:0.82rem;line-height:1.5;}
+
+        .result-missing{text-align:center;}
+        .missing-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:20px;padding:5px 12px;font-size:0.72rem;font-weight:600;color:var(--warn);margin:3px;}
+
+        .result-data{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;width:100%;}
+        @media(max-width:600px){.result-data{grid-template-columns:1fr 1fr;}}
+        .result-stat{text-align:center;padding:12px;border-right:1px solid var(--border);}
+        .result-stat:last-child{border-right:none;}
+        .result-stat-label{font-size:0.62rem;text-transform:uppercase;font-weight:700;color:var(--text-dim);letter-spacing:0.07em;margin-bottom:6px;}
+        .result-stat-val{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;color:var(--text);}
+        .result-stat-val.big{font-size:2rem;color:var(--g3);}
+        .result-category-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.68rem;font-weight:800;text-transform:uppercase;margin-top:4px;}
+
+        .result-loader{display:none;align-items:center;gap:12px;color:var(--g3);font-size:0.9rem;font-weight:600;}
+        .spinner-sm{width:20px;height:20px;border:2px solid rgba(52,211,153,0.2);border-top-color:var(--g2);border-radius:50%;animation:spin 0.8s linear infinite;}
+
+        /* ═══ SECTION 2: APPLIANCE BUILDER ═══ */
+        .builder-section{animation:fadeUp 0.7s 0.2s both;}
+        .builder-grid{display:grid;grid-template-columns:1fr 420px;gap:24px;align-items:start;}
+        @media(max-width:1100px){.builder-grid{grid-template-columns:1fr;}}
+
+        .builder-card{background:var(--card-bg);border:1px solid var(--border);border-radius:24px;padding:32px;backdrop-filter:blur(14px);}
+
+        /* Category tabs */
+        .cat-tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
+        .cat-tab{padding:7px 14px;border-radius:20px;font-size:0.72rem;font-weight:700;border:1px solid var(--border);background:var(--surface2);color:var(--text-dim);cursor:pointer;transition:0.2s;display:flex;align-items:center;gap:6px;}
+        .cat-tab:hover{border-color:var(--g2);color:var(--text-muted);}
+        .cat-tab.active{background:rgba(16,185,129,0.15);border-color:var(--g2);color:var(--g3);}
+
+        /* Appliance catalog grid */
+        .catalog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+        .catalog-tile{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:14px;cursor:pointer;transition:all 0.25s cubic-bezier(0.23,1,0.32,1);position:relative;overflow:hidden;user-select:none;}
+        .catalog-tile::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(52,211,153,0.08),transparent);opacity:0;transition:0.3s;}
+        .catalog-tile:hover{border-color:var(--g2);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.3);}
+        .catalog-tile:hover::before{opacity:1;}
+        .catalog-tile.in-basket{border-color:var(--g2);background:rgba(16,185,129,0.08);}
+        .catalog-tile.in-basket::after{content:'\f00c';font-family:'Font Awesome 6 Free';font-weight:900;position:absolute;top:8px;right:8px;font-size:0.55rem;color:var(--g3);background:rgba(16,185,129,0.2);width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:3px;}
+        .tile-icon{font-size:1.4rem;color:var(--g3);margin-bottom:8px;display:block;}
+        .tile-name{font-size:0.75rem;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:4px;}
+        .tile-watt{font-size:0.65rem;color:var(--text-dim);}
+        .tile-add-hint{font-size:0.6rem;color:var(--g3);margin-top:5px;opacity:0;transition:0.2s;}
+        .catalog-tile:hover .tile-add-hint{opacity:1;}
+
+        /* Basket panel */
+        .basket-card{background:var(--card-bg);border:1px solid var(--border);border-radius:24px;padding:28px;backdrop-filter:blur(14px);position:sticky;top:88px;display:flex;flex-direction:column;min-height: 464px;}
+        #basket-list {flex: 1;display: flex;flex-direction: column;}
+        .basket-empty {flex: 1;display: flex;flex-direction: column;align-items: center;justify-content: center;text-align: center;color: var(--text-dim);}
+        .basket-empty i{font-size:2.5rem;opacity:0.2;margin-bottom:12px;display:block;}
+        .basket-empty p{font-size:0.82rem;line-height:1.6;}
+        .basket-item{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;overflow: hidden;animation: neuralIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;transition: border-color 0.3s, box-shadow 0.3s;}
+        .basket-item:hover {border-color: var(--g3);box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);}
+        .basket-item.removing{animation: neuralOut 0.4s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards;}
+        .basket-item-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+        .basket-item-icon{width:32px;height:32px;background:rgba(52,211,153,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.85rem;color:var(--g3);flex-shrink:0;}
+        .basket-item-name{font-size:0.8rem;font-weight:700;color:var(--text);flex:1;}
+        .basket-remove{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.75rem;padding:3px 6px;border-radius:6px;transition:0.2s;}
+        .basket-remove:hover{background:rgba(248,113,113,0.1);color:var(--error);}
+        .basket-controls{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+        .basket-ctrl-label{font-size:0.6rem;color:var(--text-dim);font-weight:700;text-transform:uppercase;margin-bottom:4px;}
+        .qty-row{display:flex;align-items:center;gap:6px;}
+        .qty-btn{width:24px;height:24px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;font-size:0.75rem;transition:0.2s;display:flex;align-items:center;justify-content:center;}
+        .qty-btn:hover{background:var(--g1);color:#fff;border-color:var(--g1);}
+        .qty-num{font-family:'Syne',sans-serif;font-weight:800;font-size:0.9rem;color:var(--g3);min-width:20px;text-align:center;}
+        .hours-slider{width:100%;appearance:none;-webkit-appearance:none;height:6px;background:var(--surface);border-radius:3px;outline:none;}
+        .hours-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--g2);cursor:pointer;box-shadow:0 0 8px var(--glow);}
+        .hours-val{font-size:0.72rem;color:var(--g3);font-weight:700;text-align:right;margin-top:3px;}
+
+        /* Update the footer container to support smooth fading */
+        #basket-footer {
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Add a helper class for when the footer is vanishing */
+        .footer-fade-out {
+            opacity: 0 !important;
+            transform: translateY(10px) !important;
+            pointer-events: none;
+        }
+
+        /* Update empty message to support smooth fading */
+        #basket-empty {
+            transition: opacity 0.4s ease;
+            opacity: 0;
+            display: none; /* We will switch this to flex in JS */
+        }
+
+        #basket-empty.show {
+            opacity: 1;
+            display: flex;
+        }
+
+        /* --- PREMIUM NEURAL ANIMATIONS --- */
+        @keyframes neuralIn {
+            0% { 
+                opacity: 0; 
+                transform: translateX(30px) scale(0.9); 
+                filter: blur(8px);
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateX(0) scale(1); 
+                filter: blur(0);
+            }
+        }
+
+        @keyframes neuralOut {
+            0% { 
+                opacity: 1; 
+                transform: scale(1); 
+                max-height: 150px; 
+                margin-bottom: 10px;
+                filter: blur(0);
+            }
+            100% { 
+                opacity: 0; 
+                transform: scale(0.8) translateX(-30px); 
+                max-height: 0; 
+                margin-bottom: 0; 
+                padding-top: 0;
+                padding-bottom: 0;
+                filter: blur(12px);
+                border: none;
+            }
+        }
+
+        /* Basket total & simulate button */
+        .basket-total{background:rgba(16,185,129,0.06);border:1px solid rgba(52,211,153,0.15);border-radius:14px;padding:16px;margin:16px 0;}
+        .basket-total-row{display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:6px;}
+        .basket-total-row:last-child{margin-bottom:0;border-top:1px solid var(--border);padding-top:8px;margin-top:8px;}
+        .basket-total-row b{color:var(--g3);font-family:'Syne',sans-serif;}
+
+        .btn-simulate{width:100%;padding:14px;background:linear-gradient(135deg,var(--g1),var(--g2));border:none;border-radius:14px;color:#fff;font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:800;cursor:pointer;transition:0.3s;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 6px 24px rgba(5,150,105,0.3);}
+        .btn-simulate:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(5,150,105,0.5);}
+        .btn-simulate:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none;}
+
+        /* Bill compare strip */
+        .compare-strip{display:none;background:rgba(16,185,129,0.04);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:16px;}
+        .compare-strip.visible{display:block;animation:fadeUp 0.4s both;}
+        .compare-row{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;text-align:center;}
+        .compare-label{font-size:0.6rem;text-transform:uppercase;font-weight:700;color:var(--text-dim);margin-bottom:4px;}
+        .compare-val{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;}
+        .compare-arrow{color:var(--g3);font-size:1.2rem;}
+        .compare-diff{font-size:0.75rem;font-weight:700;margin-top:4px;}
+
+        /* This makes the cards fade out slightly differently for a more natural look */
+        .basket-item:nth-child(2) { animation-delay: 0.05s; }
+        .basket-item:nth-child(3) { animation-delay: 0.1s; }
+        .basket-item:nth-child(4) { animation-delay: 0.15s; }
+        /* FOOTER */
+        .footer{background:rgba(3,10,6,0.8);border-top:1px solid var(--border);padding:40px 20px;text-align:center;backdrop-filter:blur(10px);}
+        .footer-brand{font-family:'Syne',sans-serif;font-size:0.9rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;}
+        .footer-brand i{color:var(--g2);margin-right:6px;}
+        .footer-sub{color:var(--text-dim);font-size:0.8rem;margin-bottom:10px;}
+        .footer-tag{display:inline-block;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--g3);border:1px solid var(--border);padding:4px 12px;border-radius:20px;background:rgba(52,211,153,0.06);}
+
+        @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes spin{to{transform:rotate(360deg);}}
+        @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-logo" onclick="window.location.href='dashboard.html'"><i class="fa fa-leaf"></i> Bill Optimizer <span class="ai-tag">AI</span></div>
+        <div class="nav-user-area">
+            <div class="user-info"><span id="user-name-display">User</span><small>What-If Simulator</small></div>
+            <div class="profile-dropdown">
+                <img id="user-pfp" class="user-avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+                <div class="dropdown-menu">
+                    <a href="dashboard.html"><i class="fa fa-home"></i> Dashboard</a>
+                    <a href="setup-profile.html"><i class="fa fa-cog"></i> Setup Profile</a>
+                    <a href="ai-memory.html"><i class="fa fa-brain"></i> AI Memory</a>
+                    <a href="nepra-info.html"><i class="fa fa-landmark"></i> Nepra Info</a>
+                    <hr>
+                    <a href="#" onclick="logout()" class="logout-link"><i class="fa fa-sign-out-alt"></i> Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-header">
+        <div id="dynamic-breadcrumb" class="breadcrumb">
+            <a href="dashboard.html">Dashboard</a>
+            <i class="fa fa-chevron-right"></i>
+            <span>Appliance Simulator</span>
+        </div>
+        <h1>The <span class="highlight">Neural</span> Sandbox</h1>
+        <p style="color:var(--text-dim);margin-top:8px;max-width:580px;">Test billing scenarios and simulate appliance additions before they impact your real bill.</p>
+        <span class="model-badge"><i class="fa fa-microchip"></i> NEPRA 2026 Pro-Rata Engine</span>
+    </div>
+
+    <main class="main-container">
+
+        <!-- ═══ SECTION 1: QUICK BILL CALCULATOR ═══ -->
+        <div class="calc-section">
+            <div class="section-header">
+                <div class="section-icon"><i class="fa fa-calculator"></i></div>
+                <div class="section-title">
+                    <h3>Quick Bill Calculator</h3>
+                    <p>Enter data to see the exact NEPRA 2026 PKR breakdown instantly.</p>
+                </div>
+            </div>
+
+            <div class="calc-grid">
+                <div class="field-group">
+                    <label class="field-label">Units (kWh)</label>
+                    <input type="number" id="calc-units" class="field-input" placeholder="e.g. 250" oninput="onCalcChange()">
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Sanctioned Load</label>
+                    <div class="select-wrap">
+                        <select id="calc-load" class="field-input" onchange="onCalcChange()">
+                            <option value="" disabled selected>Select load</option>
+                            <option value="1">1 kW — Single Phase</option>
+                            <option value="2">2 kW</option>
+                            <option value="3">3 kW</option>
+                            <option value="5">5 kW — Three Phase</option>
+                            <option value="10">10 kW</option>
+                            <option value="15">15 kW</option>
+                            <option value="20">20 kW</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Tariff Category</label>
+                    <div class="select-wrap">
+                        <select id="calc-cat" class="field-input" onchange="onCalcChange()">
+                            <option value="" disabled selected>Select category</option>
+                            <option value="lifeline">Lifeline (≤100 units)</option>
+                            <option value="protected">Protected (≤200 units)</option>
+                            <option value="non_protected">Standard / Non-Protected</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Billing Days</label>
+                    <input type="number" id="calc-days" class="field-input" value="30" min="1" max="31" oninput="onCalcChange()">
+                </div>
+            </div>
+
+            <div class="result-panel" id="calc-result-panel">
+                <!-- Idle state -->
+                <div class="result-idle" id="calc-idle">
+                    <i class="fa fa-bolt-lightning"></i>
+                    <p>Fill in all three fields above to instantly calculate your NEPRA bill.</p>
+                </div>
+                <!-- Missing fields state -->
+                <div id="calc-missing" style="display:none;text-align:center;"></div>
+                <!-- Loader -->
+                <div class="result-loader" id="calc-loader">
+                    <div class="spinner-sm"></div> Calculating...
+                </div>
+                <!-- Result -->
+                <div class="result-data" id="calc-data" style="display:none;width:100%;"></div>
+            </div>
+        </div>
+
+        <!-- ═══ SECTION 2: APPLIANCE LOAD BUILDER ═══ -->
+        <div class="builder-section">
+            <div class="section-header" style="margin-bottom:20px;">
+                <div class="section-icon"><i class="fa fa-plug"></i></div>
+                <div class="section-title">
+                    <h3>Appliance Load Builder</h3>
+                    <p>Pick appliances, set usage hours, and simulate the PKR cost impact on your bill.</p>
+                </div>
+            </div>
+
+            <div class="builder-grid">
+                <!-- Left: Catalog -->
+                <div class="builder-card">
+                    <div class="cat-tabs" id="cat-tabs"></div>
+                    <div class="catalog-grid" id="catalog-grid"></div>
+                </div>
+
+                <!-- Right: Basket + Result -->
+                <div>
+                    <div class="basket-card">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+                            <div>
+                                <h4 style="font-family:'Syne';font-size:0.95rem;font-weight:800;">Simulation Basket</h4>
+                                <p style="font-size:0.72rem;color:var(--text-dim);margin-top:2px;" id="basket-count">0 appliances added</p>
+                            </div>
+                            <button onclick="clearBasket()" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.75rem;padding:5px 10px;border-radius:8px;transition:0.2s;" onmouseover="this.style.color='var(--error)'" onmouseout="this.style.color='var(--text-dim)'">
+                                <i class="fa fa-trash-can"></i> Clear
+                            </button>
+                        </div>
+
+                        <div id="basket-list">
+                            <div class="basket-empty" id="basket-empty">
+                                <i class="fa fa-basket-shopping"></i>
+                                <p>Click any appliance tile on the left to add it to your simulation.</p>
+                            </div>
+                        </div>
+
+                        <div id="basket-footer" style="display:none;">
+                            <div class="basket-total" id="basket-total-display"></div>
+
+                            <!-- Baseline units input for comparison -->
+                            <div style="margin-bottom:14px;">
+                                <label class="field-label" style="font-size:0.65rem;margin-bottom:6px;display:block;">Your current monthly baseline (kWh) — for comparison</label>
+                                <input type="number" id="basket-baseline" class="field-input" placeholder="e.g. 200" oninput="updateBasketLive()" style="font-size:0.85rem;padding:9px 14px;">
+                            </div>
+
+                            <button class="btn-simulate" id="basket-sim-btn" onclick="runBasketSim()">
+                                <i class="fa fa-bolt"></i> Calculate PKR Impact
+                            </button>
+
+                            <!-- Compare strip -->
+                            <div class="compare-strip" id="compare-strip"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="footer">
+        <div class="footer-brand"><i class="fa fa-graduation-cap"></i> Sir Syed University of Engineering and Technology</div>
+        <p class="footer-sub"><i class="fa fa-map-marker-alt"></i> Gulshan-e-Iqbal, Karachi, Pakistan</p>
+        <div class="footer-tag">FYP 2026 · Smart Energy Management System</div>
+    </footer>
+
+    <script src="js/auth.js"></script>
+    <script>
+    // ─── AUTH ───
+    firebase.auth().onAuthStateChanged(user => {
+        initDynamicBreadcrumb("Appliance Simulator");
+        if (!user) { window.location.href = 'index.html'; return; }
+        document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
+        if (user.photoURL) document.getElementById('user-pfp').src = user.photoURL;
+    });
+
+    // ═══════════════════════════════════════
+    //  SECTION 1: QUICK BILL CALCULATOR
+    // ═══════════════════════════════════════
+    const TARIFF_RATES = {
+        'lifeline': 7.74,        // Avg total cost for Lifeline
+        'protected': 12.34,       // Avg total cost for Protected
+        'non_protected': 33.10,   // Avg total cost for Standard/Unprotected
+        'default': 22.00          // Fallback avg
+    };
+
+    let currentEffectiveRate = TARIFF_RATES.default;
+    let calcTimer = null;
+
+    function onCalcChange() {
+        clearTimeout(calcTimer);
+        const units = document.getElementById('calc-units').value;
+        const load  = document.getElementById('calc-load').value;
+        const cat   = document.getElementById('calc-cat').value;
+        const days  = parseInt(document.getElementById('calc-days').value) || 30;
+
+        currentEffectiveRate = TARIFF_RATES[cat] || TARIFF_RATES.default;
+        updateBasketLive();
+        
+        const missing = [];
+        if (!units || parseFloat(units) <= 0) missing.push('Units');
+        if (!load) missing.push('Sanctioned Load');
+        if (!cat)  missing.push('Tariff Category');
+
+        setCalcState('idle');
+
+        if (missing.length === 3) { setCalcState('idle'); return; }
+        if (missing.length > 0)   { setCalcState('missing', missing); return; }
+
+        setCalcState('loading');
+        calcTimer = setTimeout(() => fetchCalcResult(parseFloat(units), parseFloat(load), cat, days), 500);
+
+        if(Object.keys(basket).length > 0) updateBasketLive();
+    }
+
+    function setCalcState(state, data) {
+        document.getElementById('calc-idle').style.display    = 'none';
+        document.getElementById('calc-missing').style.display = 'none';
+        document.getElementById('calc-loader').style.display  = 'none';
+        document.getElementById('calc-data').style.display    = 'none';
+        document.getElementById('calc-result-panel').classList.remove('has-result');
+
+        if (state === 'idle') {
+            document.getElementById('calc-idle').style.display = 'block';
+        } else if (state === 'missing') {
+            const el = document.getElementById('calc-missing');
+            el.style.display = 'block';
+            el.innerHTML = '<p style="font-size:0.72rem;color:var(--text-dim);margin-bottom:10px;">Still needed:</p>' +
+                data.map(f => `<span class="missing-chip"><i class="fa fa-circle-dot" style="font-size:0.5rem"></i>${f}</span>`).join('');
+        } else if (state === 'loading') {
+            document.getElementById('calc-loader').style.display = 'flex';
+        } else if (state === 'result') {
+            document.getElementById('calc-data').style.display = 'grid';
+            document.getElementById('calc-result-panel').classList.add('has-result');
+        }
+    }
+
+    async function fetchCalcResult(units, load, cat, days) {
+        try {
+            const res  = await fetch('http://localhost:5000/api/simulate_bill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ units, load_kw: load, category: cat, is_eligible: true })
+            });
+            const data = await res.json();
+            if (data.status !== 'success') throw new Error();
+
+            const sim    = data.simulation;
+            const pf     = days / 30;
+            const total  = Math.round(sim.total_bill * pf);
+            const energy = Math.round(sim.energy_cost * pf);
+            const fixed  = Math.round(sim.fixed_charges * pf);
+            const taxes  = Math.round(sim.taxes_and_fca * pf);
+
+            const CAT_COLORS = { lifeline:'#059669', protected:'#0284c7', non_protected:'#dc2626' };
+            const CAT_LABELS = { lifeline:'Lifeline', protected:'Protected', non_protected:'Unprotected' };
+            const catColor   = CAT_COLORS[sim.applied_category] || '#dc2626';
+            const catLabel   = CAT_LABELS[sim.applied_category]  || sim.applied_category;
+
+            document.getElementById('calc-data').innerHTML = `
+                <div class="result-stat">
+                    <div class="result-stat-label">Total Bill (${days}d)</div>
+                    <div class="result-stat-val big">Rs. ${total.toLocaleString()}</div>
+                    <span class="result-category-badge" style="background:${catColor}22;color:${catColor};border:1px solid ${catColor}44">${catLabel}</span>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-label">Energy Charges</div>
+                    <div class="result-stat-val">Rs. ${energy.toLocaleString()}</div>
+                    <div style="font-size:0.65rem;color:var(--text-dim);margin-top:4px;">${Math.round(units * pf / days * 30)} units equiv.</div>
+                </div>
+                <div class="result-stat" style="border-right:none">
+                    <div class="result-stat-label">Fixed + Taxes</div>
+                    <div class="result-stat-val">Rs. ${(fixed + taxes).toLocaleString()}</div>
+                    <div style="font-size:0.65rem;color:var(--text-dim);margin-top:4px;">Fixed: Rs.${fixed.toLocaleString()} · Tax: Rs.${taxes.toLocaleString()}</div>
+                </div>
+            `;
+            setCalcState('result');
+        } catch {
+            setCalcState('missing', ['Backend connection failed — is Flask running?']);
+        }
+    }
+
+    async function updateEffectiveRateFromBackend(load, cat) {
+        try {
+            // We ping the backend with a standard 250 unit sample
+            const res = await fetch('http://localhost:5000/api/simulate_bill', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ units: 250, load_kw: load, category: cat, is_eligible: true })
+            });
+            const data = await res.json();
+            
+            if (data.status === 'success') {
+                const sim = data.simulation;
+                
+                // FIX: Use energy_cost (variable) instead of total_bill (fixed + variable)
+                // This gives us the actual price of 1 kWh for your current slab.
+                currentEffectiveRate = sim.energy_cost / 250; 
+                
+                updateBasketLive(); 
+            }
+        } catch (e) {
+            console.error("Link Sync Error:", e);
+            currentEffectiveRate = 22.44; // Fallback
+        }
+    }
+
+    // ═══════════════════════════════════════
+    //  SECTION 2: APPLIANCE LOAD BUILDER
+    // ═══════════════════════════════════════
+    const CATALOG = {
+        'Cooling': [
+            { id:'ac_std',    name:'Standard AC 1.5T',    icon:'fa-snowflake',       watts:1500, desc:'Fixed speed compressor' },
+            { id:'ac_inv',    name:'Inverter AC 1.5T',    icon:'fa-bolt-lightning',  watts:900,  desc:'DC inverter, avg load' },
+            { id:'ac_1t',     name:'1-Ton AC (Fixed)',    icon:'fa-wind',            watts:1000, desc:'Smaller room AC' },
+            { id:'fan_ac',    name:'Ceiling Fan (AC)',    icon:'fa-fan',             watts:80,   desc:'Standard motor fan' },
+            { id:'fan_dc',    name:'Ceiling Fan (DC)',    icon:'fa-fan',             watts:35,   desc:'Inverter BLDC fan' },
+            { id:'cooler',    name:'Air Cooler',          icon:'fa-water',           watts:150,  desc:'Evaporative cooler' },
+        ],
+        'Kitchen': [
+            { id:'fridge_old',name:'Fridge (Standard)',   icon:'fa-box',             watts:200,  desc:'Older compressor' },
+            { id:'fridge_inv',name:'Fridge (Inverter)',   icon:'fa-box-open',        watts:120,  desc:'Modern inverter type' },
+            { id:'freezer',   name:'Deep Freezer',        icon:'fa-icicles',         watts:250,  desc:'Chest type ~2.5kWh/day' },
+            { id:'microwave', name:'Microwave Oven',      icon:'fa-circle-radiation',watts:1000, desc:'Standard 1000W' },
+            { id:'kettle',    name:'Electric Kettle',     icon:'fa-mug-hot',         watts:1500, desc:'1500W per boil' },
+            { id:'dispenser', name:'Water Dispenser',     icon:'fa-droplet',         watts:500,  desc:'Hot & cold type' },
+        ],
+        'Utilities': [
+            { id:'pump',      name:'Water Pump 1HP',      icon:'fa-water',           watts:746,  desc:'Submersible 1HP' },
+            { id:'pump_1h5',  name:'Water Pump 1.5HP',    icon:'fa-water',           watts:1119, desc:'Submersible 1.5HP' },
+            { id:'geyser',    name:'Electric Geyser',     icon:'fa-hot-tub-person',  watts:3000, desc:'Storage geyser 3kW' },
+            { id:'ups',       name:'UPS / Inverter',      icon:'fa-car-battery',     watts:400,  desc:'Charging load avg' },
+            { id:'iron',      name:'Clothes Iron',        icon:'fa-shirt',           watts:1000, desc:'1000W dry iron' },
+            { id:'washing',   name:'Washing Machine',     icon:'fa-soap',            watts:500,  desc:'Semi-automatic' },
+        ],
+        'Entertainment': [
+            { id:'tv_led',    name:'LED TV 43"',          icon:'fa-tv',              watts:60,   desc:'Energy-efficient LED' },
+            { id:'tv_old',    name:'LCD TV 40"',          icon:'fa-television',      watts:120,  desc:'Older LCD panel' },
+            { id:'desktop',   name:'Desktop PC',          icon:'fa-desktop',         watts:250,  desc:'With monitor' },
+            { id:'laptop',    name:'Laptop',              icon:'fa-laptop',          watts:65,   desc:'On charger' },
+            { id:'router',    name:'WiFi Router',         icon:'fa-wifi',            watts:10,   desc:'Always on' },
+            { id:'ev',        name:'EV Charger L2',       icon:'fa-charging-station',watts:7200, desc:'Level 2 home charger' },
+        ]
+    };
+
+    const basket = {}; // { applianceId: { qty, hours } }
+    let activeCat = 'Cooling';
+
+    // Build category tabs
+    function buildTabs() {
+        const tabsEl = document.getElementById('cat-tabs');
+        tabsEl.innerHTML = Object.keys(CATALOG).map(cat => `
+            <button class="cat-tab ${cat === activeCat ? 'active' : ''}" onclick="switchCat('${cat}')">
+                <i class="fa ${getCatIcon(cat)}"></i> ${cat}
+            </button>
+        `).join('');
+    }
+
+    function getCatIcon(cat) {
+        return { Cooling:'fa-snowflake', Kitchen:'fa-utensils', Utilities:'fa-plug', Entertainment:'fa-tv' }[cat] || 'fa-box';
+    }
+
+    function switchCat(cat) {
+        activeCat = cat;
+        buildTabs();
+        buildCatalog();
+    }
+
+    // Build catalog tiles
+    function buildCatalog() {
+        const grid = document.getElementById('catalog-grid');
+        const apps = CATALOG[activeCat] || [];
+        grid.innerHTML = apps.map(app => `
+            <div class="catalog-tile ${basket[app.id] ? 'in-basket' : ''}" onclick="toggleAppliance('${app.id}')">
+                <i class="fa ${app.icon} tile-icon"></i>
+                <div class="tile-name">${app.name}</div>
+                <div class="tile-watt">${app.watts >= 1000 ? (app.watts/1000).toFixed(1) + ' kW' : app.watts + 'W'} · ${app.desc}</div>
+                <div class="tile-add-hint">${basket[app.id] ? '✓ In basket' : '+ Add to simulation'}</div>
+            </div>
+        `).join('');
+    }
+
+    function findApp(id) {
+        for (const cat of Object.values(CATALOG)) {
+            const found = cat.find(a => a.id === id);
+            if (found) return found;
+        }
+        return null;
+    }
+
+    // Toggle appliance in/out of basket
+    function toggleAppliance(id) {
+        if (basket[id]) {
+            removeFromBasket(id);
+        } else {
+            basket[id] = { qty: 1, hours: 8 };
+            renderBasket();
+            buildCatalog();
+        }
+    }
+
+    function removeFromBasket(id) {
+        const itemEl = document.getElementById('bitem-' + id);
+        const ids = Object.keys(basket);
+        if (itemEl) {
+            itemEl.classList.add('removing');
+            if (ids.length === 1) {
+                document.getElementById('basket-footer').classList.add('footer-fade-out');
+            }
+            setTimeout(() => {
+                delete basket[id];
+                document.getElementById('basket-footer').classList.remove('footer-fade-out');
+                renderBasket();
+                buildCatalog();
+            }, 400);
+        } else {
+            delete basket[id];
+            renderBasket();
+            buildCatalog();
+        }
+    }
+
+    function clearBasket() {
+        const items = document.querySelectorAll('.basket-item');
+        const footer = document.getElementById('basket-footer');
+        
+        if (items.length === 0) return;
+
+        // 1. Fade out the footer and the cards TOGETHER
+        footer.classList.add('footer-fade-out');
+        items.forEach(item => item.classList.add('removing'));
+
+        // 2. Wait for animations to finish
+        setTimeout(() => {
+            Object.keys(basket).forEach(k => delete basket[k]);
+            
+            // 3. Remove the fade class so it's ready for next time
+            footer.classList.remove('footer-fade-out');
+            
+            renderBasket();
+            buildCatalog();
+        }, 400); 
+    }
+
+    function renderBasket() {
+        const list    = document.getElementById('basket-list');
+        const empty   = document.getElementById('basket-empty');
+        const footer  = document.getElementById('basket-footer');
+        const countEl = document.getElementById('basket-count');
+        const ids     = Object.keys(basket);
+
+        countEl.innerText = ids.length === 0 ? '0 appliances added' : `${ids.length} appliance${ids.length > 1 ? 's' : ''} added`;
+
+        if (ids.length === 0) {
+            empty.classList.add('show'); 
+            empty.style.display = 'flex';
+            footer.style.display = 'none'; 
+            list.querySelectorAll('.basket-item').forEach(el => el.remove());
+            document.getElementById('compare-strip').classList.remove('visible');
+            return; 
+        } 
+
+        empty.classList.remove('show');
+        empty.style.display = 'none';
+        footer.style.display = 'block'; 
+
+        // Sync DOM — add missing items
+        ids.forEach(id => {
+            if (!document.getElementById('bitem-' + id)) {
+                const app = findApp(id);
+                if (!app) return;
+                const item = document.createElement('div');
+                item.className = 'basket-item';
+                item.id = 'bitem-' + id;
+                item.innerHTML = `
+                    <div class="basket-item-top">
+                        <div class="basket-item-icon"><i class="fa ${app.icon}"></i></div>
+                        <div class="basket-item-name">${app.name}</div>
+                        <button class="basket-remove" onclick="removeFromBasket('${id}')"><i class="fa fa-xmark"></i></button>
+                    </div>
+                    <div class="basket-controls">
+                        <div>
+                            <div class="basket-ctrl-label">Quantity</div>
+                            <div class="qty-row">
+                                <button class="qty-btn" onclick="adjQty('${id}',-1)">−</button>
+                                <span class="qty-num" id="qty-${id}">${basket[id].qty}</span>
+                                <button class="qty-btn" onclick="adjQty('${id}',1)">+</button>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="basket-ctrl-label">Hours/day: <span id="hval-${id}">${basket[id].hours}h</span></div>
+                            <input type="range" class="hours-slider" min="0.5" max="24" step="0.5"
+                                value="${basket[id].hours}" oninput="adjHours('${id}',this.value)">
+                        </div>
+                    </div>
+                `;
+                
+                // FIX: Change insertBefore to prepend to put new items at the top
+                list.prepend(item); 
+            }
+        });
+
+        // Remove items no longer in basket
+        list.querySelectorAll('.basket-item').forEach(el => {
+            const id = el.id.replace('bitem-','');
+            if (!basket[id]) el.remove();
+        });
+
+        updateBasketLive();
+    }
+
+    function adjQty(id, delta) {
+        basket[id].qty = Math.max(1, basket[id].qty + delta);
+        document.getElementById('qty-' + id).innerText = basket[id].qty;
+        updateBasketLive();
+    }
+
+    function adjHours(id, val) {
+        basket[id].hours = parseFloat(val);
+        document.getElementById('hval-' + id).innerText = parseFloat(val) + 'h';
+        updateBasketLive();
+    }
+
+    function updateBasketLive() {
+        let totalKwh = 0;
+        Object.entries(basket).forEach(([id, cfg]) => {
+            const app = findApp(id);
+            if (!app) return;
+            totalKwh += (app.watts / 1000) * cfg.hours * cfg.qty * 30;
+        });
+
+        const baselineVal = document.getElementById('basket-baseline').value;
+        const simBtn = document.getElementById('basket-sim-btn');
+        
+        // DYNAMIC CALCULATION
+        const calculatedImpact = Math.round(totalKwh * currentEffectiveRate);
+        const topCat = document.getElementById('calc-cat').value;
+        const rateSource = topCat ? `${topCat.toUpperCase().replace('_',' ')} RATE` : "DEFAULT RATE";
+
+        const totalEl = document.getElementById('basket-total-display');
+        totalEl.innerHTML = `
+            <div style="margin-bottom: 12px; padding: 6px 10px; background: rgba(52,211,153,0.05); border-radius: 8px; border: 1px solid rgba(52,211,153,0.1); display: flex; align-items: center; gap: 8px;">
+                <i class="fa fa-link" style="font-size: 0.65rem; color: var(--g3); animation: pulse 2s infinite;"></i>
+                <span style="font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em;">
+                    Calculator Linked: Using ${topCat ? topCat.replace('_',' ') : 'Default'} Profile
+                </span>
+            </div>
+            <div class="basket-total-row">
+                <span style="color:var(--text-dim)">Monthly Load Addition</span>
+                <b>${totalKwh.toFixed(1)} kWh</b>
+            </div>
+            <div class="basket-total-row">
+                <span style="color:var(--text-dim)">Current Unit Rate</span>
+                <b style="color:var(--g3)">Rs. ${currentEffectiveRate.toFixed(2)} <small style="font-size:0.5rem; color:var(--text-dim)">(${rateSource})</small></b>
+            </div>
+            <div class="basket-total-row" style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px;">
+                <span style="font-weight:700;color:var(--text)">Incremental Bill Cost</span>
+                <b style="font-size:1.1rem; color:var(--g3)">Rs. ${calculatedImpact.toLocaleString()}</b>
+            </div>
+        `;
+
+        // GREY OUT BUTTON IF NO BASELINE
+        const isReady = (baselineVal && parseFloat(baselineVal) >= 0);
+        simBtn.disabled = !isReady;
+        simBtn.style.opacity = isReady ? "1" : "0.3";
+        simBtn.style.cursor = isReady ? "pointer" : "not-allowed";
+    }
+
+    async function runBasketSim() {
+        const btn      = document.getElementById('basket-sim-btn');
+        const baseline = parseFloat(document.getElementById('basket-baseline').value) || 0;
+        const load     = parseFloat(document.getElementById('calc-load').value) || 5;
+        const cat      = document.getElementById('calc-cat').value || 'non_protected';
+
+        let addedKwh = 0;
+        Object.entries(basket).forEach(([id, cfg]) => {
+            const app = findApp(id);
+            if (!app) return;
+            addedKwh += (app.watts / 1000) * cfg.hours * cfg.qty * 30;
+        });
+
+        btn.disabled  = true;
+        btn.innerHTML = '<div class="spinner-sm" style="border:2px solid rgba(255,255,255,0.2);border-top-color:#fff;"></div> Calculating...';
+
+        try {
+            const [baseRes, newRes] = await Promise.all([
+                fetch('http://localhost:5000/api/simulate_bill', {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ units: baseline, load_kw: load, category: cat, is_eligible: true })
+                }).then(r => r.json()),
+                fetch('http://localhost:5000/api/simulate_bill', {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ units: baseline + addedKwh, load_kw: load, category: cat, is_eligible: true })
+                }).then(r => r.json())
+            ]);
+
+            if (baseRes.status !== 'success' || newRes.status !== 'success') throw new Error();
+
+            const baseBill = Math.round(baseRes.simulation.total_bill);
+            const newBill  = Math.round(newRes.simulation.total_bill);
+            const diff     = newBill - baseBill;
+            const diffSign = diff >= 0 ? '+' : '';
+            const diffColor = diff > 0 ? 'var(--error)' : 'var(--g3)';
+
+            const strip = document.getElementById('compare-strip');
+            strip.innerHTML = `
+                <p style="font-size:0.65rem;text-transform:uppercase;font-weight:700;color:var(--text-dim);margin-bottom:12px;letter-spacing:0.07em;">Bill Comparison</p>
+                <div class="compare-row">
+                    <div>
+                        <div class="compare-label">Without additions</div>
+                        <div class="compare-val" style="color:var(--text-muted)">Rs. ${baseBill.toLocaleString()}</div>
+                        <div style="font-size:0.65rem;color:var(--text-dim);">${baseline} kWh</div>
+                    </div>
+                    <div class="compare-arrow"><i class="fa fa-arrow-right-long"></i></div>
+                    <div>
+                        <div class="compare-label">With additions</div>
+                        <div class="compare-val" style="color:var(--g3)">Rs. ${newBill.toLocaleString()}</div>
+                        <div style="font-size:0.65rem;color:var(--text-dim);">${Math.round(baseline + addedKwh)} kWh</div>
+                    </div>
+                </div>
+                <div style="text-align:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
+                    <span style="font-size:0.8rem;color:var(--text-dim);">Monthly difference: </span>
+                    <span style="font-family:'Syne';font-size:1rem;font-weight:800;color:${diffColor}">${diffSign}Rs. ${Math.abs(diff).toLocaleString()}</span>
+                </div>
+                <div style="text-align:center;margin-top:6px;font-size:0.7rem;color:var(--text-dim);">Annual impact: 
+                    <strong style="color:${diffColor}">${diffSign}Rs. ${Math.abs(diff * 12).toLocaleString()}/year</strong>
+                </div>
+            `;
+            strip.classList.add('visible');
+        } catch {
+            document.getElementById('compare-strip').innerHTML = `<p style="color:var(--error);font-size:0.8rem;text-align:center"><i class="fa fa-triangle-exclamation"></i> Backend offline — is Flask running?</p>`;
+            document.getElementById('compare-strip').classList.add('visible');
+        } finally {
+            btn.disabled  = false;
+            btn.innerHTML = '<i class="fa fa-bolt"></i> Calculate PKR Impact';
+        }
+    }
+
+    // Init
+    buildTabs();
+    buildCatalog();
+    renderBasket();   
+    updateBasketLive();
+
+    function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }
+    </script>
+</body>
+</html>

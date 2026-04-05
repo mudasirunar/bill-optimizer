@@ -365,6 +365,18 @@
                 <div class="insight-value" id="min-time">--:--</div>
                 <p style="font-size:0.75rem; color:var(--text-dim); margin-top:8px;" id="min-val">Ideal for heavy appliance scheduling</p>
             </div>
+            <div class="insight-card">
+                <div class="insight-icon" id="stability-icon"><i class="fa fa-wave-square"></i></div>
+                <div class="insight-label">Load Stability</div>
+                <div class="insight-value" id="stability-score">-- %</div>
+                <p style="font-size:0.75rem; color:var(--text-dim); margin-top:8px;" id="stability-desc">Analyzing consumption variance...</p>
+            </div>
+            <div class="insight-card">
+                <div class="insight-icon"><i class="fa fa-smog"></i></div>
+                <div class="insight-label">Carbon Footprint</div>
+                <div class="insight-value" id="carbon-val">-- kg</div>
+                <p style="font-size:0.75rem; color:var(--text-dim); margin-top:8px;">Estimated daily CO2 emissions</p>
+            </div>
             <div class="insight-card" id="strategy-card">
                 <div class="insight-icon"><i class="fa fa-brain"></i></div>
                 <div class="insight-label">AI Strategy</div>
@@ -457,7 +469,7 @@
             document.querySelectorAll('.routine-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             activeRoutine = btn.dataset.routine;
-            runForecaster();
+            runForecaster(true); 
         }
 
         function showLoadingError(message) {
@@ -487,7 +499,7 @@
         }
 
         // ── Main forecaster ──
-        async function runForecaster() {
+        async function runForecaster( isSimulation = false ) {
             const loadingOverlay = document.getElementById('loading');
             const spinner = document.getElementById('loading-spinner');
             const loadText = document.getElementById('loading-text');
@@ -552,7 +564,14 @@
                         standard: 1.00, morning_active: 1.04,
                         evening_active: 1.08, all_day: 1.15
                     };
-                    const rf = ROUTINE_FACTORS[activeRoutine] || 1.0;
+
+                    const profileRoutine = currentUserDoc.user_routine || 'standard';
+                    
+                    let rf = 1.0;
+                    if (isSimulation) {
+                        rf = ROUTINE_FACTORS[activeRoutine] / ROUTINE_FACTORS[profileRoutine];
+                    }
+
                     const forecastArray = data.forecast.map(v => parseFloat((v * rf).toFixed(4)));
 
                     // 1. SAVE GLOBAL DATA FIRST
@@ -564,7 +583,14 @@
                     renderHourlyGrid(data.hours, forecastArray);
                     renderArchetypeCard(data.archetype, data.month);
                     renderDiscoCard(currentUserDoc.disco, data.month, data.ac_scale);
-                    renderDailyCost(data.finance);
+                    const simulatedFinance = {
+                        ...data.finance,
+                        daily_units: (data.finance.daily_units * rf),
+                        monthly_units: (data.finance.monthly_units * rf),
+                        daily_cost: (data.finance.daily_cost * rf),
+                        monthly_cost: (data.finance.monthly_cost * rf)
+                    };
+                    renderDailyCost(simulatedFinance);
 
                     // Month label
                     const monthName = new Date(targetYear, data.month - 1, 1).toLocaleString('default', { month: 'long' });
@@ -718,11 +744,42 @@
             const peakHour = hours[forecast.indexOf(maxLoad)];
             const minHour  = hours[forecast.indexOf(minLoad)];
 
+            const totalDailyUnits = forecast.reduce((a, b) => a + b, 0);
             const fmt = h => `${h % 12 || 12}:00 ${h >= 12 ? 'PM' : 'AM'}`;
             document.getElementById('peak-val').innerText  = `${maxLoad.toFixed(3)} kW`;
             document.getElementById('peak-time').innerText = fmt(peakHour);
             document.getElementById('min-time').innerText  = fmt(minHour);
             document.getElementById('min-val').innerText   = `${minLoad.toFixed(3)} kW · Best window for heavy loads`;
+
+            const carbonKg = totalDailyUnits * 0.45;
+            document.getElementById('carbon-val').innerText = `${carbonKg.toFixed(2)} kg CO2`;
+
+            // ── Load Stability Score ──
+            const mean   = forecast.reduce((a, b) => a + b, 0) / forecast.length;
+            const stdDev = Math.sqrt(forecast.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / forecast.length);
+            // Coefficient of Variation (CV): lower = more stable
+            const cv           = mean > 0 ? (stdDev / mean) : 1;
+            const stabilityPct = Math.round(Math.max(0, Math.min(100, (1 - cv) * 100)));
+
+            document.getElementById('stability-score').innerText = `${stabilityPct}%`;
+
+            // Dynamic icon and message based on score
+            const iconBox  = document.getElementById('stability-icon');
+            const descEl   = document.getElementById('stability-desc');
+
+            if (stabilityPct >= 75) {
+                iconBox.style.background = 'rgba(52,211,153,0.15)';
+                iconBox.innerHTML = '<i class="fa fa-wave-square" style="color:#34d399"></i>';
+                descEl.innerText  = 'Flat, predictable load — baseload appliances dominate. Easy to budget.';
+            } else if (stabilityPct >= 50) {
+                iconBox.style.background = 'rgba(251,191,36,0.1)';
+                iconBox.innerHTML = '<i class="fa fa-wave-square" style="color:#fbbf24"></i>';
+                descEl.innerText  = 'Moderate spikes detected. Heavy appliances are creating demand peaks.';
+            } else {
+                iconBox.style.background = 'rgba(248,113,113,0.1)';
+                iconBox.innerHTML = '<i class="fa fa-wave-square" style="color:#f87171"></i>';
+                descEl.innerText  = 'High variance — erratic usage pattern. AC or pump switching is causing sharp spikes.';
+            }
 
             const textEl = document.getElementById('strategy-text');
 
@@ -801,17 +858,24 @@
             auditContainer.innerHTML = '';
 
             const effRate = currentForecast.finance.effective_rate;
+            const appliedCat = currentForecast.finance.applied_category;
 
             // 2. Context Variables
             const h12 = hour % 12 || 12;
             const period = hour >= 12 ? 'PM' : 'AM';
             const isPeak = hour >= 18 && hour <= 22;
 
+            const readableCategory = formatCategory(appliedCat);
+            const statusEl = document.getElementById('m-status');
+            
+            // Combine Category + Temporal Status (e.g., "Protected Peak")
+            statusEl.innerText = `${readableCategory} ${isPeak ? 'Peak Window' : 'Off-Peak'}`;
+            statusEl.style.color = isPeak ? 'var(--warn)' : 'var(--g3)';
+
             document.getElementById('m-time').innerText = `${hour % 12 || 12}:00 ${hour >= 12 ? 'PM' : 'AM'}`;
             document.getElementById('m-load').innerText = `${load.toFixed(3)} kW`;
             document.getElementById('m-cost').innerText = `Rs. ${(load * effRate).toFixed(2)}`;
             
-            const statusEl = document.getElementById('m-status');
             statusEl.innerText = isPeak ? 'NEPRA Peak Hours (High Tax)' : 'Standard Off-Peak';
             statusEl.style.color = isPeak ? 'var(--warn)' : 'var(--g3)';
 
@@ -841,8 +905,6 @@
             if (inv.fans > 0) potential.push({ id: 'fan', label: 'Fans & Ventilation', score: inv.fans * 0.08 * weights.fan, icon: 'wind', color: '#34d399', desc: `${inv.fans} Active Fans` });
             if (inv.fridge > 0) potential.push({ id: 'fridge', label: 'Refrigeration', score: inv.fridge * 0.15 * weights.fridge, icon: 'box', color: '#10b981', desc: 'Always On' });
             if (inv.pump > 0 || inv.wash > 0) potential.push({ id: 'motor', label: 'Heavy Motors', score: (inv.pump * 0.75 + inv.wash * 0.4) * weights.pump, icon: 'gears', color: '#fbbf24', desc: 'Pump/Washing' });
-            
-            // Baseload is always present (Lights/Standby/Phone)
             potential.push({ id: 'base', label: 'Neural Baseload', score: (inv.people * 0.04) + (0.1 * weights.light), icon: 'bolt', color: '#a5b4fc', desc: 'Always Active' });
 
             const totalScore = potential.reduce((s, p) => s + p.score, 0) || 0.1;
@@ -871,32 +933,33 @@
 
             // ─── 7. THE INTELLIGENT STRATEGY ENGINE (Tips) ───
             let tipContent = "";
-
+            
             // A. NO MAJOR APPLIANCES CASE
             if (inv.ac === 0 && inv.pump === 0 && inv.fridge === 0) {
-                tipContent = `<strong>Minimalist Profile:</strong> Your load is purely lights and fans. Since you have no heavy appliances, ensure your ${inv.fans} fans are DC Inverter type to stay in the Lifeline slab.`;
+                tipContent = `<strong>Minimalist Profile:</strong> Your load is purely lights and fans. Since you are in the <strong>${readableCategory}</strong> category, ensuring your ${inv.fans} fans are DC Inverter type is the fastest way to drop into a lower tax slab.`;
             } 
-            // B. PEAK HOUR CASE
+            // B. PEAK HOUR CASE (6 PM - 10 PM)
             else if (isPeak) {
                 if (dominantAppliance.id === 'ac') {
-                    tipContent = `<strong>Critical Peak Alert:</strong> Your AC is the 1# cost driver right now. Raising the thermostat to 27°C for these 4 hours can save you Rs. 1,800/month.`;
+                    tipContent = `<strong>Critical Peak Alert:</strong> Your AC is the #1 cost driver during this expensive window. For <strong>${readableCategory}</strong> users, raising the thermostat to 27°C right now can save approximately Rs. 1,800/month.`;
                 } else {
-                    tipContent = `<strong>Peak Management:</strong> Even without AC, your usage is higher. Dimming lights and using only one fan during 6PM-10PM protects your slab eligibility.`;
+                    tipContent = `<strong>Peak Management:</strong> You are in the high-tax window. Even without AC, your <strong>${dominantAppliance.label}</strong> usage is high. Dimming lights and reducing fan speeds now helps protect your slab eligibility.`;
                 }
             }
-            // C. MOTOR CASE
+            // C. MOTOR CASE (Pump or Washing Machine)
             else if (dominantAppliance.id === 'motor') {
-                tipContent = `<strong>Neural Sync:</strong> We detected heavy motor activity. Using your Pump/Washer at this hour (${h12}${period}) is smart—it avoids the 6PM surcharges.`;
+                tipContent = `<strong>Neural Sync:</strong> Heavy motor activity detected. Running your Pump/Washer during this <strong>${readableCategory} Off-Peak</strong> hour (${h12}${period}) is a smart financial move—it avoids the 6 PM surcharges.`;
             }
-            // D. AFTERNOON HEAT CASE
+            // D. AFTERNOON HEAT CASE (12 PM - 4 PM)
             else if (hour >= 12 && hour <= 16 && inv.ac > 0) {
-                tipContent = `<strong>Thermal Efficiency:</strong> At this heat peak, your ACs are working at 90% capacity. Keep windows sealed to reduce the kW draw shown above.`;
+                tipContent = `<strong>Thermal Efficiency:</strong> At this heat peak, your ACs are drawing maximum kW. As a <strong>${readableCategory}</strong> consumer, keeping windows sealed now is vital to prevent "creeping" into the next expensive slab.`;
             }
-            // E. DEFAULT
+            // E. DEFAULT / EFFICIENT
             else {
-                tipContent = `<strong>Standard Efficiency:</strong> Your current load is well-distributed. No specific waste detected for your profile at ${h12}:00.`;
+                tipContent = `<strong>Standard Efficiency:</strong> Your current load is well-distributed. No specific waste detected for your profile at ${h12}:00. This routine keeps your <strong>${readableCategory}</strong> effective rate stable.`;
             }
 
+            // Render the final tip with the Brain Icon
             tipEl.innerHTML = `<i class="fa fa-brain" style="color:var(--g3); margin-right:8px;"></i> ${tipContent}`;
 
             document.getElementById('hour-modal').style.display = 'flex';
@@ -916,7 +979,7 @@
         function renderArchetypeCard(archetype, month) {
             const card = document.getElementById('archetype-card');
             const num  = archetype.replace('House', '');
-            const mName = new Date(2024, month - 1, 1).toLocaleString('default', { month: 'long' });
+            const mName = new Date(0, month - 1).toLocaleString('default', { month: 'long' });
             document.getElementById('archetype-title').innerText = `Matched Archetype: PRECON Model #${num}`;
             document.getElementById('archetype-desc').innerText =
                 `Your appliance inventory was matched against all 41 PRECON dataset households using K-Nearest Neighbours. ` +

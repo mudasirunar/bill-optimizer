@@ -691,7 +691,7 @@ def forecast_24h():
 
 @app.route('/api/predict_bill', methods=['POST'])
 def predict_user_bill():
-    """v2.5 — Optimized Synchronized Engine (Single Month)"""
+    """v2.6 — Memory-Aware Synchronized Engine (Aligned with Roadmap Chart)"""
     try:
         data = request.json
         uid = data['uid']
@@ -701,35 +701,69 @@ def predict_user_bill():
         if not user_doc.exists: return jsonify({"error": "Profile not found"}), 404
         u = user_doc.to_dict()
 
+        # ─── STEP 1: INITIALIZE ROLLING WINDOW FROM REAL HISTORY ───
         history = u.get('bill_history', [])
         sorted_hist = sorted(history, key=lambda x: x.get('month', '0000-00'))
-        # Extract only the units into a clean list for the engine
-        actual_units_history = [float(b.get('units', 0)) for b in sorted_hist if float(b.get('units', 0)) > 5]
+        # Load real history units (the NEPRA memory)
+        rolling_window = [float(b.get('units', 0)) for b in sorted_hist if float(b.get('units', 0)) > 5][-12:]
 
-        # ── 1. UNIFIED PHYSICS ──
-        physics = compute_true_baseload(u, target_month)
+        # Determine where the simulation starts
+        if sorted_hist:
+            last_m_str = sorted_hist[-1].get('month', '0000-00')
+            _, last_m_int = map(int, last_m_str.split('-'))
+            current_sim_month = (last_m_int % 12) + 1
+        else:
+            current_sim_month = get_current_month()
+
+        # ─── STEP 2: SIMULATE THE GAP UNTIL TARGET MONTH ───
+        # This ensures intermediate months update the 'rolling_window' memory
+        final_units = 0
+        physics = {}
+        rf_kwh = 0
         
-        # ── 2. UNIFIED RF INFERENCE (The 13-Feature Contract) ──
-        feature_vector = {feat: 0.0 for feat in bill_feats}
-        feature_vector.update({
-            'ac_monthly': physics['ac'], 'kitchen_monthly': physics['kitchen'],
-            'refrigerator_monthly': physics['fridge'], 'ups_monthly': physics['ups'],
-            'wp_monthly': physics['water_pump'], 'weekend_usage': safe_get(u, 'mean_hourly', 0.05),
-            'month_num': float(target_month), 'person_count': max(safe_get(u, 'person_count', 1.0), 1.0),
-            'property_area': safe_get(u, 'property_area', 500.0), 'meta_ac_count': safe_get(u, 'ac_qty'),
-            'meta_fridge_count': safe_get(u, 'f_qty'), 'meta_ups_count': safe_get(u, 'u_qty', 0.0),
-            'floors': safe_get(u, 'floors', 1.0)
-        })
-        rf_kwh = float(rf_model.predict(pd.DataFrame([feature_vector]))[0])
+        # We simulate from the 'next' month until we reach the 'target' month
+        # If target_month is the immediate next month, loop runs once.
+        max_safety_iterations = 13 # Prevent infinite loops
+        while max_safety_iterations > 0:
+            m = current_sim_month
+            
+            # Physics + RF logic for this step
+            physics = compute_true_baseload(u, m)
+            feature_vector = {feat: 0.0 for feat in bill_feats}
+            feature_vector.update({
+                'ac_monthly': physics['ac'], 'kitchen_monthly': physics['kitchen'],
+                'refrigerator_monthly': physics['fridge'], 'ups_monthly': physics['ups'],
+                'wp_monthly': physics['water_pump'], 'weekend_usage': safe_get(u, 'mean_hourly', 0.05),
+                'month_num': float(m), 'person_count': max(safe_get(u, 'person_count', 1.0), 1.0),
+                'property_area': safe_get(u, 'property_area', 500.0), 'meta_ac_count': safe_get(u, 'ac_qty'),
+                'meta_fridge_count': safe_get(u, 'f_qty'), 'meta_ups_count': safe_get(u, 'u_qty', 0.0),
+                'floors': safe_get(u, 'floors', 1.0)
+            })
+            rf_kwh = float(rf_model.predict(pd.DataFrame([feature_vector]))[0])
+            final_units = calculate_hybrid_units(u, physics, rf_kwh, m)
 
-        # ── 3. UNIFIED BLENDING ──
-        final_units = calculate_hybrid_units(u, physics, rf_kwh, target_month)
+            # Check if this is our destination
+            if m == target_month:
+                break
+                
+            # Otherwise, update the memory and move to next month
+            rolling_window.append(final_units)
+            if len(rolling_window) > 12: rolling_window.pop(0)
+            current_sim_month = (m % 12) + 1
+            max_safety_iterations -= 1
 
-        # ── 4. NEPRA ──
+        # ─── STEP 3: NEPRA CALCULATION (Using simulated window) ───
         cat = u.get('user_category', 'lifeline')
-        is_eligible = nepra.check_eligibility(actual_units_history, cat)
+        # This now checks eligibility based on simulated sequence leading to target_month
+        is_eligible = nepra.check_eligibility(rolling_window, cat)
         sanc_load = safe_get(u, 'sanctioned_load', 1.0)
-        bill_res = nepra.calculate_bill(units=final_units, load_kw=sanc_load, user_category=cat, is_eligible= is_eligible)
+        
+        bill_res = nepra.calculate_bill(
+            units=final_units, 
+            load_kw=sanc_load, 
+            user_category=cat, 
+            is_eligible=is_eligible
+        )
 
         valid_hist_count = len([b for b in u.get('bill_history', []) if float(b.get('units', 0)) > 5])
 
@@ -829,6 +863,34 @@ def seasonal_preview():
         import traceback; traceback.print_exc(); return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/simulate_bill', methods=['POST'])
+def simulate_bill():
+    try:
+        data = request.json
+        # Input parameters for simulation
+        units = float(data.get('units', 0))
+        load_kw = float(data.get('load_kw', 1.0))
+        category = data.get('category', 'non_protected')
+        
+        # We use a dummy history for eligibility check or pass it from UI
+        # For simulation, we usually assume 'eligible' to show best-case savings
+        is_eligible = data.get('is_eligible', True)
+
+        # Call your existing NepraEngine
+        bill_res = nepra.calculate_bill(
+            units=units, 
+            load_kw=load_kw, 
+            user_category=category, 
+            is_eligible=is_eligible
+        )
+
+        return jsonify({
+            "status": "success",
+            "simulation": bill_res
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 if __name__ == '__main__':
     validate() 
     app.run(host='0.0.0.0', port=5000, debug=True)
