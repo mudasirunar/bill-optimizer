@@ -190,7 +190,8 @@ function initDynamicBreadcrumb(currentPageTitle) {
         'appliance-simulator.html': 'Appliance Simulator',
         'ai-memory.html': 'AI Memory',
         'setup-profile.html': 'Setup Profile',
-        'nepra-info.html': 'NEPRA Info'
+        'nepra-info.html': 'NEPRA Info',
+        'about-us.html': 'About Us'
     };
 
     // Start with Dashboard as the permanent root
