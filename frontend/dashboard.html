@@ -31,6 +31,10 @@
             font-family: 'DM Sans', sans-serif;
             background: var(--dark); color: var(--text);
             min-height: 100vh; overflow-x: hidden;
+            opacity: 0;transition: opacity 0.5s ease;
+        }
+        body.auth-verified {
+            opacity: 1;
         }
         body::before {
             content: ''; position: fixed; inset: 0; z-index: 0;
@@ -164,6 +168,11 @@
         }
         .hero-stats span:hover { background: rgba(52,211,153,0.14); border-color: var(--g2); }
         .hero-stats span i { color: var(--g2); }
+
+        /* This class will be added by JS once we know the user is logged in */
+        body.auth-verified {
+            opacity: 1;
+        }
 
         /* ── MAIN CONTAINER ── */
         .main-container { position: relative; z-index: 1; max-width: 1160px; margin: 0 auto; padding: 0 5% 80px; }
@@ -1195,6 +1204,7 @@
     firebase.auth().onAuthStateChanged(user => {
         if (!user) { window.location.href = "index.html"; return; }
 
+        document.body.classList.add('auth-verified');
         const greeting = getGreeting();
         const firstName = user.displayName ? user.displayName.split(' ')[0] : user.email.split('@')[0];
         document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
