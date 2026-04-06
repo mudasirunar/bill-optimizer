@@ -559,6 +559,11 @@
                     body: JSON.stringify({ uid: userUid, month: targetMonth })
                 }).catch(() => { throw new Error("Neural Engine Offline: Flask backend is not running on Port 5000.") });
 
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Server Error: ${response.status}`);
+                }
+                
                 const data = await response.json();
 
                 if (data.status === "success") {
@@ -614,6 +619,9 @@
                 }
             } catch (err) {
                 console.error("Forecaster Error:", err);
+                const errorMsg = isLocal 
+                    ? "Local Backend Offline: Is Flask running on Port 5000?" 
+                    : "Cloud Neural Engine is waking up. Please wait 30 seconds and retry.";
                 showLoadingError(err.message);
             }
         }
