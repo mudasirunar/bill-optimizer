@@ -40,14 +40,17 @@ nepra = NepraEngine()
 # ─────────────────────────────────────────
 #  FIREBASE
 # ─────────────────────────────────────────
-cred = credentials.Certificate("serviceAccountKey.json")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+cred_path = os.path.join(BASE_DIR, "serviceAccountKey.json")
+cred = credentials.Certificate(cred_path)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
 # ─────────────────────────────────────────
 #  LOAD MODELS
 # ─────────────────────────────────────────
-MODELS_DIR  = "../data/processed/models"
+MODELS_DIR = os.path.join(BASE_DIR, "data", "processed", "models")
+
 rf_model    = joblib.load(os.path.join(MODELS_DIR, "rf_bill_predictor.pkl"))
 bill_feats  = joblib.load(os.path.join(MODELS_DIR, "bill_features.pkl"))
 lstm_model  = tf.keras.models.load_model(os.path.join(MODELS_DIR, "lstm_forecaster.keras"))
@@ -61,7 +64,7 @@ with open(os.path.join(MODELS_DIR, "seasonal_coefficients.json")) as f:
     _raw = json.load(f)
     SEASONAL_COEFFICIENTS = {int(k): tuple(v) for k, v in _raw.items()}
 
-MASTER_PATH = "../data/processed/master_hourly.csv"
+MASTER_PATH = os.path.join(BASE_DIR, "data", "processed", "master_hourly.csv")
 _master_df  = None
 
 def get_master_df():
