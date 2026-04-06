@@ -320,10 +320,10 @@
                 
                 <div style="background: rgba(5,20,10,0.5); padding: 25px; border-radius: 16px; border: 1px solid var(--border);">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px;">
-                        <h4 style="font-family: 'Syne', sans-serif; font-weight: 700; color: var(--g3); display: flex; align-items: center; gap: 8px;">
+                        <h4 style="font-family: 'Syne', sans-serif; font-weight: 700; color: #ff4d4d; display: flex; align-items: center; gap: 8px;">
                             <i class="fa fa-tree"></i> Random Forest
                         </h4>
-                        <div style="font-size: 0.55rem; background: var(--g1); color: white; padding: 3px 8px; border-radius: 4px; font-weight: 800; white-space: nowrap; text-transform: uppercase;">REGRESSION</div>
+                        <div style="font-size: 0.55rem; background: #cc0000; color: white; padding: 3px 8px; border-radius: 4px; font-weight: 800; white-space: nowrap; text-transform: uppercase;">REGRESSION</div>
                     </div>
                     <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">A sophisticated regressor calibrated on 13 zero-leakage features. It handles long-term forecasting by analyzing appliance counts and seasonal drift.</p>
                     <div style="margin-top: 12px; font-size: 0.7rem; color: var(--text-dim); font-weight: 700;"><i class="fa fa-circle-check"></i> R² ACCURACY: ~0.84</div>
@@ -479,7 +479,7 @@
     });
 
     function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }
-    
+
     </script>
 </body>
 </html>
