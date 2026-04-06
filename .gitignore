@@ -1,18 +1,35 @@
-# Python local files
+# ──────────────────────────────────────────────────────────
+# 1. PYTHON & SYSTEM FILTERS
+# ──────────────────────────────────────────────────────────
 backend/venv/
 backend/__pycache__/
 backend/*.pyc
-
-# Data (Ignore massive CSVs)
-data/raw/
-data/processed/*
-
-# BUT DO NOT ignore the models folder inside processed
-!data/processed/models/
-
-# System files
 .DS_Store
 .vscode/
 
-# Firebase private key (IMPORTANT: Never upload this)
+# ──────────────────────────────────────────────────────────
+# 2. DATA FOLDER LOGIC (backend/data)
+# ──────────────────────────────────────────────────────────
+
+# Ignore all raw source data
+backend/data/raw/
+
+# Ignore everything in processed (per-house folders, temporary CSVs)
+backend/data/processed/*
+
+# ── EXCEPTION RULES (White-listing the Essentials) ──
+
+# KEEP the models folder (Required for RF, LSTM, and KNN inference)
+!backend/data/processed/models/
+
+# KEEP the Master Hourly CSV (Required for the LSTM Seed habit database)
+!backend/data/processed/master_hourly.csv
+
+# ──────────────────────────────────────────────────────────
+# 3. SECURITY SENSITIVE FILES
+# ──────────────────────────────────────────────────────────
+
+# WARNING: If you are using a PRIVATE GitHub repo, you can 
+# comment out the line below to push the key to Render. 
+# If your repo is PUBLIC, keep it ignored and use Render 'Secret Files'.
 backend/serviceAccountKey.json
