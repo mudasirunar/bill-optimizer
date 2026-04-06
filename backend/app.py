@@ -64,15 +64,6 @@ with open(os.path.join(MODELS_DIR, "seasonal_coefficients.json")) as f:
     _raw = json.load(f)
     SEASONAL_COEFFICIENTS = {int(k): tuple(v) for k, v in _raw.items()}
 
-MASTER_PATH = os.path.join(BASE_DIR, "data", "processed", "master_hourly.csv")
-_master_df  = None
-
-def get_master_df():
-    global _master_df
-    if _master_df is None:
-        _master_df = pd.read_csv(MASTER_PATH, parse_dates=["datetime"])
-    return _master_df
-
 
 # ─────────────────────────────────────────
 #  SAFE GETTER
@@ -402,38 +393,46 @@ def _synthetic_seed(user_mean: float, current_month: int) -> np.ndarray:
     return seed
 
 def get_lstm_seed(house_id: str, user_mean: float, month: int) -> np.ndarray:
+    """
+    v2.0 — Reads pre-computed seed from Firestore instead of CSV.
+    Zero RAM overhead. Same data, same LSTM output.
+    Falls back to synthetic seed if Firestore read fails.
+    """
     try:
-        master     = get_master_df()
-        house_data = master[master["house_id"] == house_id].sort_values("datetime")
-        if len(house_data) < 48:
-            raise ValueError("Insufficient data")
-        monthly = house_data[house_data["datetime"].dt.month == month]
-        seed_48h = monthly.tail(48).copy() if len(monthly) >= 48 else house_data.tail(48).copy()
-        house_mean = seed_48h["usage_kw"].mean()
+        doc_id  = f"{house_id}_month_{month}"
+        doc_ref = db.collection("lstm_seeds").document(doc_id).get()
+ 
+        if not doc_ref.exists:
+            raise ValueError(f"Seed document not found: {doc_id}")
+ 
+        seed_data = doc_ref.to_dict()
+        flat      = seed_data["data"]           # 480 floats (48 × 10)
+        rows      = seed_data.get("rows", 48)
+        cols      = seed_data.get("cols", len(LSTM_FEATURES))
+        matrix    = np.array(flat, dtype=np.float32).reshape(rows, cols)  # (48, 10)
+ 
+        if matrix.shape != (48, len(LSTM_FEATURES)):
+            raise ValueError(f"Unexpected shape: {matrix.shape}")
+ 
+        # Scale to match this user's mean consumption
+        # (same logic as before — just source changed from CSV to Firestore)
+        house_mean = matrix[:, 0].mean()  # usage_kw is index 0
         if house_mean > 0:
             sf = user_mean / house_mean
-            seed_48h["usage_kw"]        *= sf
-            seed_48h["ac_kw"]           *= sf
-            seed_48h["refrigerator_kw"] *= sf
+            matrix[:, 0] *= sf  # scale usage_kw
+            matrix[:, 1] *= sf  # scale ac_kw
+            matrix[:, 2] *= sf  # scale refrigerator_kw
+ 
+        # Update month cyclical encoding for target month
         ms, mc = encode_cyclical(month, 12)
-        seed_48h["month_sin"] = ms
-        seed_48h["month_cos"] = mc
-        if "hour_sin" not in seed_48h.columns:
-            seed_48h["hour_sin"], seed_48h["hour_cos"] = zip(
-                *seed_48h["datetime"].dt.hour.apply(lambda h: encode_cyclical(h, 24))
-            )
-        if "day_of_week_sin" not in seed_48h.columns:
-            seed_48h["day_of_week_sin"], seed_48h["day_of_week_cos"] = zip(
-                *seed_48h["datetime"].dt.dayofweek.apply(lambda d: encode_cyclical(d, 7))
-            )
-        avail  = [f for f in LSTM_FEATURES if f in seed_48h.columns]
-        matrix = seed_48h[avail].fillna(0).values
-        miss   = len(LSTM_FEATURES) - len(avail)
-        if miss > 0:
-            matrix = np.hstack([matrix, np.zeros((48, miss))])
-        return matrix[:, :len(LSTM_FEATURES)]
+        matrix[:, 7] = ms  # month_sin is index 7
+        matrix[:, 8] = mc  # month_cos is index 8
+ 
+        return matrix
+ 
     except Exception as e:
-        print(f"[WARN] LSTM seed fallback: {e}")
+        print(f"[WARN] Firestore seed read failed ({house_id}, month {month}): {e}")
+        print(f"[WARN] Falling back to synthetic seed")
         return _synthetic_seed(user_mean, month)
     
 def _get_calibration(u: dict) -> tuple:

@@ -22,9 +22,6 @@ backend/data/processed/*
 # KEEP the models folder (Required for RF, LSTM, and KNN inference)
 !backend/data/processed/models/
 
-# KEEP the Master Hourly CSV (Required for the LSTM Seed habit database)
-!backend/data/processed/master_hourly.csv
-
 # ──────────────────────────────────────────────────────────
 # 3. SECURITY SENSITIVE FILES
 # ──────────────────────────────────────────────────────────
