@@ -234,6 +234,42 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 640px) { .page-header h1 { font-size: 1.8rem; } .hourly-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); } }
+    
+        /* ── SCROLL TOP BUTTON ── */
+        .scroll-top {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 500;
+            width: 42px;
+            height: 42px;
+            background: var(--g1);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 20px var(--glow);
+            opacity: 0; /* Hidden by default */
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s, background 0.3s;
+        }
+
+        /* Shown when page is scrolled */
+        .scroll-top.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .scroll-top:hover {
+            transform: translateY(-3px);
+            background: var(--g2);
+            box-shadow: 0 8px 25px var(--glow-strong);
+        }
+
     </style>
 </head>
 <body>
@@ -249,6 +285,7 @@
                 <img id="user-pfp" class="user-avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
                 <div class="dropdown-menu">
                     <a href="dashboard.html"><i class="fa fa-home"></i> Dashboard</a>
+                    <a href="prediction-hub.html"><i class="fa fa-bolt-lightning"></i> Prediction Hub</a>
                     <a href="setup-profile.html"><i class="fa fa-cog"></i> Setup Profile</a>
                     <a href="ai-memory.html"><i class="fa fa-brain"></i> AI Memory</a>
                     <a href="nepra-info.html"><i class="fa fa-landmark"></i> NEPRA Info</a>
@@ -439,6 +476,10 @@
         <p class="footer-sub"><i class="fa fa-map-marker-alt"></i> Gulshan-e-Iqbal, Karachi, Pakistan</p>
         <div class="footer-tag">FYP 2026 · Smart Energy Management System</div>
     </footer>
+
+    <button class="scroll-top" id="scrollBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+        <i class="fa fa-chevron-up"></i>
+    </button>
 
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
@@ -1062,35 +1103,44 @@
             textEl.innerText   = d.text;
             card.style.display = 'block';
         }
+        // Monitor scroll position to show/hide the Up Arrow
+        window.addEventListener('scroll', () => {
+            const scrollBtn = document.getElementById('scrollBtn');
+            if (window.scrollY > 300) {
+                scrollBtn.classList.add('visible');
+            } else {
+                scrollBtn.classList.remove('visible');
+            }
+        });
 
         function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }
     </script>
-    <div class="modal-overlay" id="hour-modal">
-        <div class="modal-content">
-            <button class="close-modal" onclick="closeModal()"><i class="fa fa-times"></i></button>
-            
-            <div class="modal-header-time" id="m-time">14:00 PM</div>
-            <p id="m-status" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; margin-top: 4px;"></p>
+        <div class="modal-overlay" id="hour-modal">
+            <div class="modal-content">
+                <button class="close-modal" onclick="closeModal()"><i class="fa fa-times"></i></button>
+                
+                <div class="modal-header-time" id="m-time">14:00 PM</div>
+                <p id="m-status" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; margin-top: 4px;"></p>
 
-            <div class="modal-stat-grid">
-                <div class="m-stat">
-                    <div class="insight-label">Hour Load</div>
-                    <div class="insight-value" id="m-load" style="font-size: 1.1rem;">0.00 kW</div>
-                </div>
-                <div class="m-stat">
-                    <div class="insight-label">Estimated Cost</div>
-                    <div class="insight-value" id="m-cost" style="font-size: 1.1rem;">Rs. 0.0</div>
-                </div>
-            </div>
-
-            <h4 style="font-family:'Syne'; font-size: 0.85rem; margin-bottom: 12px;">Neural Participation Audit</h4>
-            <div id="m-audit-list">
+                <div class="modal-stat-grid">
+                    <div class="m-stat">
+                        <div class="insight-label">Hour Load</div>
+                        <div class="insight-value" id="m-load" style="font-size: 1.1rem;">0.00 kW</div>
+                    </div>
+                    <div class="m-stat">
+                        <div class="insight-label">Estimated Cost</div>
+                        <div class="insight-value" id="m-cost" style="font-size: 1.1rem;">Rs. 0.0</div>
+                    </div>
                 </div>
 
-            <div id="m-tip" style="margin-top: 20px; padding: 15px; background: rgba(52,211,153,0.05); border-radius: 12px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
+                <h4 style="font-family:'Syne'; font-size: 0.85rem; margin-bottom: 12px;">Neural Participation Audit</h4>
+                <div id="m-audit-list">
+                    </div>
+
+                <div id="m-tip" style="margin-top: 20px; padding: 15px; background: rgba(52,211,153,0.05); border-radius: 12px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
+                </div>
             </div>
         </div>
-    </div>
 
 </body>
 </html>

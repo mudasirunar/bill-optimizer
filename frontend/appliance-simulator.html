@@ -247,6 +247,42 @@
         @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
         @keyframes spin{to{transform:rotate(360deg);}}
         @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+
+        /* ── SCROLL TOP BUTTON ── */
+        .scroll-top {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 500;
+            width: 42px;
+            height: 42px;
+            background: var(--g1);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 20px var(--glow);
+            opacity: 0; /* Hidden by default */
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s, background 0.3s;
+        }
+
+        /* Shown when page is scrolled */
+        .scroll-top.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .scroll-top:hover {
+            transform: translateY(-3px);
+            background: var(--g2);
+            box-shadow: 0 8px 25px var(--glow-strong);
+        }
+
     </style>
 </head>
 <body>
@@ -258,6 +294,7 @@
                 <img id="user-pfp" class="user-avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
                 <div class="dropdown-menu">
                     <a href="dashboard.html"><i class="fa fa-home"></i> Dashboard</a>
+                    <a href="prediction-hub.html"><i class="fa fa-bolt-lightning"></i> Prediction Hub</a>
                     <a href="setup-profile.html"><i class="fa fa-cog"></i> Setup Profile</a>
                     <a href="ai-memory.html"><i class="fa fa-brain"></i> AI Memory</a>
                     <a href="nepra-info.html"><i class="fa fa-landmark"></i> Nepra Info</a>
@@ -411,6 +448,10 @@
         <p class="footer-sub"><i class="fa fa-map-marker-alt"></i> Gulshan-e-Iqbal, Karachi, Pakistan</p>
         <div class="footer-tag">FYP 2026 · Smart Energy Management System</div>
     </footer>
+
+    <button class="scroll-top" id="scrollBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+        <i class="fa fa-chevron-up"></i>
+    </button>
 
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
@@ -890,6 +931,16 @@
     buildCatalog();
     renderBasket();   
     updateBasketLive();
+
+    // Monitor scroll position to show/hide the Up Arrow
+    window.addEventListener('scroll', () => {
+        const scrollBtn = document.getElementById('scrollBtn');
+        if (window.scrollY > 300) {
+            scrollBtn.classList.add('visible');
+        } else {
+            scrollBtn.classList.remove('visible');
+        }
+    });
 
     function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }
     </script>

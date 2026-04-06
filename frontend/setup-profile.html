@@ -722,6 +722,41 @@
             .full-width { grid-column: span 1; }
             .header-row { flex-direction: column; align-items: flex-start; }
         }
+
+        /* ── SCROLL TOP BUTTON ── */
+        .scroll-top {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 500;
+            width: 42px;
+            height: 42px;
+            background: var(--g1);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 20px var(--glow);
+            opacity: 0; /* Hidden by default */
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s, background 0.3s;
+        }
+
+        /* Shown when page is scrolled */
+        .scroll-top.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .scroll-top:hover {
+            transform: translateY(-3px);
+            background: var(--g2);
+            box-shadow: 0 8px 25px var(--glow-strong);
+        }
     </style>
 </head>
 
@@ -742,6 +777,7 @@
                      src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile">
                 <div class="dropdown-menu">
                     <a href="dashboard.html"><i class="fa fa-home"></i> Dashboard</a>
+                    <a href="prediction-hub.html"><i class="fa fa-bolt-lightning"></i> Prediction Hub</a>
                     <a href="ai-memory.html"><i class="fa fa-brain"></i> AI Memory</a>
                     <a href="nepra-info.html"><i class="fa fa-landmark"></i> NEPRA Info</a>
                     <a href="about-us.html"><i class="fa fa-info-circle"></i> About Us</a>
@@ -1187,6 +1223,10 @@
         <span id="toast-msg">Saved!</span>
     </div>
 
+    <button class="scroll-top" id="scrollBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+        <i class="fa fa-chevron-up"></i>
+    </button>
+
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
     <script>
@@ -1606,7 +1646,6 @@
     function closeLoadHelp() { document.getElementById('loadHelpModal').style.display = 'none'; }
     function openUnitHelp() { document.getElementById('unitHelpModal').style.display = 'flex'; }
     function closeUnitHelp() { document.getElementById('unitHelpModal').style.display = 'none'; }
-    function logout() { firebase.auth().signOut().then(() => window.location.href = "index.html"); }
 
     // ─── FLOATING PROGRESS TRACKER LOGIC ───
     const progressWrap = document.querySelector('.completeness-wrap');
@@ -1632,6 +1671,18 @@
             }
         }
     });
+
+    // Monitor scroll position to show/hide the Up Arrow
+    window.addEventListener('scroll', () => {
+        const scrollBtn = document.getElementById('scrollBtn');
+        if (window.scrollY > 300) {
+            scrollBtn.classList.add('visible');
+        } else {
+            scrollBtn.classList.remove('visible');
+        }
+    });
+
+    function logout() { firebase.auth().signOut().then(() => window.location.href = "index.html"); }
 
 </script>
 </body>

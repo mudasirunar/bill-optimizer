@@ -108,6 +108,42 @@
         .footer { position: relative; z-index: 1; background: rgba(3,10,6,0.8); border-top: 1px solid var(--border); padding: 40px 20px; text-align: center; backdrop-filter: blur(10px); }
         .footer-brand { font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; }
         .footer-tag { display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--g3); border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; background: rgba(52,211,153,0.06); }
+        
+        /* ── SCROLL TOP BUTTON ── */
+        .scroll-top {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 500;
+            width: 42px;
+            height: 42px;
+            background: var(--g1);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 20px var(--glow);
+            opacity: 0; /* Hidden by default */
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s, background 0.3s;
+        }
+
+        /* Shown when page is scrolled */
+        .scroll-top.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .scroll-top:hover {
+            transform: translateY(-3px);
+            background: var(--g2);
+            box-shadow: 0 8px 25px var(--glow-strong);
+        }
+
     </style>
 </head>
 <body>
@@ -123,6 +159,7 @@
                 <img id="user-pfp" class="user-avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
                 <div class="dropdown-menu">
                     <a href="dashboard.html"><i class="fa fa-home"></i> Dashboard</a>
+                    <a href="prediction-hub.html"><i class="fa fa-bolt-lightning"></i> Prediction Hub</a>
                     <a href="setup-profile.html"><i class="fa fa-cog"></i> Setup Profile</a>
                     <a href="ai-memory.html"><i class="fa fa-brain"></i> AI Memory</a>
                     <a href="nepra-info.html"><i class="fa fa-landmark"></i> NEPRA Info</a>
@@ -410,6 +447,10 @@
         <div class="footer-tag" style="margin-top: 15px;">FYP 2026 · Smart Energy Management System</div>
     </footer>
 
+    <button class="scroll-top" id="scrollBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+        <i class="fa fa-chevron-up"></i>
+    </button>
+
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
     <script>
@@ -427,7 +468,18 @@
         }
     });
 
-        function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }
+    // Monitor scroll position to show/hide the Up Arrow
+    window.addEventListener('scroll', () => {
+        const scrollBtn = document.getElementById('scrollBtn');
+        if (window.scrollY > 300) {
+            scrollBtn.classList.add('visible');
+        } else {
+            scrollBtn.classList.remove('visible');
+        }
+    });
+
+    function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }
+    
     </script>
 </body>
 </html>
