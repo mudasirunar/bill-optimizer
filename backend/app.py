@@ -33,6 +33,20 @@ from firebase_admin import credentials, firestore
 
 from utils.nepra_engine import NepraEngine
 
+
+# ── Render Free Tier Memory Optimization ──
+# Limits TensorFlow CPU threads to reduce RAM usage
+# Does NOT affect model accuracy or predictions
+tf.config.threading.set_inter_op_parallelism_threads(1)
+tf.config.threading.set_intra_op_parallelism_threads(1)
+
+# Prevent TensorFlow from grabbing all available RAM upfront
+tf.config.set_soft_device_placement(True)
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
+        
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 nepra = NepraEngine()
