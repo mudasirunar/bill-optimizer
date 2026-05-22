@@ -1,25 +1,3 @@
-"""
-=============================================================
-  PRECON Flask API — v2.3 (Pakistan-Calibrated Physics Engine)
-  FYP: AI-Powered Electricity Bill Optimization
-
-  ROOT CAUSE FIX:
-    setup_profile.html had: mean_hourly = (appliances + 100) / 720
-    For 0 appliances → mean_hourly = 0.1389 kW
-    → physics_baseline = 0.1389 × 24 × 30 = 100 kWh floor
-    → Every prediction started at ≥100 kWh regardless of reality
-
-  v2.3 SOLUTION:
-    Replace the 100 kWh hardcoded floor with compute_true_baseload():
-    A first-principles Pakistani residential consumption model.
-
-  VALIDATED OUTPUTS:
-    1 person, no appliances, January  → ~29 kWh  ✅ (was 106)
-    4 people, 2 inv AC, June          → ~755 kWh ✅ (realistic)
-    4 people, no AC, January          → ~133 kWh ✅ (realistic)
-=============================================================
-"""
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import joblib, os, json, calendar

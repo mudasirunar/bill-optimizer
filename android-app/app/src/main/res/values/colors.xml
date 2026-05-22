@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- Emerald Dark Mode Design Palette -->
+    <color name="bg_dark">#030A06</color>
+    <color name="bg_surface">#0D1A12</color>
+    <color name="bg_surface_card">#122018</color>
+    <color name="bg_input">#B305140A</color> <!-- Semi-transparent input bg -->
+    <color name="emerald_primary">#059669</color> <!-- g1 -->
+    <color name="emerald_medium">#10B981</color> <!-- g2 -->
+    <color name="emerald_light">#34D399</color> <!-- g3 -->
+    <color name="emerald_extra_light">#6EE7B7</color> <!-- g4 -->
+    
+    <!-- Muted & Glowing Tones -->
+    <color name="emerald_glow">#3310B981</color> <!-- glowing green -->
+    <color name="border_color">#1F34D399</color> <!-- border: rgba(52, 211, 153, 0.12) -->
+    <color name="border_hover">#5934D399</color> <!-- border-hover: rgba(52, 211, 153, 0.35) -->
+    
+    <!-- Text Colors -->
+    <color name="text_white">#F0FDF4</color> <!-- text -->
+    <color name="text_muted">#86EFAC</color> <!-- text-muted -->
+    <color name="text_dim">#4B7A5E</color> <!-- text-dim -->
+    
+    <!-- Status Tones -->
+    <color name="warning_yellow">#FBBF24</color>
+    <color name="danger_red">#F87171</color>
+    <color name="info_blue">#67E8F9</color>
+</resources>

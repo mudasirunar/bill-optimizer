@@ -1,0 +1,57 @@
+<resources>
+    <string name="app_name">AI Bill Optimizer</string>
+    
+    <!-- Login Screen Strings -->
+    <string name="login_title">Power your home\nwith AI insights</string>
+    <string name="login_desc">Navigate Pakistan\'s NEPRA 2026 tariffs with confidence. Predict bills, simulate appliances, and cut costs — all in one place.</string>
+    <string name="electric_badge">Smart Energy Platform</string>
+    <string name="login_logo_subtitle">Sign in to your smart energy dashboard</string>
+    <string name="email_hint">ali@example.com</string>
+    <string name="email_label">Email Address</string>
+    <string name="password_label">Password</string>
+    <string name="password_placeholder">••••••••</string>
+    <string name="sign_in_btn">Sign In</string>
+    <string name="sign_in_with_google">Continue with Google</string>
+    <string name="new_here_sign_up">New here? Create an account</string>
+    <string name="or_divider">OR</string>
+    
+    <!-- Sign Up Screen Strings -->
+    <string name="signup_logo_subtitle">Create a smart energy account</string>
+    <string name="full_name_label">Full Name</string>
+    <string name="full_name_hint">Ali Khan</string>
+    <string name="confirm_password_label">Confirm Password</string>
+    <string name="sign_up_btn">Create Account</string>
+    <string name="already_have_account">Already have an account? Sign In</string>
+    
+    <!-- Dashboard Screen Strings -->
+    <string name="dashboard_greeting">Welcome Back,</string>
+    <string name="dashboard_sub">Predict, Simulate, and Optimize. Your AI companion for navigating NEPRA 2026 tariffs.</string>
+    <string name="setup_mem_title">Setting up your AI Memory...</string>
+    <string name="setup_mem_desc">Complete your profile for accurate predictions and personalized insights.</string>
+    <string name="setup_btn_text">Complete Setup</string>
+    
+    <!-- Management Hub Titles -->
+    <string name="mgt_hub_title">Management Hub</string>
+    <string name="mgt_hub_sub">Select a module to begin optimization</string>
+    
+    <string name="bill_prediction_title">Bill Prediction</string>
+    <string name="bill_prediction_desc">AI-driven estimates based on your household consumption patterns using ML models.</string>
+    <string name="bill_prediction_btn">Launch Hub</string>
+    
+    <string name="load_forecaster_title">Load Forecaster</string>
+    <string name="load_forecaster_desc">Visualize your 24-hour power usage pattern. See exactly when your home hits peak demand.</string>
+    <string name="load_forecaster_btn">View Forecast</string>
+    
+    <string name="opt_simulator_title">Optimization Simulator</string>
+    <string name="opt_simulator_desc">Simulate individual appliances and find hidden savings in your daily usage.</string>
+    <string name="opt_simulator_btn">Try Simulator</string>
+
+    <!-- Quick Links -->
+    <string name="quick_access_title">Quick Access</string>
+    <string name="quick_access_sub">Tools and resources to help you take action</string>
+    
+    <!-- Footer -->
+    <string name="footer_uni">Sir Syed University of Engineering and Technology</string>
+    <string name="footer_loc">Gulshan-e-Iqbal, Karachi, Pakistan</string>
+    <string name="footer_tag">FYP 2026 · Smart Energy Management System</string>
+</resources>

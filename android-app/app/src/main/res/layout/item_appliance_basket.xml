@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    android:background="@drawable/card_emerald_border"
+    android:padding="12dp">
+
+    <!-- Icon Frame -->
+    <FrameLayout
+        android:id="@+id/icon_frame"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="@drawable/badge_status_live"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:id="@+id/iv_basket_icon"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_gravity="center"
+            android:src="@android:drawable/ic_lock_idle_low_battery"
+            android:tint="@color/emerald_light"
+            tools:ignore="UseAppTint" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/tv_basket_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        android:fontFamily="sans-serif-medium"
+        android:textColor="@color/text_white"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@id/icon_frame"
+        app:layout_constraintEnd_toStartOf="@id/btn_basket_remove"
+        app:layout_constraintStart_toEndOf="@id/icon_frame"
+        app:layout_constraintTop_toTopOf="@id/icon_frame"
+        tools:text="Inverter AC 1.5T" />
+
+    <!-- Remove Close action button -->
+    <ImageView
+        android:id="@+id/btn_basket_remove"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:tint="@color/text_dim"
+        app:layout_constraintBottom_toBottomOf="@id/icon_frame"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/icon_frame"
+        tools:ignore="UseAppTint" />
+
+    <View
+        android:id="@+id/sep"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="10dp"
+        android:background="@color/border_color"
+        app:layout_constraintTop_toBottomOf="@id/icon_frame" />
+
+    <!-- Controls Row: Qty & Hours -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/sep">
+
+        <!-- Quantity Adjuster -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_vertical"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="QUANTITY"
+                android:textColor="@color/text_dim"
+                android:textSize="8sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/btn_qty_minus"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:background="@drawable/badge_status_live"
+                    android:src="@android:drawable/ic_media_previous"
+                    android:tint="@color/emerald_light"
+                    tools:ignore="UseAppTint" />
+
+                <TextView
+                    android:id="@+id/tv_qty_num"
+                    android:layout_width="24dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textColor="@color/emerald_light"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    tools:text="1" />
+
+                <ImageButton
+                    android:id="@+id/btn_qty_plus"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:background="@drawable/badge_status_live"
+                    android:src="@android:drawable/ic_media_next"
+                    android:tint="@color/emerald_light"
+                    tools:ignore="UseAppTint" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Hours Slider Adjuster -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.4"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="DAILY USAGE"
+                    android:textColor="@color/text_dim"
+                    android:textSize="8sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_hours_val"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/emerald_light"
+                    android:textSize="9sp"
+                    android:textStyle="bold"
+                    tools:text="8 hrs" />
+            </LinearLayout>
+
+            <SeekBar
+                android:id="@+id/sb_usage_hours"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:max="24"
+                android:progress="8"
+                android:theme="@android:style/Theme.Material" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
