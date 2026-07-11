@@ -52,7 +52,17 @@ nepra = NepraEngine()
 # ─────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 cred_path = os.path.join(BASE_DIR, "serviceAccountKey.json")
-cred = credentials.Certificate(cred_path)
+
+# Support both local file and cloud environment variable
+if os.path.exists(cred_path):
+    cred = credentials.Certificate(cred_path)
+elif os.environ.get("FIREBASE_CREDENTIALS_JSON"):
+    import json as _json
+    cred_dict = _json.loads(os.environ["FIREBASE_CREDENTIALS_JSON"])
+    cred = credentials.Certificate(cred_dict)
+else:
+    raise RuntimeError("No Firebase credentials found. Provide serviceAccountKey.json or set FIREBASE_CREDENTIALS_JSON env var.")
+
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
