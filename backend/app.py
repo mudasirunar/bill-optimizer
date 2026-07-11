@@ -1,5 +1,23 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+import sys
+import os
+
+# Auto-re-execute using virtual environment if dependencies are missing
+try:
+    from flask import Flask, request, jsonify
+    from flask_cors import CORS
+except ImportError:
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    venv_python = os.path.join(base_dir, "venv", "bin", "python")
+    if not os.path.exists(venv_python):
+        venv_python = os.path.join(base_dir, "venv", "Scripts", "python.exe")
+    
+    if os.path.exists(venv_python) and sys.executable != venv_python:
+        print(f"🔄 Auto-redirecting: Re-executing app.py using virtual environment interpreter: {venv_python}")
+        os.execv(venv_python, [venv_python] + sys.argv)
+    else:
+        print("❌ Error: Missing dependencies. Please run within the virtual environment.")
+        sys.exit(1)
+
 import joblib, os, json, calendar
 from datetime import datetime
 
@@ -895,4 +913,4 @@ def home():
     
 if __name__ == '__main__':
     validate() 
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)

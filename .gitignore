@@ -2,8 +2,8 @@
 # 1. PYTHON & SYSTEM FILTERS
 # ──────────────────────────────────────────────────────────
 backend/venv/
-backend/__pycache__/
-backend/*.pyc
+**/__pycache__/
+**/*.pyc
 .DS_Store
 .vscode/
 
