@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bill_optimizer_backend
+    ports:
+      - "5001:5001"
+    restart: always
+    volumes:
+      # Optional: mount serviceAccountKey.json if you don't want to bake it into the image
+      - ./serviceAccountKey.json:/app/serviceAccountKey.json:ro
