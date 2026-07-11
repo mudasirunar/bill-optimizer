@@ -14,8 +14,7 @@ The ecosystem comprises a responsive Web Application, a native Android App, and 
 ## 🌐 Live Demos & Deployments
 
 - **Backend API (DigitalOcean App Platform):** [https://bill-optimizer-fyp-lj83m.ondigitalocean.app](https://bill-optimizer-fyp-lj83m.ondigitalocean.app)
-- **Frontend Web App:** *[Insert Frontend Live URL Here]*
-- **Android App:** *[Insert App Download / App Distribution Link Here]*
+- **Frontend Web App:** https://bill-optimizer.vercel.app
 
 ---
 
