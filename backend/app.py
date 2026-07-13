@@ -287,7 +287,12 @@ def compute_true_baseload(u: dict, month: int) -> dict:
     u_freq   = safe_get(u, 'u_freq', 30.0)
     ups_kwh  = safe_get(u, 'u_qty', 0.0) * 0.15 * safe_get(u, 'u_val', 0.0) * u_freq
  
-    total    = p_base + a_light + fans_kwh + ac_kwh + f_kwh + wp_kwh + k_kwh + wm_kwh + ups_kwh
+    # ── 8. CLOTHES IRON ──
+    iron_kw   = 1.00 # 1000W Standard pressing iron
+    iron_freq = safe_get(u, 'iron_freq', 4.3)
+    iron_kwh  = safe_get(u, 'iron_qty', 0.0) * iron_kw * safe_get(u, 'iron_val', 0.0) * iron_freq
+
+    total    = p_base + a_light + fans_kwh + ac_kwh + f_kwh + wp_kwh + k_kwh + wm_kwh + ups_kwh + iron_kwh
  
     return {
         "total":         round(total, 2),
@@ -300,6 +305,7 @@ def compute_true_baseload(u: dict, month: int) -> dict:
         "kitchen":       round(k_kwh, 2),
         "ups":           round(ups_kwh, 2),
         "washing":       round(wm_kwh, 2),
+        "iron":          round(iron_kwh, 2),
     }
  
  

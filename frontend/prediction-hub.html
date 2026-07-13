@@ -2248,9 +2248,9 @@
                                 <td class="val" style="color:var(--g3)">${Math.round(((phy.ac + phy.fans)/totalLoad)*100)}%</td>
                             </tr>
                             <tr>
-                                <td class="label">Appliances (Fridge/Pump)</td>
-                                <td class="val">${(phy.fridge + phy.water_pump + phy.washing).toFixed(1)} <small>kWh</small></td>
-                                <td class="val" style="color:var(--g3)">${Math.round(((phy.fridge + phy.water_pump + phy.washing)/totalLoad)*100)}%</td>
+                                <td class="label">Appliances (Fridge/Pump/Iron)</td>
+                                <td class="val">${(phy.fridge + phy.water_pump + phy.washing + (phy.iron || 0)).toFixed(1)} <small>kWh</small></td>
+                                <td class="val" style="color:var(--g3)">${Math.round(((phy.fridge + phy.water_pump + phy.washing + (phy.iron || 0))/totalLoad)*100)}%</td>
                             </tr>
                             <tr>
                                 <td class="label">Efficiency Waste (UPS)</td>
@@ -2647,7 +2647,7 @@
             const groups = [
                 { label: 'Cooling (AC/Fans)', val: (phy.ac || 0) + (phy.fans || 0), color: '#00f2ff' },
                 { label: 'Refrigeration', val: phy.fridge || 0, color: '#10b981' },
-                { label: 'Heavy (Pump/Wash)', val: (phy.water_pump || 0) + (phy.washing || 0), color: '#f59e0b' },
+                { label: 'Heavy (Pump/Wash/Iron)', val: (phy.water_pump || 0) + (phy.washing || 0) + (phy.iron || 0), color: '#f59e0b' },
                 { label: 'Kitchen/Misc', val: (phy.kitchen || 0) + (phy.person_base || 0), color: '#8b5cf6' },
                 { label: 'System Waste (UPS)', val: phy.ups || 0, color: '#ff4d4d' }
             ].filter(g => g.val > 0.1); 

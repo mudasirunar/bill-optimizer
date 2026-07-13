@@ -836,7 +836,7 @@
        PROFILE COMPLETION CALCULATOR
     ════════════════════════════════════════ */
     function calcProfileCompletion(d) {
-        let score = 0; const total = 15;
+        let score = 0; const total = 16;
         const has = (v) => v !== undefined && v !== null && v !== "";
         if (has(d.disco))            score++;
         if (has(d.sanctioned_load)) score++;
@@ -852,6 +852,7 @@
         if (has(d.wp_qty))       score++;
         if (has(d.u_qty))        score++;
         if (has(d.k_qty))        score++;
+        if (has(d.iron_qty))     score++;
         if ((d.bill_history || []).length > 0) score++;
         return Math.round((score / total) * 100);
     }

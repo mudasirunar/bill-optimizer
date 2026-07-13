@@ -377,13 +377,14 @@
         <section class="section-card">
             <h3 class="section-title"><i class="fa fa-microchip"></i> Load Signature Mapping</h3>
             <p class="body-text">
-                The engine maps your household inventory against the standardized load profiles established in the <b>e-Energy '19</b> research, isolating these six primary signatures:
+                The engine maps your household inventory against the sub-metered appliance signatures established in the <b>e-Energy '19 (PRECON)</b> dataset, augmented by our physics-based baseline constraints:
             </p>
 
             <style>
                 .sig-grid-3x2 { 
-                    display: grid; 
-                    grid-template-columns: repeat(3, 1fr); 
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: center;
                     gap: 15px; 
                     margin-top: 25px; 
                 }
@@ -395,6 +396,8 @@
                     font-size: 0.75rem; 
                     text-align: center;
                     transition: 0.3s;
+                    flex: 1 1 200px;
+                    max-width: 240px;
                 }
                 .sig-item b { 
                     color: var(--g3); 
@@ -403,22 +406,70 @@
                     font-size: 0.9rem; 
                     font-family: 'Syne', sans-serif;
                 }
-                .sig-item span { color: var(--text-muted); opacity: 0.8; }
-
-                /* Responsive: stack to 2 columns on small screens */
-                @media (max-width: 768px) {
-                    .sig-grid-3x2 { grid-template-columns: 1fr 1fr; }
+                .sig-item span { color: var(--text-muted); opacity: 0.8; display: block; }
+                .sig-badge {
+                    display: inline-block;
+                    margin-top: 8px;
+                    padding: 2px 8px;
+                    font-size: 0.55rem;
+                    font-weight: 700;
+                    border-radius: 4px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .sig-badge.precon {
+                    background: rgba(16,185,129,0.1);
+                    color: var(--g3);
+                    border: 1px solid rgba(16,185,129,0.2);
+                }
+                .sig-badge.physics {
+                    background: rgba(59,130,246,0.1);
+                    color: #60a5fa;
+                    border: 1px solid rgba(59,130,246,0.2);
                 }
             </style>
 
             <div class="sig-grid-3x2">
-                <div class="sig-item"><b>AC_kW</b><span>Air Conditioning</span></div>
-                <div class="sig-item"><b>Refrigerator_kW</b><span>Compressor Cycles</span></div>
-                <div class="sig-item"><b>UPS_kW</b><span>Charging/Inversion</span></div>
-                
-                <div class="sig-item"><b>WP_kW</b><span>Water Pump Motor</span></div>
-                <div class="sig-item"><b>Kitchen_kW</b><span>Oven & Kettle Load</span></div>
-                <div class="sig-item"><b>Laundary_kW</b><span>Washing Machine</span></div>
+                <div class="sig-item">
+                    <b>AC_kW</b>
+                    <span>Air Conditioning</span>
+                    <div class="sig-badge precon">PRECON Sensor</div>
+                </div>
+                <div class="sig-item">
+                    <b>Refrigerator_kW</b>
+                    <span>Compressor Cycles</span>
+                    <div class="sig-badge precon">PRECON Sensor</div>
+                </div>
+                <div class="sig-item">
+                    <b>UPS_kW</b>
+                    <span>Charging/Inversion</span>
+                    <div class="sig-badge precon">PRECON Sensor</div>
+                </div>
+                <div class="sig-item">
+                    <b>WP_kW</b>
+                    <span>Water Pump Motor</span>
+                    <div class="sig-badge precon">PRECON Sensor</div>
+                </div>
+                <div class="sig-item">
+                    <b>Kitchen_kW</b>
+                    <span>Oven & Kettle Load</span>
+                    <div class="sig-badge precon">PRECON Sensor</div>
+                </div>
+                <div class="sig-item">
+                    <b>Laundary_kW</b>
+                    <span>Washing Machine</span>
+                    <div class="sig-badge precon">PRECON Sensor</div>
+                </div>
+                <div class="sig-item">
+                    <b>Iron_kW</b>
+                    <span>Pressing Iron</span>
+                    <div class="sig-badge physics">Calibrated Physics</div>
+                </div>
+                <div class="sig-item">
+                    <b>Fan_kW</b>
+                    <span>Household Fans</span>
+                    <div class="sig-badge physics">Calibrated Physics</div>
+                </div>
             </div>
 
             <p class="body-text" style="margin-top: 25px; font-size: 0.85rem; color: var(--text-dim);">

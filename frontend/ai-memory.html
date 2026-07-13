@@ -586,6 +586,10 @@
                         <div class="data-value" id="disp-k">--</div>
                     </div>
                     <div class="data-item">
+                        <div class="data-label" id="label-iron"><i class="fa fa-shirt"></i> Clothes Iron</div>
+                        <div class="data-value" id="disp-iron">--</div>
+                    </div>
+                    <div class="data-item">
                         <div class="data-label" id="label-wm"><i class="fa fa-tshirt"></i> Washing Machine</div>
                         <div class="data-value" id="disp-wm">--</div>
                     </div>
@@ -714,9 +718,11 @@
             const hasAC = (has(d.ac_std_qty) || has(d.ac_inv_qty));
             const hasFans = (has(d.fan_ac_qty) || has(d.fan_dc_qty));
             const hasFridge = has(d.f_qty);
-            if (hasAC) score += 10; else gaps.push("AC Consumption Profile");
-            if (hasFans) score += 10; else gaps.push("Air-Flow Load Signature");
-            if (hasFridge) score += 10; else gaps.push("Refrigeration Efficiency");
+            const hasIron = has(d.iron_qty);
+            if (hasAC) score += 7.5; else gaps.push("AC Consumption Profile");
+            if (hasFans) score += 7.5; else gaps.push("Air-Flow Load Signature");
+            if (hasFridge) score += 7.5; else gaps.push("Refrigeration Efficiency");
+            if (hasIron) score += 7.5; else gaps.push("Clothes Iron Signature");
 
             // History (40pts)
             const validHistory = (d.bill_history || []).filter(b => parseFloat(b.units) > 5);
@@ -867,7 +873,7 @@
             }
 
             // 3. CHECK APPLIANCES DATA
-            const appKeys = ['ac_std_qty', 'ac_inv_qty', 'fan_ac_qty', 'fan_dc_qty', 'f_qty', 'wm_qty', 'wp_qty', 'u_qty', 'k_qty'];
+            const appKeys = ['ac_std_qty', 'ac_inv_qty', 'fan_ac_qty', 'fan_dc_qty', 'f_qty', 'wm_qty', 'wp_qty', 'u_qty', 'k_qty', 'iron_qty'];
             if (!hasData(appKeys)) {
                 document.getElementById('body-appliances').innerHTML = emptyMsg("No appliance inventory signatures detected.");
             } else {
@@ -922,6 +928,7 @@
                 renderAppliance('wp', 'wp', 'Pump', 'fa fa-water', d.wp_monthly);
                 renderAppliance('ups', 'u', 'UPS', 'fa fa-car-battery', d.ups_monthly);
                 renderAppliance('k', 'k', 'Kitchen', 'fa fa-utensils', d.kitchen_monthly);
+                renderAppliance('iron', 'iron', 'Clothes Iron', 'fa fa-shirt', d.iron_monthly);
 
                 // ─── 4. FANS (FIXED COLORS: GREEN QTY | GREEN KWH) ───
                 const fAc = d.fan_ac_qty;

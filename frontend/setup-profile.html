@@ -1105,6 +1105,24 @@
                 </div>
 
                 <div class="input-group full-width">
+                    <label><i class="fa fa-shirt"></i> Clothes Iron (Press)</label>
+                    <div class="appliance-row">
+                        <div class="input-wrap">
+                            <input type="number" id="iron_qty" placeholder="Qty" oninput="toggleApplianceRow('iron')">
+                        </div>
+                        <div class="input-wrap">
+                            <input type="number" id="iron_val" placeholder="Usage" oninput="toggleApplianceRow('iron')" class="has-unit">
+                            <span class="input-unit">Hrs</span>
+                        </div>
+                        <select id="iron_freq" class="freq-select" onchange="updateCompleteness()">
+                            <option value="30">Daily</option>
+                            <option value="4.3">Weekly</option>
+                            <option value="1">Monthly</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group full-width">
                     <label><i class="fa fa-fan"></i> Household Fans (Ceiling/Pedestal)</label>
                     <div class="appliance-row" style="grid-template-columns: 1fr 1fr;">
                         <div class="input-wrap">
@@ -1265,7 +1283,7 @@
             else setCategory('lifeline');
 
             // 4. Load Appliance Details (Synchronized with UI changes)
-            const appliances = ['ac_std', 'ac_inv', 'f', 'wp', 'k', 'u', 'wm'];
+            const appliances = ['ac_std', 'ac_inv', 'f', 'wp', 'k', 'u', 'wm', 'iron'];
             appliances.forEach(prefix => {
                 setValue(prefix + '_qty', d[prefix + '_qty'], '');
                 setValue(prefix + '_val', d[prefix + '_val'], '');
@@ -1347,8 +1365,8 @@
 
     function updateCompleteness() {
         let score = 0;
-        // Total Points: 3 (Tariff) + 4 (Lifestyle) + 7 (Inventory) + 1 (History) = 15
-        const totalPoints = 15; 
+        // Total Points: 3 (Tariff) + 4 (Lifestyle) + 8 (Inventory) + 1 (History) = 16
+        const totalPoints = 16; 
         
         const hasVal = (id) => {
             const el = document.getElementById(id);
@@ -1366,7 +1384,7 @@
         if (hasVal('property_area')) score++;
         if (hasVal('floors')) score++;
         
-        // --- 3. Household Inventory (7 pts) ---
+        // --- 3. Household Inventory (8 pts) ---
         // Fans (AC or DC)
         if (hasVal('fan_ac_qty') || hasVal('fan_dc_qty')) score++;
         
@@ -1387,6 +1405,9 @@
 
         // Kitchen Appliances
         if (hasVal('k_qty')) score++;
+
+        // Clothes Iron
+        if (hasVal('iron_qty')) score++;
 
         // --- 4. Historical Record (1 pt) ---
         const histRow = document.querySelector('.bill-history-row');
@@ -1455,6 +1476,9 @@
             // Kitchen Appliances: Flat scaling (Oven/Kettle)
             const k_monthly  = v('k_qty') * 1.20 * getSafeVal('k') * v('k_freq');
             
+            // Clothes Iron: Flat scaling (1.0kW)
+            const iron_monthly = v('iron_qty') * 1.00 * getSafeVal('iron') * v('iron_freq');
+            
             // UPS Math: 400W Base * Loss Factors
             const ups_efficiency = gv('u_type') === 'pure' ? 1.05 : 1.25; 
             const battery_loss = gv('u_battery') === 'lithium' ? 1.02 : 1.20;
@@ -1474,7 +1498,7 @@
             const area_baseload   = Math.min((v('property_area') || 500) * 0.006, 15.0);
             
             const mean_hourly = (total_ac_monthly + f_monthly + wp_monthly + k_monthly + 
-                                u_monthly + wm_monthly + total_fan_monthly + 
+                                u_monthly + wm_monthly + total_fan_monthly + iron_monthly + 
                                 person_baseload + area_baseload) / 720;
 
             // ─── 4. BILLING HISTORY CALIBRATION ───
@@ -1511,6 +1535,7 @@
                 wp_qty: dbVal('wp_qty'), wp_type: gv('wp_type'), wp_val:  dbSafeVal('wp'), wp_freq: dbVal('wp_freq'),
                 k_qty:  dbVal('k_qty'),  k_val:   dbSafeVal('k'),  k_freq:  dbVal('k_freq'),
                 u_qty:  dbVal('u_qty'),  u_type: gv('u_type'), u_battery: gv('u_battery'), u_val:   dbSafeVal('u'),  u_freq:  dbVal('u_freq'),
+                iron_qty: dbVal('iron_qty'), iron_val: dbSafeVal('iron'), iron_freq: dbVal('iron_freq'),
                 fan_ac_qty: dbVal('fan_ac_qty'), fan_dc_qty: dbVal('fan_dc_qty'), fan_qty: v('fan_ac_qty') + v('fan_dc_qty'),
 
                 // Computed Monthly kWh for RF Features
@@ -1521,6 +1546,7 @@
                 wp_monthly:           wp_monthly, 
                 wm_monthly:           wm_monthly, 
                 fan_monthly:          total_fan_monthly,
+                iron_monthly:         iron_monthly,
 
                 // Derived Anchors
                 mean_hourly,
