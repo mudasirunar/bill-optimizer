@@ -47,6 +47,7 @@ async function handleGoogleLogin() {
     try {
         await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         const result = await auth.signInWithPopup(provider);
+        localStorage.setItem('userLoggedIn', 'true');
         handleAuthRedirect(result);
     } catch (error) {
         showErrorMessage(error.message);
@@ -59,6 +60,7 @@ async function handleSignIn(email, password) {
     try {
         await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         const result = await auth.signInWithEmailAndPassword(email, password);
+        localStorage.setItem('userLoggedIn', 'true');
         handleAuthRedirect(result);
     } catch (error) {
         showErrorMessage("Invalid email or password.");
@@ -97,6 +99,7 @@ async function handleSignUp(firstName, lastName, email, password, confirmPasswor
 
     try {
         const result = await auth.createUserWithEmailAndPassword(email, password);
+        localStorage.setItem('userLoggedIn', 'true');
         
         // Update Profile with Full Name for Dashboard Greeting
         const fullName = `${firstName.trim()} ${lastName.trim()}`;
@@ -125,6 +128,8 @@ const titleCase = (str) => str ? str.toLowerCase().split(' ').map(w => w.charAt(
 // 8. Global Session Watcher (Stays intact for refresh)
 auth.onAuthStateChanged((user) => {
     if (user) {
+        localStorage.setItem('userLoggedIn', 'true');
+        
         const nameDisplay = document.getElementById('user-name-display');
         const pfpDisplay = document.getElementById('user-pfp');
         const greetingDisplay = document.getElementById('greeting-display');
@@ -132,6 +137,12 @@ auth.onAuthStateChanged((user) => {
         // --- 1. NAME LOGIC (Capitalized & Safe) ---
         const rawName = user.displayName || user.email.split('@')[0] || "User";
         const cleanName = titleCase(rawName);
+
+        // Cache profile information in localStorage
+        localStorage.setItem('userDisplayName', cleanName);
+        localStorage.setItem('userEmail', user.email);
+        localStorage.setItem('userPhotoURL', user.photoURL || '');
+        localStorage.setItem('userUid', user.uid);
 
         if (nameDisplay) nameDisplay.innerText = cleanName;
 
@@ -154,7 +165,8 @@ auth.onAuthStateChanged((user) => {
 
         // --- GLOBAL REDIRECT LOGIC ---
         const path = window.location.pathname;
-        const isAuthPage = path.includes("index.html") || path.includes("signup.html") || path.endsWith("/");
+        const filename = path.substring(path.lastIndexOf('/') + 1);
+        const isAuthPage = filename === "index.html" || filename === "signup.html" || filename === "" || path.endsWith("/");
 
         if (isAuthPage) {
             // Check if account was JUST created (within the last 10 seconds)
@@ -168,6 +180,60 @@ auth.onAuthStateChanged((user) => {
                 window.location.href = "dashboard.html";
             }
         }
+    } else {
+        // Clear cached session info
+        localStorage.removeItem('userLoggedIn');
+        localStorage.removeItem('userDisplayName');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userPhotoURL');
+        localStorage.removeItem('userUid');
+
+        // Redirect to index.html if we are currently on a protected page
+        const path = window.location.pathname;
+        const filename = path.substring(path.lastIndexOf('/') + 1);
+        const isAuthPage = filename === "index.html" || filename === "signup.html" || filename === "" || path.endsWith("/");
+        if (!isAuthPage) {
+            window.location.href = "index.html";
+        }
+    }
+});
+
+// 9. Pre-populate UI from LocalStorage Cache to eliminate loading lag
+document.addEventListener('DOMContentLoaded', () => {
+    const isLoggedIn = localStorage.getItem('userLoggedIn') === 'true';
+    if (isLoggedIn) {
+        const cachedName = localStorage.getItem('userDisplayName');
+        const cachedPhoto = localStorage.getItem('userPhotoURL');
+        
+        const nameDisplay = document.getElementById('user-name-display');
+        const pfpDisplay = document.getElementById('user-pfp');
+        const greetingDisplay = document.getElementById('greeting-display');
+        
+        if (nameDisplay && cachedName) {
+            nameDisplay.innerText = cachedName;
+        }
+        if (greetingDisplay && cachedName) {
+            const firstName = cachedName.split(' ')[0];
+            const getGreeting = () => {
+                const h = new Date().getHours();
+                if (h < 5)  return 'Good Night';
+                if (h < 12) return 'Good Morning';
+                if (h < 17) return 'Good Afternoon';
+                if (h < 21) return 'Good Evening';
+                return 'Good Night';
+            };
+            greetingDisplay.innerText = `${getGreeting()}, ${firstName}`;
+        }
+        if (pfpDisplay) {
+            if (cachedPhoto && (cachedPhoto.startsWith('http') || cachedPhoto.startsWith('https'))) {
+                pfpDisplay.src = cachedPhoto;
+            } else {
+                pfpDisplay.src = `https://cdn-icons-png.flaticon.com/512/3135/3135715.png`;
+            }
+        }
+        
+        // Immediately add auth-verified class to body to prevent layout fade-in delay
+        document.body.classList.add('auth-verified');
     }
 });
 

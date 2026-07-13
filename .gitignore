@@ -62,4 +62,7 @@ android-app/captures/
 # Compiled Application Packages (APKs, App Bundles)
 android-app/**/*.apk
 android-app/**/*.ap_
-android-app/**/*.aab
+android-app/**/*.aab
+
+# Project Documentation Folder (FYP)
+fyp-docs/

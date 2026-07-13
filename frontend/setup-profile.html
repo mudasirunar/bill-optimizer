@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Setup Profile | Bill Optimizer</title>
+    <script src="js/session-check.js"></script>
     <link rel="icon" type="image/png" href="assets/favicon.png?v=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1290,11 +1291,13 @@
                 toggleApplianceRow(prefix); 
             });
 
-            // 5. Load Bill History
+            // 5. Load Bill History (Sorted - Newest First)
             const logContainer = document.getElementById('bill-log-container');
             logContainer.innerHTML = ""; 
             if (d.bill_history && d.bill_history.length > 0) {
-                d.bill_history.forEach(b => addBillRow(b.month, b.units, b.amount));
+                [...d.bill_history]
+                    .sort((a, b) => b.month.localeCompare(a.month))
+                    .forEach(b => addBillRow(b.month, b.units, b.amount));
             } else {
                 addBillRow(); 
             }
@@ -1347,48 +1350,50 @@
         // Total Points: 3 (Tariff) + 4 (Lifestyle) + 7 (Inventory) + 1 (History) = 15
         const totalPoints = 15; 
         
-        const gv = (id) => document.getElementById(id)?.value || "";
-        const v  = (id) => parseFloat(document.getElementById(id)?.value) || 0;
+        const hasVal = (id) => {
+            const el = document.getElementById(id);
+            return el && el.value !== "";
+        };
 
         // --- 1. Location & Tariff (3 pts) ---
-        if (gv('disco') !== "") score++;
-        if (v('load') > 0) score++;
+        if (hasVal('disco')) score++;
+        if (hasVal('load')) score++;
         if (selectedCategory) score++;
 
         // --- 2. Household Dynamics (4 pts) ---
-        if (v('person_count') > 0) score++;
-        if (gv('user_routine') !== "") score++;
-        if (v('property_area') > 0) score++;
-        if (gv('floors') !== "") score++;
+        if (hasVal('person_count')) score++;
+        if (hasVal('user_routine')) score++;
+        if (hasVal('property_area')) score++;
+        if (hasVal('floors')) score++;
         
         // --- 3. Household Inventory (7 pts) ---
         // Fans (AC or DC)
-        if (v('fan_ac_qty') > 0 || v('fan_dc_qty') > 0) score++;
+        if (hasVal('fan_ac_qty') || hasVal('fan_dc_qty')) score++;
         
         // Air Conditioners (Standard or Inverter)
-        if (v('ac_std_qty') > 0 || v('ac_inv_qty') > 0) score++;
+        if (hasVal('ac_std_qty') || hasVal('ac_inv_qty')) score++;
 
         // Refrigerator
-        if (v('f_qty') > 0) score++;
+        if (hasVal('f_qty')) score++;
 
         // Washing Machine
-        if (v('wm_qty') > 0) score++;
+        if (hasVal('wm_qty')) score++;
 
         // Water Pump
-        if (v('wp_qty') > 0) score++;
+        if (hasVal('wp_qty')) score++;
 
         // UPS System
-        if (v('u_qty') > 0) score++;
+        if (hasVal('u_qty')) score++;
 
         // Kitchen Appliances
-        if (v('k_qty') > 0) score++;
+        if (hasVal('k_qty')) score++;
 
         // --- 4. Historical Record (1 pt) ---
         const histRow = document.querySelector('.bill-history-row');
         if (histRow) {
             const m = histRow.querySelector('.hist-month').value;
             const u = histRow.querySelector('.hist-units').value;
-            if (m !== "" && parseFloat(u) > 0) score++;
+            if (m !== "" && u !== "") score++;
         }
 
         // --- Calculate & Update Ring ---
@@ -1414,6 +1419,19 @@
             const v  = (id) => parseFloat(document.getElementById(id)?.value) || 0;
             const gv = (id) => document.getElementById(id)?.value || '';
             const getSafeVal = (id_prefix) => (v(id_prefix + '_qty') > 0 ? v(id_prefix + '_val') : 0);
+
+            // Database-specific values (save empty string if user left it blank)
+            const dbVal = (id) => {
+                const el = document.getElementById(id);
+                return (el && el.value !== "") ? parseFloat(el.value) : "";
+            };
+            const dbSafeVal = (id_prefix) => {
+                const qtyEl = document.getElementById(id_prefix + '_qty');
+                const valEl = document.getElementById(id_prefix + '_val');
+                if (!qtyEl || qtyEl.value === "") return "";
+                if (parseFloat(qtyEl.value) === 0) return 0;
+                return valEl && valEl.value !== "" ? parseFloat(valEl.value) : "";
+            };
 
             // ─── 2. APPLIANCE CALCULATIONS (As per your Logic) ───
             
@@ -1465,7 +1483,8 @@
                 month:  row.querySelector('.hist-month').value,
                 units:  parseFloat(row.querySelector('.hist-units').value) || 0,
                 amount: parseFloat(row.querySelector('.hist-amount').value) || 0
-            })).filter(b => b.month !== "");
+            })).filter(b => b.month !== "")
+              .sort((a, b) => b.month.localeCompare(a.month));
 
             const validHistory = bill_history.filter(b => b.units > 5);
             const historical_avg_units = validHistory.length > 0
@@ -1475,24 +1494,24 @@
             // ─── 5. THE AI MEMORY DATA PACKET ───
             const data = {
                 disco:            gv('disco'),
-                sanctioned_load:  v('load'),
+                sanctioned_load:  dbVal('load'),
                 user_category:    selectedCategory,
-                property_area:    v('property_area'),
-                person_count:     v('person_count'),
+                property_area:    dbVal('property_area'),
+                person_count:     dbVal('person_count'),
                 floors:           gv('floors'),
                 user_routine:     gv('user_routine'),
-                fan_qty:          v('fan_qty'),
+                fan_qty:          dbVal('fan_qty'),
 
                 // Raw inputs sanitized for AI (No Contradictions)
-                ac_std_qty: v('ac_std_qty'), ac_std_val: getSafeVal('ac_std'), ac_std_freq: v('ac_std_freq'),
-                ac_inv_qty: v('ac_inv_qty'), ac_inv_val: getSafeVal('ac_inv'), ac_inv_freq: v('ac_inv_freq'),
+                ac_std_qty: dbVal('ac_std_qty'), ac_std_val: dbSafeVal('ac_std'), ac_std_freq: dbVal('ac_std_freq'),
+                ac_inv_qty: dbVal('ac_inv_qty'), ac_inv_val: dbSafeVal('ac_inv'), ac_inv_freq: dbVal('ac_inv_freq'),
                 ac_qty: v('ac_std_qty') + v('ac_inv_qty'),
-                f_qty:  v('f_qty'),  f_type:  gv('f_type'),  f_val:  getSafeVal('f'), f_freq: v('f_freq'),
-                wm_qty: v('wm_qty'), wm_type: gv('wm_type'), wm_val: getSafeVal('wm'), wm_freq: v('wm_freq'),
-                wp_qty: v('wp_qty'), wp_type: gv('wp_type'), wp_val:  getSafeVal('wp'), wp_freq: v('wp_freq'),
-                k_qty:  v('k_qty'),  k_val:   getSafeVal('k'),  k_freq:  v('k_freq'),
-                u_qty:  v('u_qty'),  u_type: gv('u_type'), u_battery: gv('u_battery'), u_val:   getSafeVal('u'),  u_freq:  v('u_freq'),
-                fan_ac_qty: v('fan_ac_qty'), fan_dc_qty: v('fan_dc_qty'), fan_qty: v('fan_ac_qty') + v('fan_dc_qty'),
+                f_qty:  dbVal('f_qty'),  f_type:  gv('f_type'),  f_val:  dbSafeVal('f'), f_freq: dbVal('f_freq'),
+                wm_qty: dbVal('wm_qty'), wm_type: gv('wm_type'), wm_val: dbSafeVal('wm'), wm_freq: dbVal('wm_freq'),
+                wp_qty: dbVal('wp_qty'), wp_type: gv('wp_type'), wp_val:  dbSafeVal('wp'), wp_freq: dbVal('wp_freq'),
+                k_qty:  dbVal('k_qty'),  k_val:   dbSafeVal('k'),  k_freq:  dbVal('k_freq'),
+                u_qty:  dbVal('u_qty'),  u_type: gv('u_type'), u_battery: gv('u_battery'), u_val:   dbSafeVal('u'),  u_freq:  dbVal('u_freq'),
+                fan_ac_qty: dbVal('fan_ac_qty'), fan_dc_qty: dbVal('fan_dc_qty'), fan_qty: v('fan_ac_qty') + v('fan_dc_qty'),
 
                 // Computed Monthly kWh for RF Features
                 ac_monthly:           total_ac_monthly,
@@ -1539,11 +1558,7 @@
         const el = document.getElementById(id);
         if (!el) return;
         let finalVal = (val !== undefined && val !== null) ? val : fallback;
-        if (finalVal == 0) {
-            el.value = "";
-        } else {
-            el.value = finalVal;
-        }
+        el.value = finalVal;
     }
 
     function setCategory(cat) {

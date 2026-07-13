@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Memory | Bill Optimizer</title>
+    <script src="js/session-check.js"></script>
     <link rel="icon" type="image/png" href="assets/favicon.png?v=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -661,6 +662,13 @@
     <script>
     const db = firebase.firestore();
 
+    function formatMonth(monthStr) {
+        if (!monthStr || !monthStr.includes('-')) return monthStr;
+        const [year, month] = monthStr.split('-');
+        const date = new Date(year, parseInt(month) - 1, 1);
+        return date.toLocaleDateString('default', { month: 'short', year: 'numeric' });
+    }
+
     firebase.auth().onAuthStateChanged(user => {
         initDynamicBreadcrumb("AI Memory");
         if (!user) { window.location.href = "index.html"; return; }
@@ -963,7 +971,7 @@
                     .sort((a, b) => new Date(b.month) - new Date(a.month)) // Chronological sort (Newest first)
                     .map(row => `
                         <tr>
-                            <td class="month-cell">${row.month}</td>
+                            <td class="month-cell">${formatMonth(row.month)}</td>
                             <td>${row.units} kWh</td>
                             <td>Rs. ${row.amount.toLocaleString()}</td>
                             <td style="color:var(--g3)"><i class="fa fa-check-circle"></i> Stored</td>

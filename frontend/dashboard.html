@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | Bill Optimizer</title>
+    <script src="js/session-check.js"></script>
     <link rel="icon" type="image/png" href="assets/favicon.png?v=1">
     <link rel="apple-touch-icon" href="assets/favicon.png?v=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -812,6 +813,13 @@
     <script src="js/auth.js"></script>
     <script>
 
+    function formatMonth(monthStr) {
+        if (!monthStr || !monthStr.includes('-')) return monthStr || '—';
+        const [year, month] = monthStr.split('-');
+        const date = new Date(year, parseInt(month) - 1, 1);
+        return date.toLocaleDateString('default', { month: 'short', year: 'numeric' });
+    }
+
     /* ════════════════════════════════════════
        GREETING
     ════════════════════════════════════════ */
@@ -829,21 +837,22 @@
     ════════════════════════════════════════ */
     function calcProfileCompletion(d) {
         let score = 0; const total = 15;
-        if (d.disco)            score++;
-        if (d.sanctioned_load > 0) score++;
-        if (d.user_category)    score++;
-        if (d.person_count > 0) score++;
-        if (d.user_routine)     score++;
-        if (d.property_area > 0) score++;
-        if (d.floors)           score++;
-        if ((d.fan_ac_qty > 0) || (d.fan_dc_qty > 0)) score++;
-        if ((d.ac_std_qty > 0) || (d.ac_inv_qty > 0)) score++;
-        if (d.f_qty > 0)        score++;
-        if (d.wm_qty > 0)       score++;
-        if (d.wp_qty > 0)       score++;
-        if (d.u_qty > 0)        score++;
-        if (d.k_qty > 0)        score++;
-        if ((d.bill_history || []).filter(b => b.units > 5).length > 0) score++;
+        const has = (v) => v !== undefined && v !== null && v !== "";
+        if (has(d.disco))            score++;
+        if (has(d.sanctioned_load)) score++;
+        if (has(d.user_category))    score++;
+        if (has(d.person_count)) score++;
+        if (has(d.user_routine))     score++;
+        if (has(d.property_area)) score++;
+        if (has(d.floors))           score++;
+        if (has(d.fan_ac_qty) || has(d.fan_dc_qty)) score++;
+        if (has(d.ac_std_qty) || has(d.ac_inv_qty)) score++;
+        if (has(d.f_qty))        score++;
+        if (has(d.wm_qty))       score++;
+        if (has(d.wp_qty))       score++;
+        if (has(d.u_qty))        score++;
+        if (has(d.k_qty))        score++;
+        if ((d.bill_history || []).length > 0) score++;
         return Math.round((score / total) * 100);
     }
 
@@ -1029,7 +1038,7 @@
             html += `
               <div class="bill-row-item">
                 <div class="bill-month-dot" style="background:${BILL_COLORS[i % BILL_COLORS.length]}"></div>
-                <div class="bill-month-label">${b.month || '—'}</div>
+                <div class="bill-month-label">${formatMonth(b.month)}</div>
                 <div class="bill-bar-wrap"><div class="bill-bar" style="width:0%" data-w="${barWidth}%"></div></div>
                 <div class="bill-units">${Math.round(b.units)} kWh</div>
                 <div class="bill-amount">${amt}</div>
