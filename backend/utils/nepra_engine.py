@@ -1,7 +1,10 @@
 class NepraEngine:
     def __init__(self):
-        # 2026 Fuel Cost Adjustment
-        self.current_fca = 1.63 
+        # 2026 Fuel Cost Adjustment (July 2026 rate: Rs. 0.3364)
+        self.current_fca = 0.3364 
+        
+        # 2026 QTA (Quarterly Tariff Adjustment) - Rs. -1.9857/unit for June-August 2026
+        self.current_qta = -1.9857
         
         # 1. 2026 ENERGY RATES
         self.lifeline_slabs = [(1, 50, 3.95), (51, 100, 7.74)]
@@ -89,11 +92,12 @@ class NepraEngine:
 
         # --- STEP 2: Taxes & Surcharges ---
         fca = units * self.current_fca
-        gst = (energy_cost + fixed_total + fca) * gst_rate
+        qta = units * self.current_qta if applied_category != "lifeline" else 0.0
+        gst = (energy_cost + fixed_total + fca + qta) * gst_rate
         ed = energy_cost * ed_rate
         tv_fee = 0.0 if applied_category == "lifeline" else 35.0
         
-        total = energy_cost + fixed_total + fca + gst + ed + tv_fee
+        total = energy_cost + fixed_total + fca + qta + gst + ed + tv_fee
         
         return {
             "units": round(units, 1),
@@ -101,6 +105,6 @@ class NepraEngine:
             "is_eligible": is_eligible,
             "energy_cost": round(energy_cost, 2),
             "fixed_charges": round(fixed_total, 2),
-            "taxes_and_fca": round(gst + ed + fca + tv_fee, 2),
+            "taxes_and_fca": round(gst + ed + fca + qta + tv_fee, 2),
             "total_bill": round(total, 0)
         }

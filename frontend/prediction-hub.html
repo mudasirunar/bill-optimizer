@@ -2542,7 +2542,7 @@
                     trigger: true, // Always active
                     cat: '2026 TARIFF POLICY', icon: 'fa-gavel', color: '#ffffff', textColor: '#000000',
                     title: 'Fuel Adjustment (FCA)',
-                    text: 'NEPRA has verified a **Rs. 1.63/unit FCA** for this month. This is a flat surcharge on every unit. Efficiency is your only defense against these external price hikes.'
+                    text: 'NEPRA has verified a **Rs. 0.34/unit FCA** for this month. This is a flat surcharge on every unit. Efficiency is your only defense against these external price hikes.'
                 },
 
                 { 
@@ -2822,12 +2822,14 @@
             const ratePerKw = loadVal > 0 ? Math.round(res.bill.fixed_charges / loadVal) : 0;
             
             // 4. Taxes & FCA
-            const fcaRate = 1.63; // Updated to match your new Python engine
-            const tvFee = 35.0;
+            const fcaRate = 0.3364; 
+            const qtaRate = isLifeline ? 0.0 : -1.9857;
+            const tvFee = isLifeline ? 0.0 : 35.0;
             const valFca = Math.round(res.kwh * fcaRate);
+            const valQta = Math.round(res.kwh * qtaRate);
             const valDuty = isLifeline ? 0 : Math.round(res.bill.energy_cost * 0.015);
-            const valGst = isLifeline ? 0 : Math.round((res.bill.energy_cost + res.bill.fixed_charges + valFca) * 0.18);
-            const totalTaxesAndFca = valFca + valDuty + valGst + tvFee;
+            const valGst = isLifeline ? 0 : Math.round((res.bill.energy_cost + res.bill.fixed_charges + valFca + valQta) * 0.18);
+            const totalTaxesAndFca = valFca + valQta + valDuty + valGst + tvFee;
 
             document.body.classList.add('modal-open');
             document.getElementById('breakdownModal').style.display = 'flex';
@@ -2865,6 +2867,11 @@
                             <span style="color: rgba(255,255,255,0.7);">Fuel Adjustment (FCA):</span>
                             <span style="color: #ffffff;">Rs. ${valFca.toLocaleString()}</span>
                         </div>
+                        ${!isLifeline ? `
+                        <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
+                            <span style="color: rgba(255,255,255,0.7);">Quarterly Adjustment (QTA):</span>
+                            <span style="color: #81c784;">Rs. ${valQta.toLocaleString()}</span>
+                        </div>` : ''}
                         <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:4px;">
                             <span style="color: rgba(255,255,255,0.7);">Electricity Duty (${isLifeline ? '0%' : '1.5%'}):</span>
                             <span style="color: #ffffff;">Rs. ${valDuty.toLocaleString()}</span>
