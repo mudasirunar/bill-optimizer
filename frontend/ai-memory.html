@@ -690,7 +690,8 @@
 
             
 
-            const hasData = (keys) => keys.some(k => d[k] !== undefined && d[k] !== null && d[k] !== "" && d[k] !== 0 && d[k] !== "0");
+            const has = (v) => v !== undefined && v !== null && v !== "";
+            const hasData = (keys) => keys.some(k => has(d[k]));
 
             const emptyMsg = (text) => `
                 <div class="card-empty-state">
@@ -705,16 +706,17 @@
             let gaps = [];
 
             // Context (30pts)
-            if (d.disco) score += 10; else gaps.push("Regional Grid Context");
-            if (d.sanctioned_load) score += 10; else gaps.push("Load Capacity Data");
-            if (d.property_area && d.person_count) score += 10; else gaps.push("Structural Dimensions");
+            if (has(d.disco)) score += 10; else gaps.push("Regional Grid Context");
+            if (has(d.sanctioned_load)) score += 10; else gaps.push("Load Capacity Data");
+            if (has(d.property_area) && has(d.person_count)) score += 10; else gaps.push("Structural Dimensions");
 
             // Inventory (30pts)
-            const hasAC = (d.ac_std_qty > 0 || d.ac_inv_qty > 0);
-            const hasFans = (d.fan_ac_qty > 0 || d.fan_dc_qty > 0);
+            const hasAC = (has(d.ac_std_qty) || has(d.ac_inv_qty));
+            const hasFans = (has(d.fan_ac_qty) || has(d.fan_dc_qty));
+            const hasFridge = has(d.f_qty);
             if (hasAC) score += 10; else gaps.push("AC Consumption Profile");
             if (hasFans) score += 10; else gaps.push("Air-Flow Load Signature");
-            if (d.f_qty > 0) score += 10; else gaps.push("Refrigeration Efficiency");
+            if (hasFridge) score += 10; else gaps.push("Refrigeration Efficiency");
 
             // History (40pts)
             const validHistory = (d.bill_history || []).filter(b => parseFloat(b.units) > 5);
@@ -790,47 +792,52 @@
             };
 
             const renderAppliance = (prefix, dataKey, labelText, icon, monthlyVal) => {
-            const qty = d[dataKey + '_qty'] || 0;
-            const hrs = d[dataKey + '_val'] || 0;
-            const freq = d[dataKey + '_freq'] || 0;
-            const dispEl = document.getElementById('disp-' + prefix);
-            const labelEl = document.getElementById('label-' + prefix);
-            
-            if (!dispEl || !labelEl) return;
+                const qtyVal = d[dataKey + '_qty'];
+                const dispEl = document.getElementById('disp-' + prefix);
+                const labelEl = document.getElementById('label-' + prefix);
+                
+                if (!dispEl || !labelEl) return;
 
-            if (qty > 0) {
-                // 1. Label Chips (Type/Battery)
-                let chips = createTypeChip(d[dataKey + '_type']);
-                if (dataKey === 'u') chips += createTypeChip(d.u_battery);
-                if (dataKey === 'wp' && d.wp_type) chips = createTypeChip(d.wp_type + " HP");
-                labelEl.innerHTML = `<i class="${icon}"></i> ${labelText} ${chips}`;
+                if (qtyVal === undefined || qtyVal === null || qtyVal === "") {
+                    dispEl.innerHTML = formatValue(null, "", labelText.toUpperCase());
+                } else if (parseFloat(qtyVal) === 0) {
+                    dispEl.innerHTML = `<div style="text-align: right; width: 100%; color:var(--text-dim); font-size:0.75rem; font-style:italic; font-weight:600;"><i class="fa fa-circle-minus" style="margin-right:4px; opacity:0.6"></i>Not Owned</div>`;
+                } else {
+                    const qty = parseFloat(qtyVal) || 0;
+                    const hrs = d[dataKey + '_val'] || 0;
+                    const freq = d[dataKey + '_freq'] || 0;
 
-                // 2. Logic for Frequency Text
-                const freqText = formatFrequencyTag(freq);
-                const freqTag = (hrs > 0 && freqText) ? `<div style="font-size:0.55rem; color:var(--text-dim); margin-top:2px; text-transform:uppercase; letter-spacing:0.02em">${freqText}</div>` : "";
+                    // 1. Label Chips (Type/Battery)
+                    let chips = createTypeChip(d[dataKey + '_type']);
+                    if (dataKey === 'u') chips += createTypeChip(d.u_battery);
+                    if (dataKey === 'wp' && d.wp_type) chips = createTypeChip(d.wp_type + " HP");
+                    labelEl.innerHTML = `<i class="${icon}"></i> ${labelText} ${chips}`;
 
-                const kwhVal = Math.round(monthlyVal || 0);
+                    // 2. Logic for Frequency Text
+                    const freqText = formatFrequencyTag(freq);
+                    const freqTag = (hrs > 0 && freqText) ? `<div style="font-size:0.55rem; color:var(--text-dim); margin-top:2px; text-transform:uppercase; letter-spacing:0.02em">${freqText}</div>` : "";
 
-                // 3. Three-Column Layout: Qty | kWh | Usage + Frequency Text
-                dispEl.innerHTML = `
-                    <div style="display: flex; align-items: center; width: 100%; justify-content: space-between;">
-                        <div style="font-family:'Syne'; font-weight:800; color:var(--g3); min-width:30px">${qty}x</div>
-                        <span style="color:var(--border); font-weight: 300;">|</span>
-                        <div style="text-align: center; flex: 1;">
-                            ${kwhVal > 0 ? kwhVal + ' <small>kWh</small>' : formatValue(null, "", "LOAD")}
-                        </div>
-                        <span style="color:var(--border); font-weight: 300;">|</span>
-                        <div style="display: flex; flex-direction: column; align-items: flex-end; min-width:60px;">
-                            <div style="line-height:1; font-weight:600;">
-                                ${hrs > 0 ? hrs + ' <small style="font-size:0.6rem">Hrs</small>' : formatValue(null, "", "TIME")}
+                    const kwhVal = Math.round(monthlyVal || 0);
+
+                    // 3. Three-Column Layout: Qty | kWh | Usage + Frequency Text
+                    dispEl.innerHTML = `
+                        <div style="display: flex; align-items: center; width: 100%; justify-content: space-between;">
+                            <div style="font-family:'Syne'; font-weight:800; color:var(--g3); min-width:30px">${qty}x</div>
+                            <span style="color:var(--border); font-weight: 300;">|</span>
+                            <div style="text-align: center; flex: 1;">
+                                ${kwhVal > 0 ? kwhVal + ' <small>kWh</small>' : formatValue(null, "", "LOAD")}
                             </div>
-                            ${freqTag}
-                        </div>
-                    </div>`;
-            } else {
-                dispEl.innerHTML = formatValue(null, "", labelText.toUpperCase());
-            }
-        };
+                            <span style="color:var(--border); font-weight: 300;">|</span>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; min-width:60px;">
+                                <div style="line-height:1; font-weight:600;">
+                                    ${hrs > 0 ? hrs + ' <small style="font-size:0.6rem">Hrs</small>' : formatValue(null, "", "TIME")}
+                                </div>
+                                ${freqTag}
+                            </div>
+                        </div>`;
+                }
+            };
+
             // 1. CHECK SYSTEM CONTEXT DATA
             const systemKeys = ['disco', 'sanctioned_load', 'user_category'];
             if (!hasData(systemKeys)) {
@@ -864,15 +871,19 @@
             if (!hasData(appKeys)) {
                 document.getElementById('body-appliances').innerHTML = emptyMsg("No appliance inventory signatures detected.");
             } else {
-                const acStdQty = d.ac_std_qty || 0;
-                const acInvQty = d.ac_inv_qty || 0;
+                const acStdQty = d.ac_std_qty;
+                const acInvQty = d.ac_inv_qty;
                 const acDisp = document.getElementById('disp-ac');
                 const acLabel = document.getElementById('label-ac');
 
                 // Top Label remains clean
                 acLabel.innerHTML = `<i class="fa fa-snowflake"></i> Air Conditioning`;
 
-                if (acStdQty > 0 || acInvQty > 0) {
+                if (acStdQty === undefined && acInvQty === undefined) {
+                    acDisp.innerHTML = formatValue(null, "", "A/C UNITS");
+                } else if (parseFloat(acStdQty || 0) === 0 && parseFloat(acInvQty || 0) === 0) {
+                    acDisp.innerHTML = `<div style="text-align: right; width: 100%; color:var(--text-dim); font-size:0.75rem; font-style:italic; font-weight:600;"><i class="fa fa-circle-minus" style="margin-right:4px; opacity:0.6"></i>Not Owned</div>`;
+                } else {
                     let rowsHtml = `<div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">`;
 
                     const renderAcRow = (qty, hrs, freq, typeLabel, powerKW) => {
@@ -880,9 +891,6 @@
                         const freqVal = parseFloat(freq) || 0;
                         const kwh = Math.round(qty * powerKW * hrs * freqVal);
                         const freqTag = hrs > 0 ? `<span style="font-size:0.5rem; color:var(--text-dim); text-transform:uppercase;">${formatFrequencyTag(freq)}</span>` : "";
-
-                        const kwhDisplay = kwh > 0 ? `${kwh} <small>kWh</small>` : formatValue(null, "", "kWh");
-                        const hrsDisplay = hrs > 0 ? `${hrs} <small>Hrs</small>` : formatValue(null, "", "Hrs");
 
                         return `
                             <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; font-size: 0.85rem;">
@@ -903,13 +911,11 @@
                         `;
                     };
 
-                    if (acStdQty > 0) rowsHtml += renderAcRow(acStdQty, d.ac_std_val, d.ac_std_freq, 'Standard', 1.5);
-                    if (acInvQty > 0) rowsHtml += renderAcRow(acInvQty, d.ac_inv_val, d.ac_inv_freq, 'Inverter', 0.75);
+                    if (parseFloat(acStdQty) > 0) rowsHtml += renderAcRow(acStdQty, d.ac_std_val, d.ac_std_freq, 'Standard', 1.5);
+                    if (parseFloat(acInvQty) > 0) rowsHtml += renderAcRow(acInvQty, d.ac_inv_val, d.ac_inv_freq, 'Inverter', 0.75);
                     
                     rowsHtml += `</div>`;
                     acDisp.innerHTML = rowsHtml;
-                } else {
-                    acDisp.innerHTML = formatValue(null, "", "A/C UNITS");
                 }
                 renderAppliance('fridge', 'f', 'Fridge', 'fa fa-box', d.refrigerator_monthly);
                 renderAppliance('wm', 'wm', 'Washing Machine', 'fa fa-soap', d.wm_monthly);
@@ -918,14 +924,18 @@
                 renderAppliance('k', 'k', 'Kitchen', 'fa fa-utensils', d.kitchen_monthly);
 
                 // ─── 4. FANS (FIXED COLORS: GREEN QTY | GREEN KWH) ───
-                const fAc = d.fan_ac_qty || 0;
-                const fDc = d.fan_dc_qty || 0;
+                const fAc = d.fan_ac_qty;
+                const fDc = d.fan_dc_qty;
                 const fanDisp = document.getElementById('disp-fans');
                 const fanLabel = document.getElementById('label-fans');
 
                 fanLabel.innerHTML = `<i class="fa fa-fan"></i> Household Fans`;
 
-                if (fAc > 0 || fDc > 0) {
+                if (fAc === undefined && fDc === undefined) {
+                    fanDisp.innerHTML = formatValue(null, "", "FAN INVENTORY");
+                } else if (parseFloat(fAc || 0) === 0 && parseFloat(fDc || 0) === 0) {
+                    fanDisp.innerHTML = `<div style="text-align: right; width: 100%; color:var(--text-dim); font-size:0.75rem; font-style:italic; font-weight:600;"><i class="fa fa-circle-minus" style="margin-right:4px; opacity:0.6"></i>Not Owned</div>`;
+                } else {
                     let fanHtml = `<div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">`;
 
                     const renderFanRow = (qty, typeLabel, powerKW) => {
@@ -948,13 +958,11 @@
                         `;
                     };
 
-                    if (fAc > 0) fanHtml += renderFanRow(fAc, 'Standard AC', 0.080);
-                    if (fDc > 0) fanHtml += renderFanRow(fDc, 'Inverter DC', 0.035);
+                    if (parseFloat(fAc) > 0) fanHtml += renderFanRow(fAc, 'Standard AC', 0.080);
+                    if (parseFloat(fDc) > 0) fanHtml += renderFanRow(fDc, 'Inverter DC', 0.035);
 
                     fanHtml += `</div>`;
                     fanDisp.innerHTML = fanHtml;
-                } else {
-                    fanDisp.innerHTML = formatValue(null, "", "FAN INVENTORY");
                 }
                 
                 document.getElementById('disp-mean').innerHTML = d.mean_hourly 
@@ -999,8 +1007,13 @@
      * Add more cases here in the future to expand the AI's "vocabulary"
      */
     function getNeuralBriefing(data, score, historyCount, gaps) {
-        const hasHighLoads = (data.ac_std_qty > 0 || data.ac_inv_qty > 0 || data.f_qty > 0);
-        const isInefficient = (data.ac_std_qty > 0 || data.f_type === 'old');
+        const has = (v) => v !== undefined && v !== null && v !== "";
+        const acAnswered = has(data.ac_std_qty) || has(data.ac_inv_qty);
+        const fridgeAnswered = has(data.f_qty);
+        const hasAnsweredHighLoads = acAnswered && fridgeAnswered;
+
+        const hasHighLoads = (parseFloat(data.ac_std_qty) > 0 || parseFloat(data.ac_inv_qty) > 0 || parseFloat(data.f_qty) > 0);
+        const isInefficient = (parseFloat(data.ac_std_qty) > 0 || data.f_type === 'old');
         const isNew = historyCount < 2;
 
         // Case 1: Initial/Empty Profile
@@ -1011,8 +1024,8 @@
             };
         }
 
-        // Case 2: Missing High-Consumption Signatures
-        if (!hasHighLoads) {
+        // Case 2: Missing High-Consumption Signatures (Unanswered)
+        if (!hasAnsweredHighLoads) {
             return {
                 status: "Signature Deficit", color: "#fbbf24",
                 html: "Context synced, but we are missing <b>High-Load Signatures</b> (AC/Fridge). The AI can predict your base lighting, but it cannot model your peak summer slab risks."
