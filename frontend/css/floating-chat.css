@@ -62,18 +62,24 @@
     display: flex;
     flex-direction: column;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    
+    /* 100% GPU-Accelerated macOS Genie Sucking Simulation */
     opacity: 0;
     pointer-events: none;
-    transform: scale(0.9) translateY(20px);
-    transition: opacity 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), 
-                transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transform-origin: calc(100% - 30px) calc(100% + 45px);
+    transform: scale(0.01, 0.05) translateY(120px) skewX(-12deg);
+    transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+                transform 0.34s cubic-bezier(0.25, 1, 0.5, 1);
     overflow: hidden;
+    will-change: transform, opacity;
 }
 
 .chat-widget.visible {
     opacity: 1;
     pointer-events: all;
-    transform: scale(1) translateY(0);
+    transform: scale(1, 1) translateY(0) skewX(0deg);
+    transition: opacity 0.22s ease-out,
+                transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1); /* Springy popping exit */
 }
 
 /* 3. Header Styling */
@@ -177,47 +183,131 @@
 
 .chat-bubble.model {
     align-self: flex-start;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    color: var(--text-dim);
-    border-radius: 16px 16px 16px 4px;
+    background: transparent;
+    border: none;
+    color: #f3f4f6; /* Clear, readable off-white text color */
+    padding: 8px 0;
+    max-width: 100%;
+    border-radius: 0;
 }
 
 /* Format bullet points inside model responses */
 .chat-bubble.model ul {
-    margin: 6px 0 0 14px;
+    margin: 8px 0 8px 18px;
     padding: 0;
 }
 .chat-bubble.model li {
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    line-height: 1.55;
 }
 
-/* 6. Typing/Thinking Status Indicator */
-.chat-typing-container {
+/* 6. Typing/Thinking Status Indicator (Transparent Inside Messages) */
+.typing-indicator-bubble {
     align-self: flex-start;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 10px 16px;
-    border-radius: 16px 16px 16px 4px;
-    display: none;
+    background: transparent !important;
+    border: none !important;
+    padding: 8px 0 !important;
+    margin: 0 !important;
+    min-height: 0 !important;
 }
 
 .chat-typing-dots {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
+    padding: 4px 0;
 }
 
 .chat-dot {
     width: 6px;
     height: 6px;
-    background-color: var(--text-muted);
+    background-color: var(--g3);
     border-radius: 50%;
     animation: typing-bounce 1.4s infinite ease-in-out both;
+    box-shadow: 0 0 4px var(--g3);
 }
 
 .chat-dot:nth-child(1) { animation-delay: -0.32s; }
 .chat-dot:nth-child(2) { animation-delay: -0.16s; }
+
+/* 7. Welcome Card Styling */
+.chat-welcome-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 30px 16px;
+    margin: auto 0; /* Center vertically inside chat space */
+}
+
+.chat-welcome-icon {
+    width: 50px;
+    height: 50px;
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: var(--g3);
+    margin-bottom: 12px;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+    animation: welcome-pulse 2.5s infinite ease-in-out;
+}
+
+@keyframes welcome-pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 12px rgba(16, 185, 129, 0.15); }
+    50% { transform: scale(1.06); box-shadow: 0 0 22px rgba(16, 185, 129, 0.35); }
+}
+
+.chat-welcome-brand {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chat-welcome-ai-tag {
+    font-size: 0.65rem;
+    background: linear-gradient(135deg, var(--g2) 0%, var(--g3) 100%);
+    color: #fff;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.chat-welcome-text {
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: #e5e7eb; /* Extremely clear and readable off-white */
+    max-width: 85%;
+}
+
+/* 7.5 Background Watermark Logo */
+.chat-bg-watermark {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 6.5rem;
+    color: rgba(16, 185, 129, 0.03); /* Faint watermark green, static */
+    pointer-events: none;
+    z-index: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-messages.has-chat .chat-bg-watermark {
+    display: flex;
+}
 
 /* 7. Input Footer Bar */
 .chat-footer {
@@ -301,4 +391,37 @@
         bottom: 15px;
         right: 15px;
     }
+}
+
+/* 8. Flicker Prevention & Header Controls */
+.no-transition, 
+.no-transition *,
+.notransition,
+.notransition * {
+    transition: none !important;
+    animation: none !important;
+}
+
+.chat-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.chat-action-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.2s ease, transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-action-btn:hover {
+    color: var(--g3);
+    transform: rotate(30deg);
 }
