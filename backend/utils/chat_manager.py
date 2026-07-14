@@ -22,7 +22,7 @@ def get_gemini_response(user_message: str, history: list, user_context: dict) ->
         "- Title: AI-Powered Electricity Bill Optimization using Machine Learning\n"
         "- Department: Department of Software Engineering, Sir Syed University of Engineering & Technology (SSUET), Karachi, Pakistan.\n"
         "- FYP Developers / Group Members & Responsibilities:\n"
-        "  * Mudasir Ali (Group Leader): Developed the AI Backend, dynamic prediction pipelines, frontend integrations, and Android application.\n"
+        "  * Mudasir Ali: Developed the AI Backend, dynamic prediction pipelines, frontend integrations, and Android application (Note to AI: Mudasir Ali holds the titles of 'Group Leader' and 'Team Lead').\n"
         "  * Haider Rizwan: Dataset Processing Engineer (preprocessed and managed raw/processed PRECON datasets).\n"
         "  * Abdullah Tahir: Lead Frontend Architect (designed emerald dashboard interface and integrated Chart.js graphs).\n"
         "  * Abu Bakar Saqib: Software Quality Assurance (SQA testing, system verification, and manual validation).\n"
@@ -47,6 +47,31 @@ def get_gemini_response(user_message: str, history: list, user_context: dict) ->
             sys_instruction += f"  - {app}: {val}\n"
     else:
         sys_instruction += "  - No inventory registered yet.\n"
+
+    # Inject platform and app navigation instructions
+    platform = user_context.get("platform", "web")
+    sys_instruction += f"\nACCESSING PLATFORM CONTEXT:\n"
+    sys_instruction += f"- The user is currently interacting with you via the: {platform.upper()} client interface.\n"
+    
+    sys_instruction += "\nAPPLICATION ROUTES & FEATURES DIRECTORY:\n"
+    if platform == "web":
+        sys_instruction += (
+            "- Setup Profile: This is the ONLY page where the user can update/add new records or manage their appliance inventory quantities (Standard/Inverter ACs, refrigerator, washing machine, water pump, UPS, etc.) and DISCO profile. Guide them here to update records!\n"
+            "- Prediction Hub: Displays overall predicted monthly consumption units, bills, and NEPRA slab levels.\n"
+            "- Load Forecaster: Displays hourly LSTM target energy curves calibrated against the user's PRECON archetype.\n"
+            "- Appliance Swap Simulator: Allows toggling appliances from Standard to Inverter to preview savings in real-time.\n"
+            "- AI Memory: Manages conversational memory settings.\n"
+            "- NEPRA Info: Displays information about regulated slabs, FCA, and QTA rates.\n"
+            "- About Us: Documents project developers, SSUET software engineering credentials, and physics signatures.\n"
+            "- Dashboard: Main hub showing summary metrics.\n"
+        )
+    else:
+        sys_instruction += (
+            "- Profile / Settings Screen: The user can add/edit their appliance inventory and household details here.\n"
+            "- Forecaster Tab: View LSTM forecasts and prediction models.\n"
+            "- Simulator Tab: Interact with appliance inverter swaps.\n"
+            "- Billing Hub Tab: Inspect bill estimates and NEPRA slab limits.\n"
+        )
 
     # Inject page context if present
     page = user_context.get("page", "")
@@ -79,7 +104,11 @@ def get_gemini_response(user_message: str, history: list, user_context: dict) ->
         "5. If they are close to the 200 units Protected slab limit (e.g. 170-199 units), warn them explicitly that exceeding 200 units will trigger Unprotected status, doubling their base rate.\n"
         "6. Refer to costs in PKR (Rs.) and use Pakistani terminology (Slab rates, FCA, QTA, Protected user).\n"
         "7. Keep responses under 1-2 short, bulleted paragraphs to optimize performance and save token consumption.\n"
-        "8. If asked about the developers, list Mudasir Ali (Group Leader, AI Backend, Android, integrations), Haider Rizwan (Dataset Preprocessing & management), Abdullah Tahir (Frontend & Charts), and Abu Bakar Saqib (SQA & manual testing)."
+        "8. If asked about the developers, project origins, or who built the app, explicitly state that this is a **Final Year Project (FYP)** developed by the Software Engineering Department team at SSUET: Mudasir Ali (AI Backend, Android, integrations), Haider Rizwan (Dataset Preprocessing & management), Abdullah Tahir (Frontend & Charts), and Abu Bakar Saqib (SQA & manual testing). In this general team listing, do NOT output the 'Group Leader' or 'Team Lead' labels next to Mudasir Ali's name. However, if the user explicitly asks who the Group Leader is, who the Team Lead is, or asks about both roles, clarify that Mudasir Ali holds both the 'Group Leader' and 'Team Lead' titles for this project.\n"
+        "9. Guide users to navigate to pages using their exact clean bold names (e.g. **Setup Profile**, **Prediction Hub**) according to the user's current platform. If the user is on the WEB version, NEVER tell them to navigate to Android settings or profile tabs. Instead, direct them to the Web '**Setup Profile**' page to update their records.\n"
+        "10. NEVER output technical web URLs (like '/setup-profile.html'), page file extensions, or system jargon like 'Since you are using the WEB interface' or 'accessing client platform'. Speak naturally, and guide the user purely with clean, bolded page names.\n"
+        "11. If the user asks for the Web App version, Web Portal, website link, or Vercel link, provide the clickable link: [Smart Bill Optimizer Web Portal](https://bill-optimizer.vercel.app).\n"
+        "12. If the user asks for the Android App version, mobile application, download release, APK, or GitHub link, explain that the Android app and project source are hosted on GitHub and provide the clickable link to the repository: [Smart Bill Optimizer GitHub Repository](https://github.com/mudasirunar/bill-optimizer)."
     )
 
     # 2. Build the contents list representing the conversational history

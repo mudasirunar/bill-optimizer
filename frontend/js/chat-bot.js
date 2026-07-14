@@ -61,7 +61,7 @@
             </div>
             <div class="chat-footer">
                 <form class="chat-input-form" id="chatInputForm">
-                    <input type="text" class="chat-input" id="chatInput" placeholder="Ask about saving energy..." autocomplete="off" required>
+                    <textarea class="chat-input" id="chatInput" placeholder="Ask about saving energy..." autocomplete="off" rows="1"></textarea>
                     <button type="submit" class="chat-send-btn" id="chatSendBtn">
                         <i class="fa fa-paper-plane"></i>
                     </button>
@@ -89,10 +89,44 @@
         const chatCloseBtn = document.getElementById("chatCloseBtn");
         const chatResetBtn = document.getElementById("chatResetBtn");
 
+        // Auto-expand textarea on input
+        chatInput.addEventListener("input", function () {
+            this.style.height = "auto";
+            const maxHeight = 100;
+            const newHeight = Math.min(this.scrollHeight, maxHeight);
+            this.style.height = newHeight + "px";
+            if (this.scrollHeight > maxHeight) {
+                this.style.overflowY = "auto";
+            } else {
+                this.style.overflowY = "hidden";
+            }
+        });
+
+        // Submit form on Enter key press (insert newline on Shift + Enter)
+        chatInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                chatInputForm.dispatchEvent(new Event("submit"));
+            }
+        });
+
+        // Show scrollbar only while scrolling, hide after 1 second of inactivity
+        let scrollTimeout;
+        chatInput.addEventListener("scroll", () => {
+            chatInput.classList.add("scrolling");
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                chatInput.classList.remove("scrolling");
+            }, 1000);
+        });
+
+        // Setup cache key unique to logged-in user UID
+        const cacheKey = "ssuet_chat_history_" + uid;
+
         // Load History from sessionStorage
         let chatHistory = [];
         try {
-            const cachedHistory = sessionStorage.getItem("ssuet_chat_history");
+            const cachedHistory = sessionStorage.getItem(cacheKey);
             if (cachedHistory) {
                 chatHistory = JSON.parse(cachedHistory);
             }
@@ -168,7 +202,7 @@
         // Reset Chat Action
         chatResetBtn.addEventListener("click", () => {
             chatHistory = [];
-            sessionStorage.removeItem("ssuet_chat_history");
+            sessionStorage.removeItem(cacheKey);
             renderInitialMessages();
             chatInput.focus();
         });
@@ -189,6 +223,8 @@
             // Render User Bubble
             appendBubble(messageText, "user");
             chatInput.value = "";
+            chatInput.style.height = "auto";
+            chatInput.style.overflowY = "hidden";
             chatInput.disabled = true;
             chatSendBtn.disabled = true;
             
@@ -222,7 +258,8 @@
                         uid: uid,
                         message: messageText,
                         history: formattedHistory,
-                        page: window.location.pathname
+                        page: window.location.pathname,
+                        platform: "web"
                     })
                 });
 
@@ -249,7 +286,7 @@
                     // Save to cache history
                     chatHistory.push({ role: "user", text: messageText });
                     chatHistory.push({ role: "model", text: data.reply });
-                    sessionStorage.setItem("ssuet_chat_history", JSON.stringify(chatHistory));
+                    sessionStorage.setItem(cacheKey, JSON.stringify(chatHistory));
                 } else {
                     const errMsg = data.error || "Could not retrieve response from AI. Please try again.";
                     if (pendingBubble) {
@@ -279,7 +316,6 @@
             scrollToBottom();
         });
 
-        // 6. Formatting & Typing Helper functions
         function formatMarkdown(text) {
             // Escape HTML to prevent XSS
             let html = text
@@ -290,6 +326,9 @@
             // Parse bold markdown (**text**)
             html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
             
+            // Parse markdown links [Text](url) to HTML anchors
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
             // Parse bullet lists (* or - at start of line)
             if (html.includes('\n* ') || html.includes('\n- ') || html.startsWith('* ') || html.startsWith('- ')) {
                 html = html.replace(/^(?:[\*\-]\s|\-\s)(.+)$/gm, '<li>$1</li>');
@@ -312,6 +351,10 @@
             
             function step() {
                 if (i < html.length) {
+                    // Check if scroll is near bottom BEFORE we update layout
+                    const threshold = 55;
+                    const isNearBottom = (chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight) <= threshold;
+
                     // Instantly write complete HTML tags to prevent syntax breaking mid-animation
                     if (html.charAt(i) === '<') {
                         let tagCloseIndex = html.indexOf('>', i);
@@ -324,7 +367,12 @@
                         i++;
                     }
                     element.innerHTML = html.substring(0, i);
-                    scrollToBottom();
+                    
+                    // Only scroll down if the user was already near the bottom
+                    if (isNearBottom) {
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }
+                    
                     setTimeout(step, speed);
                 } else {
                     if (onComplete) onComplete();
@@ -347,6 +395,20 @@
 
         function scrollToBottom() {
             chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Listen for Firebase signOut event to immediately clear chat cache
+        if (window.firebase) {
+            firebase.auth().onAuthStateChanged((user) => {
+                if (!user) {
+                    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+                        const key = sessionStorage.key(i);
+                        if (key && key.startsWith("ssuet_chat_history")) {
+                            sessionStorage.removeItem(key);
+                        }
+                    }
+                }
+            });
         }
     }
 

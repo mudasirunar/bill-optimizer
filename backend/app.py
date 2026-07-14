@@ -941,6 +941,7 @@ def chat_with_assistant():
         message = data.get('message', '')
         history = data.get('history', [])
         page = data.get('page', '')
+        platform = data.get('platform', 'web')
 
         if not uid or not message:
             return jsonify({"error": "Missing uid or message"}), 400
@@ -948,7 +949,7 @@ def chat_with_assistant():
         # 1. Fetch user data from Firestore
         user_doc = db.collection('users').document(uid).get()
         if not user_doc.exists:
-            fallback_context = {"disco": "Unknown", "category_display": "Unknown", "inventory": {}, "page": page}
+            fallback_context = {"disco": "Unknown", "category_display": "Unknown", "inventory": {}, "page": page, "platform": platform}
             reply = get_gemini_response(message, history, fallback_context)
             return jsonify({"status": "success", "reply": reply})
 
@@ -1014,6 +1015,7 @@ def chat_with_assistant():
             "predicted_units": str(round(final_units, 1)),
             "predicted_bill": str(round(bill_res['total_bill'], 0)),
             "page": page,
+            "platform": platform,
             "inventory": {
                 "Standard ACs": f"{u.get('ac_std_qty', 0)} units ({u.get('ac_std_val', 0)} hrs/day)",
                 "Inverter ACs": f"{u.get('ac_inv_qty', 0)} units ({u.get('ac_inv_val', 0)} hrs/day)",
