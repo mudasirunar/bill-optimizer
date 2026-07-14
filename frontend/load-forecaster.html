@@ -478,11 +478,8 @@
         <div class="footer-tag">FYP 2026 · Smart Energy Management System</div>
     </footer>
 
-    <button class="scroll-top" id="scrollBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">
-        <i class="fa fa-chevron-up"></i>
-    </button>
-
     <script src="js/config.js"></script>
+    <script src="js/chat-bot.js"></script>
     <script src="js/auth.js"></script>
     <script>
 
@@ -1104,16 +1101,6 @@
             textEl.innerText   = d.text;
             card.style.display = 'block';
         }
-        // Monitor scroll position to show/hide the Up Arrow
-        window.addEventListener('scroll', () => {
-            const scrollBtn = document.getElementById('scrollBtn');
-            if (window.scrollY > 300) {
-                scrollBtn.classList.add('visible');
-            } else {
-                scrollBtn.classList.remove('visible');
-            }
-        });
-
         function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }
     </script>
         <div class="modal-overlay" id="hour-modal">

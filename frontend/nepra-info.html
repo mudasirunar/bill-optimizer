@@ -713,11 +713,8 @@
         <div class="footer-tag">FYP 2026 · Smart Energy Management System</div>
     </footer>
 
-    <button class="scroll-top" id="scrollBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">
-        <i class="fa fa-chevron-up"></i>
-    </button>
-
     <script src="js/config.js"></script>
+    <script src="js/chat-bot.js"></script>
     <script src="js/auth.js"></script>
     <script>
 
@@ -735,10 +732,6 @@
             firebase.auth().signOut().then(() => window.location.href = "index.html");
         }
 
-        const scrollBtn = document.getElementById('scrollBtn');
-        window.addEventListener('scroll', () => {
-            scrollBtn.classList.toggle('visible', window.scrollY > 300);
-        });
     </script>
 </body>
 </html>

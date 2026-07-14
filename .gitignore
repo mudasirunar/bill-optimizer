@@ -26,6 +26,10 @@ backend/data/processed/*
 # 3. SECURITY SENSITIVE FILES
 # ──────────────────────────────────────────────────────────
 
+# Environmental secrets
+.env
+backend/.env
+
 # WARNING: If you are using a PRIVATE GitHub repo, you can 
 # comment out the line below to push the key to Render. 
 # If your repo is PUBLIC, keep it ignored and use Render 'Secret Files'.

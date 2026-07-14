@@ -1242,11 +1242,8 @@
         <span id="toast-msg">Saved!</span>
     </div>
 
-    <button class="scroll-top" id="scrollBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">
-        <i class="fa fa-chevron-up"></i>
-    </button>
-
     <script src="js/config.js"></script>
+    <script src="js/chat-bot.js"></script>
     <script src="js/auth.js"></script>
     <script>
     /* ── State ── */
@@ -1710,16 +1707,6 @@
                 headerRow.appendChild(progressWrap);
                 progressWrap.classList.remove('floating');
             }
-        }
-    });
-
-    // Monitor scroll position to show/hide the Up Arrow
-    window.addEventListener('scroll', () => {
-        const scrollBtn = document.getElementById('scrollBtn');
-        if (window.scrollY > 300) {
-            scrollBtn.classList.add('visible');
-        } else {
-            scrollBtn.classList.remove('visible');
         }
     });
 
