@@ -225,6 +225,21 @@
             chatInput.value = "";
             chatInput.style.height = "auto";
             chatInput.style.overflowY = "hidden";
+
+            // Instant offline detection before hitting backend
+            if (!navigator.onLine) {
+                const errorHtml = `
+                    <i class="fa-solid fa-wifi"></i>
+                    <div class="error-content">
+                        <span class="error-title">ERR_OFFLINE</span>
+                        <span class="error-description">You are currently offline. Please check your network connection and try again.</span>
+                    </div>
+                `;
+                appendBubble(errorHtml, "error");
+                scrollToBottom();
+                return;
+            }
+
             chatInput.disabled = true;
             chatSendBtn.disabled = true;
             
@@ -248,6 +263,10 @@
                 text: h.text
             }));
 
+            // Setup AbortController for a 15-second response limit
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+
             try {
                 // Post payload to backend chat endpoint
                 const url = (typeof API_BASE_URL !== "undefined") ? `${API_BASE_URL}/api/chat` : "http://127.0.0.1:5001/api/chat";
@@ -260,8 +279,47 @@
                         history: formattedHistory,
                         page: window.location.pathname,
                         platform: "web"
-                    })
+                    }),
+                    signal: controller.signal
                 });
+
+                clearTimeout(timeoutId); // Clear timeout since server responded successfully
+
+                // Check HTTP status code errors (e.g., 400, 404, 500, 503)
+                if (!res.ok) {
+                    let code = `ERR_STATUS_${res.status}`;
+                    let desc = "";
+                    if (res.status === 404) {
+                        desc = "The requested optimization endpoint could not be found (404). Please verify your backend routing API.";
+                    } else if (res.status === 500) {
+                        desc = "The optimization server encountered an internal server error (500). Please check python backend console logs.";
+                    } else if (res.status === 503) {
+                        desc = "The energy service is temporarily overloaded or unavailable (503). Please try again shortly.";
+                    } else {
+                        desc = `The server responded with an error status: ${res.status} ${res.statusText || ""}.`;
+                    }
+
+                    const errorHtml = `
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <div class="error-content">
+                            <span class="error-title">${code}</span>
+                            <span class="error-description">${desc}</span>
+                        </div>
+                    `;
+                    const pendingBubble = document.getElementById("chatPendingReply");
+                    if (pendingBubble) {
+                        pendingBubble.removeAttribute("id");
+                        pendingBubble.className = "chat-bubble error";
+                        pendingBubble.innerHTML = errorHtml;
+                    } else {
+                        appendBubble(errorHtml, "error");
+                    }
+                    chatInput.disabled = false;
+                    chatSendBtn.disabled = false;
+                    chatInput.focus();
+                    scrollToBottom();
+                    return;
+                }
 
                 const data = await res.json();
                 
@@ -308,14 +366,39 @@
                     chatInput.focus();
                 }
             } catch (err) {
+                clearTimeout(timeoutId);
                 const pendingBubble = document.getElementById("chatPendingReply");
-                const errorHtml = `
-                    <i class="fa-solid fa-circle-exclamation"></i>
-                    <div class="error-content">
-                        <span class="error-title">ERR_CONNECTION_FAILED</span>
-                        <span class="error-description">We couldn't connect to our optimization servers. Please check your internet connection or try again shortly.</span>
-                    </div>
-                `;
+                
+                let errorHtml = "";
+                if (err.name === "AbortError") {
+                    errorHtml = `
+                        <i class="fa-solid fa-hourglass-end"></i>
+                        <div class="error-content">
+                            <span class="error-title">ERR_CONNECTION_TIMEOUT</span>
+                            <span class="error-description">The request timed out. Please check your internet connection stability and try again.</span>
+                        </div>
+                    `;
+                } else {
+                    // Check if browser is online but connection failed (meaning backend is stopped)
+                    if (navigator.onLine) {
+                        errorHtml = `
+                            <i class="fa-solid fa-server"></i>
+                            <div class="error-content">
+                                <span class="error-title">ERR_SERVICE_OFFLINE (503)</span>
+                                <span class="error-description">The optimization service is currently offline or unreachable. Please verify that the Flask backend is active.</span>
+                            </div>
+                        `;
+                    } else {
+                        errorHtml = `
+                            <i class="fa-solid fa-wifi"></i>
+                            <div class="error-content">
+                                <span class="error-title">ERR_CONNECTION_FAILED</span>
+                                <span class="error-description">We couldn't connect to our optimization servers. Please check your network connection and try again.</span>
+                            </div>
+                        `;
+                    }
+                }
+                
                 if (pendingBubble) {
                     pendingBubble.removeAttribute("id");
                     pendingBubble.className = "chat-bubble error";

@@ -30,9 +30,39 @@ function showErrorMessage(msg) {
     }
 }
 
+// 3b. Authenticating Loader Overlay Controls
+function showAuthLoading(message = "Connecting to Secure Auth") {
+    const overlay = document.getElementById('auth-loading-overlay');
+    if (overlay) {
+        const textSpan = document.getElementById('auth-loading-msg');
+        if (textSpan) textSpan.innerText = message;
+        document.body.style.overflow = 'hidden'; // Disable scroll
+        overlay.style.display = 'flex';
+        overlay.offsetHeight; // trigger reflow
+        overlay.style.opacity = '1';
+        const card = overlay.querySelector('.auth-loading-card');
+        if (card) card.style.transform = 'scale(1)';
+    }
+}
+
+function hideAuthLoading() {
+    const overlay = document.getElementById('auth-loading-overlay');
+    if (overlay) {
+        overlay.style.opacity = '0';
+        const card = overlay.querySelector('.auth-loading-card');
+        if (card) card.style.transform = 'scale(0.9)';
+        document.body.style.overflow = ''; // Restore scroll
+        setTimeout(() => {
+            if (overlay.style.opacity === '0') {
+                overlay.style.display = 'none';
+            }
+        }, 300);
+    }
+}
+
 // 4. Handle Redirect Logic
 function handleAuthRedirect(userCredential) {
-    const isNewUser = userCredential.additionalUserInfo.isNewUser;
+    const isNewUser = userCredential.additionalUserInfo?.isNewUser;
     if (isNewUser) {
         window.location.href = "setup-profile.html";
     } else {
@@ -44,12 +74,14 @@ function handleAuthRedirect(userCredential) {
 async function handleGoogleLogin() {
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
+    showAuthLoading("Authenticating with Google");
     try {
         await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         const result = await auth.signInWithPopup(provider);
         localStorage.setItem('userLoggedIn', 'true');
         handleAuthRedirect(result);
     } catch (error) {
+        hideAuthLoading();
         showErrorMessage(error.message);
     }
 }
@@ -57,12 +89,14 @@ async function handleGoogleLogin() {
 // 6. Email Sign In
 async function handleSignIn(email, password) {
     if (!email || !password) return showErrorMessage("Please enter both email and password.");
+    showAuthLoading("Signing in");
     try {
         await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         const result = await auth.signInWithEmailAndPassword(email, password);
         localStorage.setItem('userLoggedIn', 'true');
         handleAuthRedirect(result);
     } catch (error) {
+        hideAuthLoading();
         showErrorMessage("Invalid email or password.");
     }
 }
@@ -97,6 +131,7 @@ async function handleSignUp(firstName, lastName, email, password, confirmPasswor
         return showErrorMessage("Passwords do not match. Please re-type.");
     }
 
+    showAuthLoading("Creating your account");
     try {
         const result = await auth.createUserWithEmailAndPassword(email, password);
         localStorage.setItem('userLoggedIn', 'true');
@@ -106,12 +141,13 @@ async function handleSignUp(firstName, lastName, email, password, confirmPasswor
         await result.user.updateProfile({ displayName: fullName });
 
         // One-time Setup Redirect for New Users
-        if (result.additionalUserInfo.isNewUser) {
+        if (result.additionalUserInfo?.isNewUser) {
             window.location.href = "setup-profile.html";
         } else {
             window.location.href = "dashboard.html";
         }
     } catch (error) {
+        hideAuthLoading();
         // Handle Firebase-specific errors (e.g., Email already exists)
         if (error.code === 'auth/email-already-in-use') {
             showErrorMessage("This email is already registered. Try logging in.");

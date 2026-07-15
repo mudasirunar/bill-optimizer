@@ -602,6 +602,15 @@
                     </a>
                 </div>
 
+                <div id="chart-error-state" style="display: none; position: absolute; inset: 0; flex-direction: column; align-items: center; justify-content: center; background: var(--surface); z-index: 20; border-radius: 12px; text-align: center; padding: 20px; border: 1px solid rgba(239, 68, 68, 0.25);">
+                    <i class="fa-solid fa-server" style="font-size: 2.2rem; color: #f87171; margin-bottom: 12px; opacity: 0.8;"></i>
+                    <p style="color: #ef4444; font-size: 0.95rem; font-weight: 700; letter-spacing: 0.03em;">ERR_SERVICE_OFFLINE (503)</p>
+                    <p id="chart-error-desc" style="color: #fca5a5; font-size: 0.78rem; margin-top: 6px; max-width: 280px; line-height: 1.45;">The optimization service is currently offline or unreachable. Please verify that the Flask backend is active.</p>
+                    <button onclick="retryAnnualForecast()" class="btn-outline" style="margin-top: 16px; padding: 8px 16px; font-size: 0.75rem; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5; background: rgba(239, 68, 68, 0.04); cursor: pointer; transition: all 0.2s;">
+                        <i class="fa fa-rotate-right"></i> Retry Forecast
+                    </button>
+                </div>
+
                 <div style="position:relative; height:260px; width:100%;">
                     <canvas id="usageChart"></canvas>
                 </div>
@@ -910,6 +919,7 @@
         let userUid = null;
         let myChart = null;
         let annualForecastData = null; 
+        let cachedProfileDoc = null; 
 
         const SUBSIDY_GAP = {
             lifeline:  32,
@@ -933,6 +943,8 @@
             const btn = document.getElementById('predictBtn');
             const loader = document.getElementById('btnLoader');
             const btnText = document.getElementById('btnText');
+            const msgArea = document.getElementById('inference-msg-area');
+            const msgText = document.getElementById('inference-text');
 
             // Safety check
             const doc = await db.collection('users').doc(userUid).get();
@@ -1000,12 +1012,11 @@
                     `;
 
                     // ─── 3. ORIGINAL NEPRA MESSAGE BOX ───
-                    const msgArea = document.getElementById('inference-msg-area');
-                    const msgText = document.getElementById('inference-text');
                     const applied = result.bill.applied_category; 
                     let categoryName = applied === 'non_protected' ? 'Unprotected' : (applied.charAt(0).toUpperCase() + applied.slice(1));
 
                     msgArea.style.display = 'block';
+                    msgArea.style.background = 'rgba(255,255,255,0.02)';
                     msgArea.style.borderColor = 'rgba(52,211,153,0.15)';
                     
                     msgText.innerHTML = `Based on your consumption pattern, you fall into the 
@@ -1036,7 +1047,6 @@
                         engineDesc = "No AC detected. AI is focusing on your constant appliance signatures (Fridge, Fans, and Standby power).";
                     }
 
-
                     updateLoadPieChart(result.bill.physics_breakdown);
                     generateAISuggestions(result);
                     simulateSolarImpact(result);
@@ -1052,12 +1062,57 @@
                     }, 7000);
     
                 } else {
-                    alert("AI Error: " + result.error);
-                    updateEngineDisplay("Engine Error", result.error, false);
+                    document.getElementById('bill-amount').innerText = "--";
+                    document.getElementById('unit-label').innerHTML = '<i class="fa fa-microchip" style="margin-right:8px; opacity:0.7"></i> -- Predicted Units';
+                    
+                    msgArea.style.display = 'block';
+                    msgArea.style.background = 'rgba(239, 68, 68, 0.05)';
+                    msgArea.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+                    
+                    const code = "ERR_API_FAILURE";
+                    const desc = result.error || "The server encountered an error calculating predictions. Please try again.";
+                    
+                    msgText.innerHTML = `
+                        <div style="display: flex; gap: 12px; align-items: flex-start; text-align: left;">
+                            <i class="fa-solid fa-triangle-exclamation" style="color: #ef4444; font-size: 1.15rem; margin-top: 2px; flex-shrink: 0;"></i>
+                            <div>
+                                <strong style="color: #ef4444; font-size: 0.82rem; letter-spacing: 0.05em; text-transform: uppercase;">${code}</strong>
+                                <p style="font-size: 0.78rem; color: #fca5a5; margin-top: 4px; line-height: 1.45;">${desc}</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    updateEngineDisplay("Engine Error", result.error || "Inference failed", false);
                 }
             } catch (e) {
+                document.getElementById('bill-amount').innerText = "--";
+                document.getElementById('unit-label').innerHTML = '<i class="fa fa-microchip" style="margin-right:8px; opacity:0.7"></i> -- Predicted Units';
+                
+                msgArea.style.display = 'block';
+                msgArea.style.background = 'rgba(239, 68, 68, 0.05)';
+                msgArea.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+                
+                let code = "ERR_CONNECTION_FAILED";
+                let desc = "We couldn't connect to our optimization servers. Please check your internet connection and try again.";
+                let icon = "fa-solid fa-wifi";
+                
+                if (navigator.onLine) {
+                    code = "ERR_SERVICE_OFFLINE (503)";
+                    desc = "The optimization service is currently offline or unreachable. Please verify that the Flask backend is active.";
+                    icon = "fa-solid fa-server";
+                }
+                
+                msgText.innerHTML = `
+                    <div style="display: flex; gap: 12px; align-items: flex-start; text-align: left;">
+                        <i class="${icon}" style="color: #ef4444; font-size: 1.15rem; margin-top: 2px; flex-shrink: 0;"></i>
+                        <div>
+                            <strong style="color: #ef4444; font-size: 0.82rem; letter-spacing: 0.05em; text-transform: uppercase;">${code}</strong>
+                            <p style="font-size: 0.78rem; color: #fca5a5; margin-top: 4px; line-height: 1.45;">${desc}</p>
+                        </div>
+                    </div>
+                `;
+                
                 updateEngineDisplay("Connection Lost", "Flask server offline.", false);
-                alert("Flask Server Offline!");
             } finally {
                 btn.disabled = false;
                 loader.style.display = 'none';
@@ -1076,6 +1131,7 @@
             
             const doc = await db.collection('users').doc(userUid).get();
             const d = doc.exists ? doc.data() : {};
+            cachedProfileDoc = d;
 
             updateSandboxAd(d);
             // --- 1. DATA INTEGRITY SCAN ---
@@ -1185,7 +1241,16 @@
         // Fetch the 12-month data and hide loader when done
         async function fetchAnnualPreview(billHistory, userDoc) {
             const loader = document.getElementById('chart-loader');
-            if (loader) loader.style.display = 'flex';
+            if (loader) {
+                loader.style.display = 'flex';
+                loader.style.opacity = '1';
+            }
+
+            const emptyState = document.getElementById('chart-empty-state');
+            if (emptyState) emptyState.style.display = 'none';
+
+            const errorState = document.getElementById('chart-error-state');
+            if (errorState) errorState.style.display = 'none';
 
             try {
                 const res = await fetch(`${API_BASE_URL}/api/seasonal_preview`, {
@@ -1200,17 +1265,47 @@
                     updateAnnualChart(data.monthly, billHistory, userDoc);
                     return true;
                 } else {
-                    // Backend says no profile
-                    document.getElementById('chart-empty-state').style.display = 'flex';
+                    if (emptyState) emptyState.style.display = 'flex';
                 }
             } catch (e) {
                 console.error("Seasonal preview error:", e);
+                
+                let desc = "We couldn't connect to our optimization servers. Please check your internet connection and try again.";
+                let code = "ERR_CONNECTION_FAILED";
+                let iconClass = "fa-solid fa-wifi";
+                
+                if (navigator.onLine) {
+                    desc = "The optimization service is currently offline or unreachable. Please verify that the Flask backend is active.";
+                    code = "ERR_SERVICE_OFFLINE (503)";
+                    iconClass = "fa-solid fa-server";
+                }
+                
+                const errTitleEl = document.querySelector("#chart-error-state p[style*='color: #ef4444']");
+                const errDescEl = document.getElementById("chart-error-desc");
+                const errIconEl = document.querySelector("#chart-error-state i");
+                
+                if (errTitleEl) errTitleEl.textContent = code;
+                if (errDescEl) errDescEl.textContent = desc;
+                if (errIconEl) {
+                    errIconEl.className = iconClass;
+                    errIconEl.style.color = (iconClass === "fa-solid fa-server" ? "#f87171" : "#fca5a5");
+                }
+                
+                if (errorState) errorState.style.display = 'flex';
                 return false;
             } finally {
                 if (loader) {
                     loader.style.opacity = '0';
                     setTimeout(() => { loader.style.display = 'none'; }, 300);
                 }
+            }
+        }
+
+        function retryAnnualForecast() {
+            if (cachedProfileDoc) {
+                fetchAnnualPreview(cachedProfileDoc.bill_history || [], cachedProfileDoc);
+            } else {
+                loadInferenceData();
             }
         }
 

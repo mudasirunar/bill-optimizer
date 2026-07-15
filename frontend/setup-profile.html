@@ -91,13 +91,13 @@
     font-weight: 800;
 }
 
-/* Mobile tweak: Moves progress to bottom right for thumb access */
+/* Mobile tweak: Keep progress at top right, safely below navbar */
 @media (max-width: 640px) {
     .completeness-wrap.floating {
-        top: auto;
-        bottom: 30px; 
-        right: 20px;
-        transform: scale(0.85);
+        top: 80px; 
+        bottom: auto;
+        right: 15px;
+        transform: scale(0.75);
     }
 }
 
@@ -758,10 +758,20 @@
             background: var(--g2);
             box-shadow: 0 8px 25px var(--glow-strong);
         }
+
+        @keyframes loadingLineMove {
+            0% { left: -50%; }
+            100% { left: 100%; }
+        }
     </style>
 </head>
 
 <body>
+
+    <!-- TOP PROGRESS LINE LOADER -->
+    <div id="top-loading-line" style="display: none; position: fixed; top: 0; left: 0; right: 0; height: 3px; background: rgba(16, 185, 129, 0.05); z-index: 10000; overflow: hidden; pointer-events: none;">
+        <div style="position: absolute; top: 0; bottom: 0; left: -50%; width: 50%; background: linear-gradient(90deg, transparent, var(--g3), transparent); animation: loadingLineMove 0.8s infinite linear;"></div>
+    </div>
 
     <!-- NAVBAR -->
     <nav class="navbar">
@@ -1331,12 +1341,15 @@
         const syncBtn = document.getElementById('syncBtn');
         const addBtn = document.getElementById('addMonthBtn');
         const allInputs = document.querySelectorAll('input, select, .category-option');
+        const loadingLine = document.getElementById('top-loading-line');
 
         if (loading) {
             // Trigger the grey-out effect
             container.classList.add('is-loading');
             syncBtn.disabled = true;
             if (addBtn) addBtn.disabled = true;
+
+            if (loadingLine) loadingLine.style.display = 'block';
 
             if (!isSyncing) {
                 syncBtn.innerHTML = '<i class="fa fa-circle-notch fa-spin"></i> Initializing Memory...';
@@ -1347,6 +1360,8 @@
             syncBtn.disabled = false;
             if (addBtn) addBtn.disabled = false;
             syncBtn.innerHTML = '<i class="fa fa-brain"></i> Sync AI Memory';
+
+            if (loadingLine) loadingLine.style.display = 'none';
         }
 
         // Disable all fields so they are unclickable

@@ -555,10 +555,51 @@
             .quick-links-grid { grid-template-columns: 1fr; }
             .profile-banner .banner-action span { display: none; }
         }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes dotPulse {
+            0%, 100% { opacity: 0.25; transform: scale(0.85); }
+            50% { opacity: 1; transform: scale(1.15); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 1; }
+        }
     </style>
 </head>
 
-<body>
+<body style="overflow: hidden;">
+
+    <!-- DUBBED PREMIUM PAGE LOADER -->
+    <div id="dashboard-page-loader" style="position: fixed; inset: 0; background: var(--dark); z-index: 99999999; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 1; transition: opacity 0.5s ease, visibility 0.5s;">
+        <!-- Ambient pulsing glow background -->
+        <div style="position: absolute; width: 350px; height: 350px; background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 70%); filter: blur(40px); animation: pulseGlow 4s infinite ease-in-out;"></div>
+        
+        <div style="position: relative; display: flex; flex-direction: column; align-items: center; gap: 24px; z-index: 1;">
+            <!-- Spinning border around application leaf icon -->
+            <div style="position: relative; width: 90px; height: 90px; display: flex; align-items: center; justify-content: center;">
+                <div style="position: absolute; inset: 0; border-radius: 50%; border: 3px solid rgba(16, 185, 129, 0.08); border-top: 3px solid var(--g3); animation: spin 1s linear infinite;"></div>
+                <div style="width: 56px; height: 56px; background: linear-gradient(135deg, var(--g1), var(--g3)); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px var(--glow); color: #fff; font-size: 1.5rem;">
+                    <i class="fa fa-leaf"></i>
+                </div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 8px; text-align: center;">
+                <h3 style="font-family: 'Syne', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--text); letter-spacing: -0.01em; margin-bottom: 0;">Calibrating Dashboard</h3>
+                <p style="font-size: 0.8rem; color: var(--text-dim); font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0;">
+                    Syncing neural network engines
+                    <!-- Animating loading dots -->
+                    <span style="display: inline-flex; gap: 3px; align-items: center; margin-top: 2px;">
+                        <span style="width: 4px; height: 4px; border-radius: 50%; background: var(--g3); animation: dotPulse 1.2s infinite 0s;"></span>
+                        <span style="width: 4px; height: 4px; border-radius: 50%; background: var(--g3); animation: dotPulse 1.2s infinite 0.2s;"></span>
+                        <span style="width: 4px; height: 4px; border-radius: 50%; background: var(--g3); animation: dotPulse 1.2s infinite 0.4s;"></span>
+                    </span>
+                </p>
+            </div>
+        </div>
+    </div>
     <nav class="navbar">
         <div class="nav-logo" onclick="window.scrollTo({top:0,behavior:'smooth'})">
             <i class="fa fa-leaf"></i> Bill Optimizer <span class="ai-tag">AI</span>
@@ -1259,12 +1300,30 @@
             const historyCont = document.getElementById('billTimelineContainer');
             historyCont.classList.remove('history-loading', 'is-loading-lock');
 
+            // Fade out the dashboard page loader
+            const pageLoader = document.getElementById('dashboard-page-loader');
+            if (pageLoader) {
+                pageLoader.style.opacity = '0';
+                pageLoader.style.pointerEvents = 'none';
+                document.body.style.overflow = ''; // Restore scroll
+                setTimeout(() => { pageLoader.style.display = 'none'; }, 500);
+            }
+
         }).catch(err => {
             console.warn("Firestore load error:", err);
             renderProfileBanner(0);
             document.getElementById('stat-lastbill').textContent = '—';
             document.getElementById('stat-avg').textContent      = '—';
             document.getElementById('stat-people').textContent   = '—';
+
+            // Fade out page loader even on error
+            const pageLoader = document.getElementById('dashboard-page-loader');
+            if (pageLoader) {
+                pageLoader.style.opacity = '0';
+                pageLoader.style.pointerEvents = 'none';
+                document.body.style.overflow = ''; // Restore scroll
+                setTimeout(() => { pageLoader.style.display = 'none'; }, 500);
+            }
         });
     });
 
