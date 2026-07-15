@@ -1,11 +1,11 @@
 // session-check.js
 // Runs synchronously in <head> to prevent page flashing / layout shift
-(function() {
+(function () {
     const path = window.location.pathname;
     const filename = path.substring(path.lastIndexOf('/') + 1);
-    
+
     // Determine if the current page is an authentication page (login or signup)
-    const isAuthPage = filename === "index.html" || filename === "signup.html" || filename === "" || path.endsWith("/");
+    const isAuthPage = filename === "login.html" || filename === "signup.html" || filename === "" || path.endsWith("/");
     const isLoggedIn = localStorage.getItem('userLoggedIn') === 'true';
 
     if (isLoggedIn) {
@@ -14,7 +14,7 @@
         }
     } else {
         if (!isAuthPage) {
-            window.location.href = "index.html";
+            window.location.href = "login.html";
         }
     }
 })();

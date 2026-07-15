@@ -1216,7 +1216,7 @@
 
         firebase.auth().onAuthStateChanged(user => {
             initDynamicBreadcrumb("AI Memory");
-            if (!user) { window.location.href = "index.html"; return; }
+            if (!user) { window.location.href = "login.html"; return; }
 
             // Trigger loading line as soon as auth resolves and loading begins
             const loadingLine = document.getElementById('top-loading-line');
@@ -1625,7 +1625,7 @@
             };
         }
 
-        function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }
+        function logout() { firebase.auth().signOut().then(() => window.location.href = 'login.html'); }
     </script>
 </body>
 

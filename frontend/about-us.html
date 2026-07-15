@@ -649,7 +649,8 @@
 
     <nav class="navbar">
         <div class="nav-logo" onclick="window.location.href='dashboard.html'"><i class="fa fa-leaf"></i> Bill Optimizer
-            <span class="ai-tag">AI</span></div>
+            <span class="ai-tag">AI</span>
+        </div>
         <div class="nav-user-area">
             <div class="user-info">
                 <span id="user-name-display">User</span>
@@ -1018,11 +1019,11 @@
                     document.getElementById('user-pfp').src = user.photoURL;
                 }
             } else {
-                window.location.href = "index.html";
+                window.location.href = "login.html";
             }
         });
 
-        function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }
+        function logout() { firebase.auth().signOut().then(() => window.location.href = 'login.html'); }
     </script>
 </body>
 

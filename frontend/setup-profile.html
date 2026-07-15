@@ -1938,7 +1938,7 @@
         /* ── Auth & Loading Logic ── */
         firebase.auth().onAuthStateChanged(user => {
             initDynamicBreadcrumb("Setup Profile");
-            if (!user) { window.location.href = "index.html"; return; }
+            if (!user) { window.location.href = "login.html"; return; }
 
             setFormState(true);
 
@@ -2429,7 +2429,7 @@
             }
         });
 
-        function logout() { firebase.auth().signOut().then(() => window.location.href = "index.html"); }
+        function logout() { firebase.auth().signOut().then(() => window.location.href = "login.html"); }
 
     </script>
 </body>

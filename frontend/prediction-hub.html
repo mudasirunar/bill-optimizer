@@ -1121,7 +1121,8 @@
 
     <nav class="navbar">
         <div class="nav-logo" onclick="window.location.href='dashboard.html'"><i class="fa fa-leaf"></i> Bill Optimizer
-            <span class="ai-tag">AI</span></div>
+            <span class="ai-tag">AI</span>
+        </div>
         <div class="nav-user-area">
             <div class="user-info">
                 <span id="user-name-display">User</span>
@@ -1657,7 +1658,7 @@
 
         firebase.auth().onAuthStateChanged(user => {
             initDynamicBreadcrumb("Prediction Hub");
-            if (!user) { window.location.href = "index.html"; }
+            if (!user) { window.location.href = "login.html"; }
             else {
                 userUid = user.uid;
                 document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
@@ -3907,7 +3908,7 @@
             window.requestAnimationFrame(step);
         }
 
-        function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }
+        function logout() { firebase.auth().signOut().then(() => window.location.href = 'login.html'); }
     </script>
 </body>
 

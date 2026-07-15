@@ -1,20 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | Bill Optimizer</title>
-    <script src="js/session-check.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bill Optimizer AI — Predict, Simulate & Optimize Your Electricity Bill</title>
+    <meta name="description"
+        content="AI-powered electricity bill prediction for Pakistani households. Random Forest, LSTM & physics-based simulation aligned to NEPRA 2026 tariffs.">
+    <meta name="keywords"
+        content="electricity bill prediction Pakistan, NEPRA tariff calculator, AI energy assistant, bill optimizer, electricity load forecast, appliance savings simulator">
+    <meta name="author" content="Sir Syed University of Engineering and Technology">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#030a06">
+    <link rel="canonical" href="https://bill-optimizer.vercel.app/">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Bill Optimizer AI">
+    <meta property="og:title" content="Bill Optimizer AI — Predict, Simulate & Optimize Your Electricity Bill">
+    <meta property="og:description"
+        content="AI-powered electricity bill prediction for Pakistani households. Random Forest, LSTM & physics-based simulation aligned to NEPRA 2026 tariffs.">
+    <meta property="og:url" content="https://bill-optimizer.vercel.app/">
+    <meta property="og:image" content="https://bill-optimizer.vercel.app/assets/og-cover.png">
+    <meta property="og:locale" content="en_PK">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Bill Optimizer AI — Predict, Simulate & Optimize Your Electricity Bill">
+    <meta name="twitter:description"
+        content="AI-powered electricity bill prediction for Pakistani households, calibrated to NEPRA 2026 tariffs.">
+    <meta name="twitter:image" content="https://bill-optimizer.vercel.app/assets/og-cover.png">
+
     <link rel="icon" type="image/png" href="assets/favicon.png?v=1">
     <link rel="apple-touch-icon" href="assets/favicon.png?v=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet">
 
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Bill Optimizer AI",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Web",
+  "description": "AI-powered electricity bill prediction, 24-hour load forecasting, and appliance optimization simulator for Pakistani households, calibrated to NEPRA 2026 tariffs.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "PKR"
+  },
+  "creator": {
+    "@type": "Organization",
+    "name": "Sir Syed University of Engineering and Technology",
+    "address": "Gulshan-e-Iqbal, Karachi, Pakistan"
+  }
+}
+</script>
     <style>
         * {
-            -webkit-tap-highlight-color: transparent;
+            -webkit-tap-highlight-color: transparent
         }
+
         :root {
             --g1: #059669;
             --g2: #10b981;
@@ -22,445 +71,2320 @@
             --g4: #6ee7b7;
             --dark: #030a06;
             --surface: #0d1a12;
+            --surface2: #122018;
             --border: rgba(52, 211, 153, 0.12);
             --border-hover: rgba(52, 211, 153, 0.35);
             --text: #f0fdf4;
             --text-muted: #86efac;
             --text-dim: #4b7a5e;
             --glow: rgba(16, 185, 129, 0.2);
-            --card-bg: rgba(13, 26, 18, 0.9);
-            --input-bg: rgba(5, 20, 10, 0.7);
-            --error: #f87171;
+            --glow-strong: rgba(16, 185, 129, 0.45);
+            --card-bg: rgba(13, 26, 18, 0.85);
+            --warn: #fbbf24;
+            --danger: #f87171;
+            --info: #67e8f9;
+            --violet: #a78bfa;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        .page-wrap {
+            overflow-x: clip;
+            width: 100%
+        }
 
         body {
             font-family: 'DM Sans', sans-serif;
             background: var(--dark);
             color: var(--text);
             min-height: 100vh;
-            display: flex;
-            overflow-y: auto;
+            line-height: 1.5
         }
 
-        /* ── LEFT PANEL ── */
-        .left-panel {
-            flex: 1;
-            position: relative;
-            display: flex; 
-            flex-direction: column;
-            justify-content: center; align-items: flex-start;
-            padding: 60px 64px;
-            overflow: hidden;
-        }
-
-        /* Ambient glow */
-        .left-panel::before {
+        body::before {
             content: '';
-            position: absolute; inset: 0; z-index: 0;
-            background:
-                radial-gradient(ellipse 90% 70% at 20% 30%, rgba(5,150,105,0.22) 0%, transparent 65%),
-                radial-gradient(ellipse 60% 60% at 80% 70%, rgba(16,185,129,0.1) 0%, transparent 55%);
-            pointer-events: none;
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background: radial-gradient(ellipse 80% 60% at 10% 10%, rgba(5, 150, 105, 0.18) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 80% at 90% 80%, rgba(16, 185, 129, 0.12) 0%, transparent 55%),
+                radial-gradient(ellipse 40% 40% at 50% 50%, rgba(52, 211, 153, 0.05) 0%, transparent 60%);
+            pointer-events: none
         }
 
-        /* Grid */
-        .left-panel::after {
+        body::after {
             content: '';
-            position: absolute; inset: 0; z-index: 0;
-            background-image:
-                linear-gradient(rgba(52,211,153,0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(52,211,153,0.03) 1px, transparent 1px);
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background-image: linear-gradient(rgba(52, 211, 153, 0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(52, 211, 153, 0.025) 1px, transparent 1px);
             background-size: 48px 48px;
+            pointer-events: none
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace
+        }
+
+        ::selection {
+            background: rgba(52, 211, 153, 0.25);
+            color: #fff
+        }
+
+        a {
+            color: inherit
+        }
+
+        img {
+            max-width: 100%
+        }
+
+        /* ── NAVBAR ── */
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            height: 68px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 5%;
+            background: rgba(3, 10, 6, 0.75);
+            backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--border)
+        }
+
+        .nav-logo {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            text-decoration: none
+        }
+
+        .nav-logo i {
+            width: 34px;
+            height: 34px;
+            background: linear-gradient(135deg, var(--g1), var(--g3));
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            color: #fff;
+            box-shadow: 0 0 14px var(--glow)
+        }
+
+        .nav-logo span.ai-tag {
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            background: linear-gradient(90deg, var(--g1), var(--g3));
+            padding: 3px 8px;
+            border-radius: 20px;
+            color: #fff
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px
+        }
+
+        .nav-links a {
+            font-size: 0.86rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+            position: relative
+        }
+
+        .nav-links a:hover {
+            color: var(--g3)
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 10px 20px;
+            border-radius: 11px;
+            text-decoration: none;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s, background 0.2s;
+            white-space: nowrap
+        }
+
+        .btn-ghost {
+            color: var(--text-muted);
+            border-color: var(--border)
+        }
+
+        .btn-ghost:hover {
+            color: var(--g3);
+            border-color: var(--border-hover);
+            background: rgba(52, 211, 153, 0.05)
+        }
+
+        .btn-solid {
+            background: linear-gradient(135deg, var(--g1), var(--g2));
+            color: #fff;
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.28)
+        }
+
+        .btn-solid:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(16, 185, 129, 0.4)
+        }
+
+        .btn-lg {
+            padding: 14px 28px;
+            font-size: 0.92rem;
+            border-radius: 13px
+        }
+
+        .nav-actions .btn-solid {
+            opacity: 0;
+            transform: translateY(-6px) scale(0.96);
             pointer-events: none;
+            transition: opacity 0.35s ease, transform 0.35s ease
         }
 
-        .left-content { position: relative; z-index: 1; max-width: 460px; }
+        .navbar.scrolled .nav-actions .btn-solid {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all
+        }
 
-        /* Bolt icon decoration */
-        .electric-badge {
-            display: inline-flex; align-items: center; gap: 8px;
-            background: rgba(52,211,153,0.08);
+        .nav-burger {
+            display: none;
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text);
+            width: 40px;
+            height: 40px;
+            border-radius: 9px;
+            font-size: 1rem;
+            cursor: pointer
+        }
+
+        .mobile-menu {
+            display: none
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        @keyframes orbPulse {
+
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.75
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.12);
+                opacity: 1
+            }
+        }
+
+        @keyframes drift {
+
+            0%,
+            100% {
+                transform: translateY(0px) translateX(0px)
+            }
+
+            50% {
+                transform: translateY(-14px) translateX(8px)
+            }
+        }
+
+        @keyframes drawLine {
+            to {
+                stroke-dashoffset: 0
+            }
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.25
+            }
+        }
+
+        @keyframes floatSlow {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-10px)
+            }
+        }
+
+        @keyframes spinSlow {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        /* ── HERO ── */
+        .hero {
+            position: relative;
+            z-index: 1;
+            padding: 88px 5% 60px;
+            overflow: hidden
+        }
+
+        .hero-grid {
+            max-width: 1240px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.05fr 0.95fr;
+            gap: 60px;
+            align-items: center
+        }
+
+        .hero-orb {
+            position: absolute;
+            width: 640px;
+            height: 640px;
+            border-radius: 50%;
+            top: 8%;
+            left: 2%;
+            background: radial-gradient(circle, rgba(5, 150, 105, 0.20) 0%, transparent 70%);
+            animation: orbPulse 6s ease-in-out infinite;
+            pointer-events: none
+        }
+
+        .welcome-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--g3);
             border: 1px solid var(--border-hover);
-            padding: 7px 16px; border-radius: 30px;
-            font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
-            text-transform: uppercase; color: var(--g3);
-            margin-bottom: 28px;
-            animation: fadeUp 0.7s 0.1s cubic-bezier(0.16,1,0.3,1) both;
+            background: rgba(52, 211, 153, 0.07);
+            padding: 7px 16px;
+            border-radius: 30px;
+            margin-bottom: 22px;
+            animation: fadeUp 0.7s 0.05s cubic-bezier(0.16, 1, 0.3, 1) both
         }
-        .electric-badge i { font-size: 0.8rem; color: var(--g2); }
 
-        .left-content h1 {
+        .pulse-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--g3);
+            animation: blink 1.6s infinite
+        }
+
+        .hero-copy h1 {
             font-family: 'Syne', sans-serif;
-            font-size: clamp(2.4rem, 3.5vw, 3.2rem);
-            font-weight: 800; line-height: 1.08;
-            letter-spacing: -0.03em; margin-bottom: 18px;
-            animation: fadeUp 0.7s 0.18s cubic-bezier(0.16,1,0.3,1) both;
-        }
-        .left-content h1 .highlight {
-            background: linear-gradient(120deg, var(--g3), var(--g2));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-        }
-
-        .left-content p {
-            color: var(--text-dim); font-size: 1rem; line-height: 1.7;
+            font-size: clamp(2.4rem, 4.6vw, 3.6rem);
+            font-weight: 800;
+            line-height: 1.06;
+            letter-spacing: -0.03em;
             margin-bottom: 20px;
-            animation: fadeUp 0.7s 0.26s cubic-bezier(0.16,1,0.3,1) both;
+            animation: fadeUp 0.7s 0.12s cubic-bezier(0.16, 1, 0.3, 1) both
         }
 
-        /* Feature pills */
-        .feature-list {
-            display: flex; flex-direction: column; gap: 12px;
-            animation: fadeUp 0.7s 0.34s cubic-bezier(0.16,1,0.3,1) both;
-        }
-        .feature-item {
-            display: flex; align-items: center; gap: 12px;
-            font-size: 0.88rem; color: var(--text-muted);
-        }
-        .feature-item .icon {
-            width: 32px; height: 32px; flex-shrink: 0;
-            background: rgba(52,211,153,0.1);
-            border: 1px solid rgba(52,211,153,0.18);
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.8rem; color: var(--g3);
+        .hero-copy h1 .hl {
+            background: linear-gradient(120deg, var(--g3) 0%, var(--g2) 50%, var(--g4) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text
         }
 
-        /* Floating lightning bolts decoration */
-        .bolt-deco {
-            position: absolute; z-index: 0;
-            font-size: 7rem; opacity: 0.03;
-            color: var(--g3); pointer-events: none;
-            font-family: 'Font Awesome 6 Free'; font-weight: 900;
-        }
-        .bolt-1 { bottom: 10%; right: 8%; transform: rotate(12deg); font-size: 10rem; }
-        .bolt-2 { top: 12%; right: 22%; transform: rotate(-8deg); font-size: 5rem; }
-
-        /* ── RIGHT PANEL (form) ── */
-        .right-panel {
-            width: 480px; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            padding: 40px 44px;
-            background: var(--card-bg);
-            border-left: 1px solid var(--border);
-            backdrop-filter: blur(20px);
-            position: relative; overflow-y: auto;
+        .hero-copy p.lead {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: var(--text-muted);
+            max-width: 520px;
+            margin-bottom: 34px;
+            animation: fadeUp 0.7s 0.2s cubic-bezier(0.16, 1, 0.3, 1) both
         }
 
-        .form-wrap {
-            width: 100%; max-width: 360px;
-            animation: fadeUp 0.8s 0.2s cubic-bezier(0.16,1,0.3,1) both;
+        .hero-actions {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 34px;
+            animation: fadeUp 0.7s 0.28s cubic-bezier(0.16, 1, 0.3, 1) both
         }
 
-        .form-logo {
-            display: flex; align-items: center; gap: 10px;
+        .hero-stats {
+            display: flex;
+            gap: 28px;
+            flex-wrap: wrap;
+            animation: fadeUp 0.7s 0.36s cubic-bezier(0.16, 1, 0.3, 1) both
+        }
+
+        .hstat b {
+            display: block;
             font-family: 'Syne', sans-serif;
-            font-size: 1.25rem; font-weight: 800;
-            margin-bottom: 6px;
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--text)
         }
-        .form-logo i {
-            width: 32px; height: 32px;
+
+        .hstat span {
+            font-size: 0.74rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 600
+        }
+
+        /* ── HERO VISUAL: live prediction mock panel ── */
+        .hero-visual {
+            position: relative;
+            animation: fadeUp 0.8s 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 36px 26px
+        }
+
+        .predict-card {
+            position: relative;
+            z-index: 2;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 26px;
+            backdrop-filter: blur(18px);
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5), 0 0 60px var(--glow)
+        }
+
+        .predict-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px
+        }
+
+        .predict-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.62rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--g3);
+            background: rgba(52, 211, 153, 0.1);
+            border: 1px solid rgba(52, 211, 153, 0.2);
+            padding: 4px 10px;
+            border-radius: 20px
+        }
+
+        .predict-mini {
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            font-weight: 600
+        }
+
+        .predict-amount {
+            font-family: 'Syne', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text);
+            line-height: 1;
+            margin-bottom: 6px;
+            white-space: nowrap
+        }
+
+        .predict-amount span {
+            font-size: 1.1rem;
+            color: var(--g3);
+            font-weight: 700
+        }
+
+        .predict-sub {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 20px
+        }
+
+        .predict-chart {
+            width: 100%;
+            height: 120px;
+            margin-bottom: 18px
+        }
+
+        .chart-line {
+            stroke: url(#chartGrad);
+            stroke-width: 2.5;
+            fill: none;
+            stroke-dasharray: 600;
+            stroke-dashoffset: 600;
+            animation: drawLine 2.2s 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards
+        }
+
+        .chart-fill {
+            opacity: 0;
+            animation: fadeUp 1s 1.6s ease forwards
+        }
+
+        .predict-slabs {
+            display: flex;
+            gap: 8px
+        }
+
+        .slab-chip {
+            flex: 1;
+            text-align: center;
+            padding: 10px 6px;
+            border-radius: 10px;
+            background: rgba(52, 211, 153, 0.05);
+            border: 1px solid var(--border)
+        }
+
+        .slab-chip b {
+            display: block;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.85rem;
+            color: var(--g3)
+        }
+
+        .slab-chip span {
+            font-size: 0.62rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.04em
+        }
+
+        .float-chip {
+            position: absolute;
+            z-index: 3;
+            background: var(--surface);
+            border: 1px solid var(--border-hover);
+            border-radius: 14px;
+            padding: 11px 14px;
+            backdrop-filter: blur(14px);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: floatSlow 5s ease-in-out infinite;
+            max-width: 190px
+        }
+
+        .float-chip i {
+            width: 30px;
+            height: 30px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            flex-shrink: 0
+        }
+
+        .float-chip.fc1 {
+            top: -6px;
+            right: -14px;
+            animation-delay: 0s
+        }
+
+        .float-chip.fc2 {
+            bottom: -6px;
+            left: -14px;
+            animation-delay: 1.4s
+        }
+
+        .float-chip b {
+            display: block;
+            font-size: 0.74rem;
+            color: var(--text);
+            font-family: 'Syne', sans-serif;
+            line-height: 1.3
+        }
+
+        .float-chip span {
+            font-size: 0.62rem;
+            color: var(--text-dim);
+            line-height: 1.3
+        }
+
+        /* ── LOGO STRIP ── */
+        .trust-strip {
+            position: relative;
+            z-index: 1;
+            padding: 26px 5%;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border)
+        }
+
+        .trust-inner {
+            max-width: 1240px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 44px;
+            flex-wrap: wrap;
+            color: var(--text-dim);
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.03em
+        }
+
+        .trust-inner span {
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .trust-inner i {
+            color: var(--g3)
+        }
+
+        /* ── SECTION SHARED ── */
+        .section {
+            position: relative;
+            z-index: 1;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 100px 5%
+        }
+
+        .section-tight {
+            padding-top: 60px;
+            padding-bottom: 60px
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--g3);
+            margin-bottom: 14px
+        }
+
+        .eyebrow::before {
+            content: '';
+            width: 20px;
+            height: 2px;
+            background: var(--g3);
+            border-radius: 2px
+        }
+
+        .section-head {
+            max-width: 640px;
+            margin-bottom: 52px
+        }
+
+        .section-head h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(1.8rem, 3.4vw, 2.5rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 14px
+        }
+
+        .section-head p {
+            color: var(--text-dim);
+            font-size: 1rem;
+            line-height: 1.7
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)
+        }
+
+        .reveal.in {
+            opacity: 1;
+            transform: translateY(0)
+        }
+
+        /* ── PROBLEM STRIP ── */
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px
+        }
+
+        .problem-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 26px;
+            backdrop-filter: blur(14px)
+        }
+
+        .problem-card i {
+            font-size: 1.3rem;
+            color: var(--danger);
+            margin-bottom: 14px;
+            display: block
+        }
+
+        .problem-card h4 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 8px
+        }
+
+        .problem-card p {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            line-height: 1.6
+        }
+
+        /* ── HOW IT WORKS ── */
+        .steps-wrap {
+            position: relative
+        }
+
+        .steps-line {
+            position: absolute;
+            top: 34px;
+            left: 34px;
+            right: 34px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-hover), var(--border-hover), transparent);
+            z-index: 0
+        }
+
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            position: relative;
+            z-index: 1
+        }
+
+        .step-card {
+            text-align: left
+        }
+
+        .step-num {
+            width: 68px;
+            height: 68px;
+            border-radius: 18px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-hover);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Syne', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--g3);
+            margin-bottom: 20px;
+            box-shadow: 0 0 24px var(--glow);
+            position: relative
+        }
+
+        .step-num::after {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: 19px;
+            padding: 1px;
+            background: linear-gradient(135deg, var(--g2), transparent);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0.5
+        }
+
+        .step-card h4 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 10px
+        }
+
+        .step-card p {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            line-height: 1.65
+        }
+
+        /* ── FEATURES GRID ── */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px
+        }
+
+        .card {
+            position: relative;
+            overflow: hidden;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 30px 26px;
+            cursor: default;
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s, box-shadow 0.35s;
+            backdrop-filter: blur(14px)
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(110deg, transparent 30%, rgba(52, 211, 153, 0.06) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 0.55s ease;
+            pointer-events: none
+        }
+
+        .card:hover::before {
+            transform: translateX(100%)
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            border-color: var(--border-hover);
+            box-shadow: 0 22px 50px rgba(0, 0, 0, 0.45), 0 0 40px var(--glow)
+        }
+
+        .card-status {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            font-size: 0.6rem;
+            font-weight: 800;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 6px
+        }
+
+        .status-live {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--g3);
+            border: 1px solid rgba(16, 185, 129, 0.3)
+        }
+
+        .status-neural {
+            background: rgba(6, 182, 212, 0.12);
+            color: #67e8f9;
+            border: 1px solid rgba(6, 182, 212, 0.25)
+        }
+
+        .status-beta {
+            background: rgba(251, 191, 36, 0.12);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.25)
+        }
+
+        .status-ai {
+            background: rgba(167, 139, 250, 0.12);
+            color: var(--violet);
+            border: 1px solid rgba(167, 139, 250, 0.25)
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(52, 211, 153, 0.1);
+            border: 1px solid rgba(52, 211, 153, 0.18);
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: var(--g3);
+            margin-bottom: 18px;
+            transition: background 0.3s, box-shadow 0.3s, transform 0.3s
+        }
+
+        .card:hover .card-icon {
+            background: rgba(52, 211, 153, 0.18);
+            box-shadow: 0 0 20px var(--glow);
+            transform: scale(1.08) rotate(-2deg)
+        }
+
+        .card h3 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.12rem;
+            font-weight: 700;
+            margin-bottom: 8px
+        }
+
+        .card p {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            line-height: 1.6
+        }
+
+        /* ── ARCHITECTURE ── */
+        .architecture-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px
+        }
+
+        .arch-card {
+            background: rgba(5, 20, 10, 0.5);
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid var(--border)
+        }
+
+        .arch-card.dashed {
+            background: transparent;
+            border-style: dashed
+        }
+
+        .arch-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 12px
+        }
+
+        .arch-top h4 {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.98rem
+        }
+
+        .arch-pill {
+            font-size: 0.55rem;
+            color: #fff;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 800;
+            white-space: nowrap;
+            text-transform: uppercase
+        }
+
+        .arch-card p {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.55
+        }
+
+        .arch-foot {
+            margin-top: 12px;
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            font-weight: 700
+        }
+
+        /* ── TUTORIAL / DEMO PREVIEW ── */
+        .tutorial-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 8px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45)
+        }
+
+        .tutorial-topbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            min-width: 0
+        }
+
+        .tutorial-topbar span {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08)
+        }
+
+        .tutorial-topbar .url {
+            margin-left: 10px;
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            background: rgba(255, 255, 255, 0.03);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            min-width: 0;
+            flex: 0 1 auto;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap
+        }
+
+        .tutorial-body {
+            border-top: 1px solid var(--border);
+            padding: 28px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px
+        }
+
+        .tut-mini-stat {
+            background: rgba(52, 211, 153, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px
+        }
+
+        .tut-mini-stat .l {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+            font-weight: 700;
+            margin-bottom: 6px
+        }
+
+        .tut-mini-stat .v {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 800
+        }
+
+        .tut-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px
+        }
+
+        .tut-bar-row .lbl {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            width: 56px;
+            flex-shrink: 0
+        }
+
+        .tut-bar-track {
+            flex: 1;
+            height: 6px;
+            background: rgba(52, 211, 153, 0.08);
+            border-radius: 4px;
+            overflow: hidden
+        }
+
+        .tut-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--g1), var(--g3));
+            border-radius: 4px;
+            width: 0
+        }
+
+        .tut-bar-fill.reveal-bar {
+            transition: width 1.4s cubic-bezier(0.34, 1.56, 0.64, 1)
+        }
+
+        /* ── NEPRA STRIP ── */
+        .nepra-panel {
+            display: grid;
+            grid-template-columns: 0.9fr 1.1fr;
+            gap: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            overflow: hidden;
+            backdrop-filter: blur(14px)
+        }
+
+        .nepra-left {
+            padding: 44px;
+            background: linear-gradient(160deg, rgba(5, 150, 105, 0.1), transparent)
+        }
+
+        .nepra-left h3 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-bottom: 14px
+        }
+
+        .nepra-left p {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            line-height: 1.7;
+            margin-bottom: 20px
+        }
+
+        .nepra-right {
+            padding: 44px;
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 14px
+        }
+
+        .nepra-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 10px;
+            background: rgba(52, 211, 153, 0.04);
+            border: 1px solid var(--border);
+            font-size: 0.82rem
+        }
+
+        .nepra-row b {
+            color: var(--g3);
+            font-family: 'Syne', sans-serif
+        }
+
+        /* ── TEAM ── */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px
+        }
+
+        .member-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px 20px;
+            text-align: center;
+            backdrop-filter: blur(14px);
+            transition: transform 0.3s, border-color 0.3s
+        }
+
+        .member-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--border-hover)
+        }
+
+        .member-card img {
+            width: 74px;
+            height: 74px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border);
+            margin: 0 auto 14px
+        }
+
+        .member-card h4 {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 0.98rem;
+            margin-bottom: 4px
+        }
+
+        .member-role {
+            font-size: 0.72rem;
+            color: var(--g3);
+            font-weight: 600;
+            margin-bottom: 8px
+        }
+
+        .member-email {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            text-decoration: none;
+            word-break: break-all
+        }
+
+        .member-email:hover {
+            color: var(--g3)
+        }
+
+        .uni-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+            text-align: center
+        }
+
+        .uni-badge .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--g3);
+            border: 1px solid var(--border);
+            padding: 7px 16px;
+            border-radius: 20px;
+            background: rgba(52, 211, 153, 0.06)
+        }
+
+        /* ── SDG ── */
+        .sdg-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px
+        }
+
+        .sdg-card {
+            padding: 24px;
+            border-radius: 16px
+        }
+
+        .sdg-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px
+        }
+
+        .sdg-num {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 800;
+            font-size: 1.1rem;
+            flex-shrink: 0
+        }
+
+        .sdg-card h4 {
+            font-family: 'Syne', sans-serif;
+            font-size: 0.95rem
+        }
+
+        .sdg-card p {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.6
+        }
+
+        /* ── FAQ ── */
+        .faq-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-width: 820px
+        }
+
+        .faq-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            transition: border-color 0.25s
+        }
+
+        .faq-item[open] {
+            border-color: var(--border-hover)
+        }
+
+        .faq-item summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            gap: 16px
+        }
+
+        .faq-item summary::-webkit-details-marker {
+            display: none
+        }
+
+        .faq-item summary i {
+            color: var(--g3);
+            transition: transform 0.3s;
+            flex-shrink: 0
+        }
+
+        .faq-item[open] summary i {
+            transform: rotate(45deg)
+        }
+
+        .faq-answer {
+            padding: 0 24px 20px;
+            color: var(--text-dim);
+            font-size: 0.87rem;
+            line-height: 1.7
+        }
+
+        /* ── CTA BANNER ── */
+        .cta-banner {
+            position: relative;
+            overflow: hidden;
+            border-radius: 28px;
+            padding: 64px 40px;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(5, 150, 105, 0.16), rgba(52, 211, 153, 0.05));
+            border: 1px solid var(--border-hover)
+        }
+
+        .cta-banner::before {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.25), transparent 70%);
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: orbPulse 5s ease-in-out infinite;
+            pointer-events: none
+        }
+
+        .cta-banner h2 {
+            position: relative;
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(1.7rem, 3.6vw, 2.4rem);
+            font-weight: 800;
+            margin-bottom: 14px
+        }
+
+        .cta-banner p {
+            position: relative;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 30px;
+            max-width: 520px;
+            margin-left: auto;
+            margin-right: auto
+        }
+
+        .cta-actions {
+            position: relative;
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap
+        }
+
+        /* ── FOOTER ── */
+        .footer {
+            position: relative;
+            z-index: 1;
+            background: rgba(3, 10, 6, 0.85);
+            border-top: 1px solid var(--border);
+            padding: 60px 5% 30px
+        }
+
+        .footer-grid {
+            max-width: 1240px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1.4fr 1fr 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px
+        }
+
+        .footer-brand-logo {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px
+        }
+
+        .footer-brand-logo i {
+            width: 30px;
+            height: 30px;
             background: linear-gradient(135deg, var(--g1), var(--g3));
             border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.85rem; color: #fff;
-            box-shadow: 0 0 14px var(--glow);
-        }
-        .form-logo .ai-tag {
-            font-size: 0.58rem; font-weight: 700; letter-spacing: 0.1em;
-            background: linear-gradient(90deg, var(--g1), var(--g3));
-            padding: 2px 7px; border-radius: 20px; color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: #fff
         }
 
-        .form-subtitle {
-            color: var(--text-dim); font-size: 0.875rem;
-            margin-bottom: 30px; margin-top: 4px;
+        .footer-col p {
+            color: var(--text-dim);
+            font-size: 0.83rem;
+            line-height: 1.7;
+            max-width: 280px
         }
 
-        /* Error box */
-        .error-box {
-            display: none; align-items: center; gap: 10px;
-            background: rgba(248,113,113,0.08);
-            border: 1px solid rgba(248,113,113,0.25);
-            border-radius: 10px; padding: 11px 14px;
-            margin-bottom: 18px; font-size: 0.85rem;
-            color: var(--error);
-        }
-        .error-box i { flex-shrink: 0; }
-
-        @keyframes shake {
-            0%,100% { transform: translateX(0); }
-            20%,60% { transform: translateX(-5px); }
-            40%,80% { transform: translateX(5px); }
+        .footer-col h5 {
+            font-family: 'Syne', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 16px
         }
 
-        /* Input group */
-        .input-group { margin-bottom: 16px; }
-        .input-group label {
-            display: block; font-size: 0.78rem; font-weight: 600;
-            letter-spacing: 0.06em; text-transform: uppercase;
-            color: var(--text-dim); margin-bottom: 7px;
+        .footer-col a {
+            display: block;
+            font-size: 0.83rem;
+            color: var(--text-dim);
+            text-decoration: none;
+            margin-bottom: 12px;
+            transition: color 0.2s
         }
 
-        .field-wrapper { position: relative; }
-
-        input[type="email"],
-        input[type="password"],
-        input[type="text"] {
-            width: 100%; padding: 12px 16px;
-            background: var(--input-bg);
-            border: 1px solid var(--border);
-            border-radius: 11px;
-            color: var(--text); font-family: 'DM Sans', sans-serif;
-            font-size: 0.92rem; outline: none;
-            transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+        .footer-col a:hover {
+            color: var(--g3)
         }
 
-        /* ── FIX: Hides the native Edge/IE password reveal eye icon ── */
-        input[type="password"]::-ms-reveal,
-        input[type="password"]::-ms-clear {
-            display: none;
-        }
-
-        input::placeholder { color: var(--text-dim); }
-        input:focus {
-            border-color: var(--g2);
-            background: rgba(5,20,10,0.9);
-            box-shadow: 0 0 0 3px rgba(16,185,129,0.12);
-        }
-        .field-wrapper input { padding-right: 44px; }
-
-        .toggle-password {
-            position: absolute; right: 14px; top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-dim); cursor: pointer; font-size: 0.85rem;
-            transition: color 0.2s;
-        }
-        .toggle-password:hover { color: var(--g3); }
-
-        /* Buttons */
-        .btn-primary {
-            width: 100%; padding: 13px;
-            background: linear-gradient(135deg, var(--g1), var(--g2));
-            border: none; border-radius: 11px;
-            color: #fff; font-family: 'Syne', sans-serif;
-            font-size: 0.95rem; font-weight: 700; letter-spacing: 0.03em;
-            cursor: pointer; margin-top: 6px;
-            transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 20px rgba(5,150,105,0.35);
-        }
-        .btn-primary:hover {
-            opacity: 0.9; transform: translateY(-1px);
-            box-shadow: 0 8px 28px rgba(5,150,105,0.5);
-        }
-        .btn-primary:active { transform: translateY(0); }
-
-        .divider {
-            display: flex; align-items: center; gap: 12px;
-            margin: 20px 0; font-size: 0.75rem;
-            color: var(--text-dim); letter-spacing: 0.05em;
-        }
-        .divider::before, .divider::after {
-            content: ''; flex: 1;
+        .footer-bottom {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding-top: 26px;
             border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px
         }
 
-        .btn-google {
-            width: 100%; padding: 12px;
-            background: rgba(255,255,255,0.04);
+        .footer-bottom span {
+            font-size: 0.78rem;
+            color: var(--text-dim)
+        }
+
+        .footer-tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--g3);
             border: 1px solid var(--border);
-            border-radius: 11px;
-            color: var(--text-muted); font-family: 'DM Sans', sans-serif;
-            font-size: 0.9rem; font-weight: 500; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.2s;
-        }
-        .btn-google:hover {
-            background: rgba(255,255,255,0.08);
-            border-color: var(--border-hover);
-            box-shadow: 0 0 18px var(--glow);
-            transform: translateY(-1px);
-            color: var(--text);
+            padding: 5px 14px;
+            border-radius: 20px;
+            background: rgba(52, 211, 153, 0.06)
         }
 
-        .footer-link {
-            text-align: center; margin-top: 22px;
-            font-size: 0.85rem; color: var(--text-dim);
-        }
-        .footer-link a {
-            color: var(--g3); font-weight: 600; text-decoration: none;
-            transition: opacity 0.2s;
-        }
-        .footer-link a:hover { opacity: 0.75; }
-
-        /* Animations */
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes dotPulse {
-            0%, 100% { opacity: 0.25; transform: scale(0.85); }
-            50% { opacity: 1; transform: scale(1.15); }
+        /* ── SCROLL TOP ── */
+        .scroll-top {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 500;
+            width: 42px;
+            height: 42px;
+            background: var(--g1);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 20px var(--glow);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s
         }
 
-        /* Responsive */
-        @media (max-width: 860px) {
-            .left-panel { display: none; }
-            .right-panel {
-                width: 100%; border-left: none;
-                background: radial-gradient(circle at 50% 25%, rgba(5, 150, 105, 0.12) 0%, var(--dark) 80%);
+        .scroll-top.visible {
+            opacity: 1;
+            pointer-events: all
+        }
+
+        .scroll-top:hover {
+            transform: translateY(-3px);
+            background: var(--g2)
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width:1024px) {
+            .hero-grid {
+                grid-template-columns: 1fr;
+                gap: 50px
             }
-            .mobile-branding-footer { display: block !important; }
+
+            .hero-visual {
+                max-width: 480px;
+                margin: 0 auto
+            }
+
+            .problem-grid {
+                grid-template-columns: 1fr
+            }
+
+            .steps-grid {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .steps-line {
+                display: none
+            }
+
+            .architecture-grid {
+                grid-template-columns: 1fr
+            }
+
+            .nepra-panel {
+                grid-template-columns: 1fr
+            }
+
+            .nepra-right {
+                border-left: none;
+                border-top: 1px solid var(--border)
+            }
+
+            .team-grid {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .sdg-grid {
+                grid-template-columns: 1fr
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 30px
+            }
+
+            .tutorial-body {
+                grid-template-columns: 1fr
+            }
+        }
+
+        @media (max-width:768px) {
+            .nav-links {
+                display: none
+            }
+
+            .nav-burger {
+                display: flex;
+                align-items: center;
+                justify-content: center
+            }
+
+            .mobile-menu.open {
+                display: flex
+            }
+
+            .mobile-menu {
+                display: none;
+                position: fixed;
+                top: 68px;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 999;
+                background: rgba(3, 10, 6, 0.98);
+                backdrop-filter: blur(20px);
+                flex-direction: column;
+                padding: 30px 24px;
+                gap: 6px;
+                overflow-y: auto
+            }
+
+            .mobile-menu a {
+                padding: 16px 6px;
+                font-size: 1rem;
+                font-weight: 600;
+                color: var(--text-muted);
+                text-decoration: none;
+                border-bottom: 1px solid var(--border)
+            }
+
+            .mobile-menu .btn {
+                margin-top: 16px
+            }
+
+            .nav-actions .btn-ghost {
+                display: none
+            }
+
+            .nav-actions .btn-solid {
+                display: none
+            }
+
+            .navbar {
+                padding: 0 4%
+            }
+        }
+
+        @media (max-width:640px) {
+            .nav-logo {
+                font-size: 1.15rem;
+                gap: 8px
+            }
+
+            .nav-logo i {
+                flex-shrink: 0
+            }
+
+            .grid-layout {
+                grid-template-columns: 1fr
+            }
+
+            .sdg-grid {
+                grid-template-columns: 1fr
+            }
+
+            .float-chip {
+                display: none
+            }
+
+            .hero-visual {
+                padding: 0;
+                max-width: 420px
+            }
+
+            .steps-grid {
+                grid-template-columns: 1fr
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr;
+                gap: 28px
+            }
+
+            .predict-amount {
+                font-size: 2.1rem
+            }
+
+            .predict-slabs {
+                gap: 6px
+            }
+
+            .slab-chip {
+                padding: 8px 4px
+            }
+
+            .nepra-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px
+            }
+        }
+
+        @media (max-width:560px) {
+            .nav-logo {
+                font-size: 1.05rem;
+                gap: 6px
+            }
+
+            .nav-logo i {
+                width: 28px;
+                height: 28px;
+                font-size: 0.75rem
+            }
+
+            .nav-logo span.ai-tag {
+                font-size: 0.5rem;
+                padding: 2px 6px
+            }
+
+            .hero {
+                padding: 44px 5% 32px
+            }
+
+            .section {
+                padding: 52px 5%
+            }
+
+            .section-tight {
+                padding-top: 36px;
+                padding-bottom: 36px
+            }
+
+            .team-grid {
+                grid-template-columns: 1fr
+            }
+
+            .hero-stats {
+                gap: 18px
+            }
+
+            .hstat b {
+                font-size: 1.2rem
+            }
+
+            .nepra-left,
+            .nepra-right {
+                padding: 24px 22px
+            }
+
+            .cta-banner {
+                padding: 40px 20px
+            }
+
+            .hero-actions {
+                flex-direction: column;
+                align-items: stretch
+            }
+
+            .hero-actions .btn {
+                width: 100%
+            }
+
+            .cta-actions {
+                flex-direction: column;
+                align-items: stretch
+            }
+
+            .cta-actions .btn {
+                width: 100%
+            }
+
+            .predict-card {
+                padding: 20px
+            }
+
+            .tutorial-body {
+                padding: 20px;
+                gap: 18px
+            }
+
+            .faq-item summary {
+                padding: 16px 18px;
+                font-size: 0.88rem
+            }
+
+            .faq-answer {
+                padding: 0 18px 16px
+            }
+        }
+
+        @media (max-width:380px) {
+            .hero-copy h1 {
+                font-size: 1.9rem
+            }
+
+            .predict-slabs {
+                flex-direction: column
+            }
+
+            .nav-logo span.ai-tag {
+                display: none
+            }
+
+            .nav-logo {
+                font-size: 1rem;
+                gap: 6px
+            }
         }
     </style>
 </head>
+
 <body>
 
-    <!-- AUTHENTICATING OVERLAY MODAL -->
-    <div id="auth-loading-overlay" style="display: none; position: fixed; inset: 0; background: rgba(3, 10, 6, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 99999999; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease;">
-        <div class="auth-loading-card" style="background: var(--surface); border: 1px solid var(--border-hover); border-radius: 24px; padding: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px var(--glow); max-width: 320px; width: 90%; text-align: center; transform: scale(0.9); transition: transform 0.3s ease;">
-            <!-- Spinning loader with leaf icon inside -->
-            <div style="position: relative; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
-                <!-- Spinning border loader -->
-                <div style="position: absolute; inset: 0; border-radius: 50%; border: 3px solid rgba(16, 185, 129, 0.1); border-top: 3px solid var(--g3); animation: spin 1s linear infinite;"></div>
-                <!-- Leaf Icon -->
-                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, var(--g1), var(--g3)); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px var(--glow); color: white; font-size: 1.3rem;">
-                    <i class="fa fa-leaf"></i>
+    <nav class="navbar">
+        <a class="nav-logo" href="#top"><i class="fa fa-leaf"></i> Bill Optimizer <span class="ai-tag">AI</span></a>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How It Works</a>
+            <a href="#architecture">AI Engine</a>
+            <a href="#nepra">NEPRA Tariffs</a>
+            <a href="#team">Team</a>
+        </div>
+        <div class="nav-actions">
+            <a class="btn btn-ghost" href="login.html">Log In</a>
+            <a class="btn btn-solid" href="signup.html">Get Started Free</a>
+            <button class="nav-burger" id="burgerBtn" aria-label="Menu"><i class="fa fa-bars"></i></button>
+        </div>
+    </nav>
+
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#architecture">AI Engine</a>
+        <a href="#nepra">NEPRA Tariffs</a>
+        <a href="#team">Team</a>
+        <a class="btn btn-ghost" href="login.html">Log In</a>
+        <a class="btn btn-solid" href="signup.html">Get Started Free</a>
+    </div>
+
+    <div class="page-wrap">
+        <header class="hero" id="top">
+            <div class="hero-orb"></div>
+            <div class="hero-grid">
+                <div class="hero-copy">
+                    <span class="welcome-tag"><span class="pulse-dot"></span>&nbsp;NEPRA 2026 Tariffs Supported</span>
+                    <h1>Know Your Electricity Bill<br>Before <span class="hl">NEPRA</span> Does.</h1>
+                    <p class="lead">An AI energy assistant for Pakistani households. Predict next month's bill, forecast
+                        your 24-hour load curve, and simulate appliance swaps — all calibrated to real consumption data
+                        and the latest tariff slabs.</p>
+                    <div class="hero-actions">
+                        <a class="btn btn-solid btn-lg" href="signup.html"><i class="fa fa-bolt"></i> Create Free
+                            Account</a>
+                        <a class="btn btn-ghost btn-lg" href="login.html"><i class="fa fa-right-to-bracket"></i> Log
+                            In</a>
+                    </div>
+                    <div class="hero-stats">
+                        <div class="hstat"><b>3</b><span>ML Models Fused</span></div>
+                        <div class="hstat"><b>42</b><span>PRECON Archetypes</span></div>
+                        <div class="hstat"><b>&lt;1.5s</b><span>Prediction Latency</span></div>
+                        <div class="hstat"><b>~0.84</b><span>Model R² Accuracy</span></div>
+                    </div>
                 </div>
-            </div>
-            
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <h4 style="font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--text);">Authenticating</h4>
-                <div style="display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.82rem; color: var(--text-dim); font-weight: 500;">
-                    <span id="auth-loading-msg">Connecting to Secure Auth</span>
-                    <!-- Three dots animation -->
-                    <div style="display: flex; gap: 3px; align-items: center; margin-top: 2px;">
-                        <span class="auth-loading-dot" style="width: 4px; height: 4px; border-radius: 50%; background: var(--g3); animation: dotPulse 1.2s infinite 0s;"></span>
-                        <span class="auth-loading-dot" style="width: 4px; height: 4px; border-radius: 50%; background: var(--g3); animation: dotPulse 1.2s infinite 0.2s;"></span>
-                        <span class="auth-loading-dot" style="width: 4px; height: 4px; border-radius: 50%; background: var(--g3); animation: dotPulse 1.2s infinite 0.4s;"></span>
+
+                <div class="hero-visual">
+                    <div class="float-chip fc1">
+                        <i style="background:rgba(103,232,249,0.14);color:var(--info)" class="fa fa-wave-square"></i>
+                        <div><b>LSTM Live</b><span>24h forecast synced</span></div>
+                    </div>
+                    <div class="predict-card">
+                        <div class="predict-top">
+                            <span class="predict-tag"><i class="fa fa-circle-nodes"></i> AI Prediction</span>
+                            <span class="predict-mini">K-Electric · Non-Protected</span>
+                        </div>
+                        <div class="predict-amount">Rs. 18,240 <span>/ month</span></div>
+                        <div class="predict-sub">Projected from 312 units · Confidence: high</div>
+                        <svg class="predict-chart" viewBox="0 0 320 120" preserveAspectRatio="none">
+                            <defs>
+                                <linearGradient id="chartGrad" x1="0" y1="0" x2="1" y2="0">
+                                    <stop offset="0%" stop-color="#059669" />
+                                    <stop offset="100%" stop-color="#34d399" />
+                                </linearGradient>
+                                <linearGradient id="chartFillGrad" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#34d399" stop-opacity="0.28" />
+                                    <stop offset="100%" stop-color="#34d399" stop-opacity="0" />
+                                </linearGradient>
+                            </defs>
+                            <path class="chart-fill"
+                                d="M0,90 C40,70 60,95 90,80 C130,60 150,88 190,60 C230,35 250,55 280,30 L320,20 L320,120 L0,120 Z"
+                                fill="url(#chartFillGrad)" />
+                            <path class="chart-line"
+                                d="M0,90 C40,70 60,95 90,80 C130,60 150,88 190,60 C230,35 250,55 280,30 L320,20" />
+                        </svg>
+                        <div class="predict-slabs">
+                            <div class="slab-chip"><b>101–200</b><span>Slab Rate</span></div>
+                            <div class="slab-chip"><b>Rs 3.2</b><span>FCA Adj.</span></div>
+                            <div class="slab-chip"><b>17%</b><span>GST</span></div>
+                        </div>
+                    </div>
+                    <div class="float-chip fc2">
+                        <i style="background:rgba(52,211,153,0.14);color:var(--g3)" class="fa fa-plug"></i>
+                        <div><b>Rs. 2,140 saved</b><span>via AC swap simulation</span></div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <div class="left-panel">
-        <i class="fa fa-bolt bolt-deco bolt-1"></i>
-        <i class="fa fa-bolt bolt-deco bolt-2"></i>
-
-        <div class="left-content">
-            <div class="electric-badge">
-                <i class="fa fa-bolt"></i> Smart Energy Platform
+            <div id="heroSentinel" aria-hidden="true" style="position:absolute;bottom:0;left:0;width:1px;height:1px;">
             </div>
+        </header>
 
-            <h1>Power your home<br>with <span class="highlight">AI insights</span></h1>
-
-            <p>Navigate Pakistan's NEPRA 2026 tariffs with confidence. Predict bills, simulate appliances, and cut costs — all in one place.</p>
-
-            <div class="feature-list">
-                <div class="feature-item">
-                    <div class="icon"><i class="fa fa-chart-line"></i></div>
-                    ML-powered bill prediction using LSTM & RF models
-                </div>
-                <div class="feature-item">
-                    <div class="icon"><i class="fa fa-plug"></i></div>
-                    Appliance-level optimization simulator
-                </div>
-                <div class="feature-item">
-                    <div class="icon"><i class="fa fa-landmark"></i></div>
-                    Live NEPRA 2026 tariff slab reference
-                </div>
-                <div class="feature-item">
-                    <div class="icon"><i class="fa fa-shield"></i></div>
-                    Secure Firebase authentication
-                </div>
+        <div class="trust-strip">
+            <div class="trust-inner">
+                <span><i class="fa fa-graduation-cap"></i> Sir Syed University of Engineering & Technology</span>
+                <span><i class="fa fa-database"></i> Trained on LUMS PRECON Dataset</span>
+                <span><i class="fa fa-shield-halved"></i> Firebase Secured</span>
+                <span><i class="fa fa-landmark"></i> NEPRA July 2026 Compliant</span>
             </div>
         </div>
-    </div>
 
-    <div class="right-panel">
-        <div class="form-wrap">
-
-            <div class="form-logo">
-                <i class="fa fa-leaf"></i>
-                Bill Optimizer
-                <span class="ai-tag">AI</span>
+        <!-- PROBLEM -->
+        <section class="section section-tight">
+            <div class="section-head reveal">
+                <span class="eyebrow">The Problem</span>
+                <h2>Pakistani electricity bills are a black box — until now.</h2>
+                <p>Slab jumps, protected-status thresholds, fuel adjustments and time-of-use surcharges make it almost
+                    impossible to know what you'll owe until the bill arrives.</p>
             </div>
-            <p class="form-subtitle">Sign in to your smart energy dashboard</p>
-
-            <div id="error-message" class="error-box">
-                <i class="fa fa-circle-exclamation"></i>
-                <span id="error-text"></span>
-            </div>
-
-            <div class="input-group">
-                <label>Email Address</label>
-                <input type="email" id="email" placeholder="ali@example.com" spellcheck="false"
-                    onkeydown="if(event.key==='Enter') document.getElementById('password').focus()">
-            </div>
-
-            <div class="input-group">
-                <label>Password</label>
-                <div class="field-wrapper">
-                    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password"
-                        onkeydown="if(event.key==='Enter') loginRequest()">
-                    <i class="fa fa-eye toggle-password" id="eye-icon" onclick="togglePass('password', this)"></i>
+            <div class="problem-grid">
+                <div class="problem-card reveal">
+                    <i class="fa fa-stairs"></i>
+                    <h4>Sudden Slab Jumps</h4>
+                    <p>Cross a 100 or 200-unit threshold and your entire bill is charged at a much higher per-unit rate
+                        — often without warning.</p>
+                </div>
+                <div class="problem-card reveal">
+                    <i class="fa fa-user-shield"></i>
+                    <h4>Protected Status Loss</h4>
+                    <p>Exceed the 6-month rolling average and you permanently lose subsidised Protected or Lifeline
+                        pricing.</p>
+                </div>
+                <div class="problem-card reveal">
+                    <i class="fa fa-clock"></i>
+                    <h4>Peak-Hour Surcharges</h4>
+                    <p>Time-of-Use consumers pay up to 25% more for electricity used between 6 PM and 10 PM — easy to
+                        miss, costly to ignore.</p>
                 </div>
             </div>
+        </section>
 
-            <button class="btn-primary" id="signin-btn" onclick="loginRequest()">
-                <i class="fa fa-bolt" style="margin-right:6px;font-size:0.85em"></i> Sign In
-            </button>
-
-            <div class="divider">OR</div>
-
-            <button class="btn-google" onclick="handleGoogleLogin()">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="17">
-                Continue with Google
-            </button>
-
-            <p class="footer-link">New here? <a href="signup.html">Create an account</a></p>
-
-            <!-- Mobile-only SSUET branding footer -->
-            <div class="mobile-branding-footer" style="display: none; margin-top: 36px; text-align: center; font-size: 0.72rem; color: var(--text-dim); line-height: 1.5; font-weight: 500;">
-                <i class="fa fa-graduation-cap" style="color: var(--g2); margin-right: 4px;"></i> Sir Syed University of Engineering & Technology<br>
-                <span>FYP 2026 · Smart Energy Management System</span>
+        <!-- HOW IT WORKS -->
+        <section class="section" id="how-it-works">
+            <div class="section-head reveal">
+                <span class="eyebrow">How It Works</span>
+                <h2>From sign-up to savings in four steps.</h2>
+                <p>No smart meter required. Tell us about your home once, and the AI engine handles the rest —
+                    recalibrating every time you add a new bill.</p>
             </div>
-        </div>
+            <div class="steps-wrap reveal">
+                <div class="steps-line"></div>
+                <div class="steps-grid">
+                    <div class="step-card">
+                        <div class="step-num">01</div>
+                        <h4>Create Your Account</h4>
+                        <p>Sign up in seconds with email or Google. Your data is synced securely to Cloud Firestore
+                            under your account.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">02</div>
+                        <h4>Build Your AI Memory</h4>
+                        <p>Add your DISCO, sanctioned load, property size, and appliance inventory. The more detail, the
+                            sharper the prediction.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">03</div>
+                        <h4>Get Your Prediction</h4>
+                        <p>Random Forest and LSTM models fuse your profile with 42 real Pakistani household archetypes
+                            to forecast your bill and load curve.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">04</div>
+                        <h4>Simulate & Save</h4>
+                        <p>Swap appliances virtually — standard AC to inverter, old fridge to new — and see the exact
+                            Rupee impact before you spend a cent.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LIVE DASHBOARD PREVIEW -->
+        <section class="section section-tight" id="preview">
+            <div class="section-head reveal">
+                <span class="eyebrow">See It In Action</span>
+                <h2>A dashboard that thinks ahead of your bill.</h2>
+                <p>Once your profile is set up, your dashboard fills in with live projections, seasonal alerts, and
+                    AI-written insights tailored to your household.</p>
+            </div>
+            <div class="tutorial-panel reveal">
+                <div class="tutorial-topbar">
+                    <span></span><span></span><span></span>
+                    <span class="url mono">bill-optimizer.vercel.app/dashboard</span>
+                </div>
+                <div class="tutorial-body">
+                    <div>
+                        <div class="tut-mini-stat" style="margin-bottom:14px">
+                            <div class="l">Avg Monthly Units</div>
+                            <div class="v">318 <span
+                                    style="font-size:0.7rem;color:var(--text-dim);font-weight:500">kWh</span></div>
+                        </div>
+                        <div class="tut-mini-stat">
+                            <div class="l">Household</div>
+                            <div class="v">6 People · 120 Sq. Yd</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="tut-bar-row"><span class="lbl">Jan</span>
+                            <div class="tut-bar-track">
+                                <div class="tut-bar-fill reveal-bar" data-w="52%"></div>
+                            </div>
+                        </div>
+                        <div class="tut-bar-row"><span class="lbl">Feb</span>
+                            <div class="tut-bar-track">
+                                <div class="tut-bar-fill reveal-bar" data-w="46%"></div>
+                            </div>
+                        </div>
+                        <div class="tut-bar-row"><span class="lbl">Mar</span>
+                            <div class="tut-bar-track">
+                                <div class="tut-bar-fill reveal-bar" data-w="61%"></div>
+                            </div>
+                        </div>
+                        <div class="tut-bar-row"><span class="lbl">Apr</span>
+                            <div class="tut-bar-track">
+                                <div class="tut-bar-fill reveal-bar" data-w="78%"></div>
+                            </div>
+                        </div>
+                        <div class="tut-bar-row"><span class="lbl">May</span>
+                            <div class="tut-bar-track">
+                                <div class="tut-bar-fill reveal-bar" data-w="94%"></div>
+                            </div>
+                        </div>
+                        <div class="tut-bar-row"><span class="lbl">Jun</span>
+                            <div class="tut-bar-track">
+                                <div class="tut-bar-fill reveal-bar" data-w="100%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FEATURES -->
+        <section class="section" id="features">
+            <div class="section-head reveal">
+                <span class="eyebrow">Core Modules</span>
+                <h2>Everything you need to manage your energy budget.</h2>
+                <p>Six connected modules, one shared AI memory of your household.</p>
+            </div>
+            <div class="grid-layout">
+                <div class="card reveal">
+                    <div class="card-status status-live">● Live</div>
+                    <div class="card-icon"><i class="fa fa-chart-line"></i></div>
+                    <h3>Bill Prediction</h3>
+                    <p>Random Forest regression estimates next month's units and full NEPRA-calculated cost, including
+                        FCA and QTA adjustments.</p>
+                </div>
+                <div class="card reveal">
+                    <div class="card-status status-neural">Neural</div>
+                    <div class="card-icon"><i class="fa fa-wave-square"></i></div>
+                    <h3>24-Hour Load Forecaster</h3>
+                    <p>A Bidirectional LSTM projects your hourly demand curve so you know exactly when your home hits
+                        peak load.</p>
+                </div>
+                <div class="card reveal">
+                    <div class="card-status status-beta">New</div>
+                    <div class="card-icon"><i class="fa fa-plug"></i></div>
+                    <h3>Optimization Simulator</h3>
+                    <p>A physics-based engine simulates appliance swaps — inverter ACs, BLDC fans — and shows real Rupee
+                        savings.</p>
+                </div>
+                <div class="card reveal">
+                    <div class="card-status status-ai">RAG</div>
+                    <div class="card-icon"><i class="fa fa-comments"></i></div>
+                    <h3>AI Energy Assistant</h3>
+                    <p>A context-aware chatbot answers questions about your bill using your live profile — no generic
+                        advice, just yours.</p>
+                </div>
+                <div class="card reveal">
+                    <div class="card-icon"><i class="fa fa-landmark"></i></div>
+                    <h3>NEPRA Tariff Reference</h3>
+                    <p>Every 2026 domestic slab, fixed charge, and Protected/Lifeline eligibility rule, explained in
+                        plain language.</p>
+                </div>
+                <div class="card reveal">
+                    <div class="card-icon"><i class="fa fa-brain"></i></div>
+                    <h3>AI Memory Profile</h3>
+                    <p>One structured household profile — DISCO, routine, appliances, bill history — powering every
+                        model in the app.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ARCHITECTURE -->
+        <section class="section" id="architecture">
+            <div class="section-head reveal">
+                <span class="eyebrow">Under The Hood</span>
+                <h2>A tri-model hybrid pipeline, not a black box.</h2>
+                <p>We combine statistical machine learning, deep learning, and first-principles physics — so predictions
+                    stay explainable, not just accurate.</p>
+            </div>
+            <div class="architecture-grid">
+                <div class="arch-card reveal">
+                    <div class="arch-top">
+                        <h4 style="color:#ff4d4d"><i class="fa fa-tree"></i> Random Forest</h4>
+                        <div class="arch-pill" style="background:#cc0000">Regression</div>
+                    </div>
+                    <p>Calibrated on 28+ zero-leakage household features. Handles long-term monthly forecasting by
+                        analyzing appliance counts and seasonal drift.</p>
+                    <div class="arch-foot"><i class="fa fa-circle-check"></i> R² Accuracy: ~0.84</div>
+                </div>
+                <div class="arch-card reveal">
+                    <div class="arch-top">
+                        <h4 style="color:#67e8f9"><i class="fa fa-wave-square"></i> Bidirectional LSTM</h4>
+                        <div class="arch-pill" style="background:#0891b2">Deep Learning</div>
+                    </div>
+                    <p>A specialized RNN that recognizes temporal dependencies, processing a 48-hour lookback window to
+                        forecast the next 24-hour demand profile.</p>
+                    <div class="arch-foot"><i class="fa fa-circle-check"></i> Loss Function: Huber</div>
+                </div>
+                <div class="arch-card reveal">
+                    <div class="arch-top">
+                        <h4 style="color:#a78bfa"><i class="fa fa-network-wired"></i> KNN Matcher</h4>
+                        <div class="arch-pill" style="background:#7c3aed">Clustering</div>
+                    </div>
+                    <p>Maps your profile to the closest match among 42 real PRECON house archetypes, ensuring realistic
+                        seeding even without bill history.</p>
+                    <div class="arch-foot"><i class="fa fa-circle-check"></i> Distance: Euclidean</div>
+                </div>
+                <div class="arch-card dashed reveal">
+                    <div class="arch-top">
+                        <h4 style="color:#f97316;margin:0"><i class="fa fa-handshake"></i> Mathematical Handshake</h4>
+                        <div class="arch-pill" style="background:#ea580c">Physics Engine</div>
+                    </div>
+                    <p style="margin:0">Computes a structural baseload from occupancy and area. Final predictions blend
+                        physics, AI inference, and historical calibration.</p>
+                    <div class="arch-foot"><i class="fa fa-circle-check"></i> Calibrated Baseline</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- NEPRA -->
+        <section class="section section-tight" id="nepra">
+            <div class="nepra-panel reveal">
+                <div class="nepra-left">
+                    <span class="eyebrow">Tariff Intelligence</span>
+                    <h3>Built for NEPRA's July 2026 rules, not a generic calculator.</h3>
+                    <p>Domestic tariffs in Pakistan aren't a flat rate — they're a maze of slabs, subsidies, and
+                        adjustments. Our billing engine models the real structure so predictions match your actual
+                        invoice.</p>
+                    <a class="btn btn-ghost" href="signup.html">Explore Tariff Hub <i class="fa fa-arrow-right"></i></a>
+                </div>
+                <div class="nepra-right">
+                    <div class="nepra-row"><span>Lifeline Consumers</span><b>&lt; 100 units / month</b></div>
+                    <div class="nepra-row"><span>Protected Status</span><b>&lt; 200 units, 6-month avg</b></div>
+                    <div class="nepra-row"><span>Peak Surcharge (ToU)</span><b>6 PM – 10 PM</b></div>
+                    <div class="nepra-row"><span>Fixed + FCA + QTA + GST</span><b>Fully Modeled</b></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SDG -->
+        <section class="section section-tight">
+            <div class="section-head reveal">
+                <span class="eyebrow">Why It Matters</span>
+                <h2>Mapped to global sustainability goals.</h2>
+            </div>
+            <div class="sdg-grid">
+                <div class="sdg-card reveal"
+                    style="background:rgba(6,182,212,0.05);border:1px solid rgba(6,182,212,0.25)">
+                    <div class="sdg-top">
+                        <div class="sdg-num" style="background:#06b6d4">7</div>
+                        <h4 style="color:#22d3ee">Affordable & Clean Energy</h4>
+                    </div>
+                    <p>Preemptive bill awareness helps households maintain their energy budget before the billing cycle
+                        ends.</p>
+                </div>
+                <div class="sdg-card reveal"
+                    style="background:rgba(251,113,133,0.05);border:1px solid rgba(251,113,133,0.25)">
+                    <div class="sdg-top">
+                        <div class="sdg-num" style="background:#fb7185">12</div>
+                        <h4 style="color:#fda4af">Responsible Consumption</h4>
+                    </div>
+                    <p>The LSTM forecaster identifies usage patterns, shifting behaviour toward efficiency and reducing
+                        waste.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- TEAM -->
+        <section class="section" id="team">
+            <div class="section-head reveal">
+                <span class="eyebrow">The Team</span>
+                <h2>Built by Software Engineering students at SSUET.</h2>
+                <p>A four-person final year project turning academic research into a tool real households can use.</p>
+            </div>
+            <div class="team-grid">
+                <div class="member-card reveal">
+                    <img src="assets/mudasir.jpeg" alt="Mudasir Ali">
+                    <h4>Mudasir Ali</h4>
+                    <div class="member-role">Group Lead · AI & Full-Stack</div>
+                    <a class="member-email" href="mailto:unarmudasir@gmail.com">unarmudasir@gmail.com</a>
+                </div>
+                <div class="member-card reveal">
+                    <img src="assets/abdullah.jpeg" alt="Abdullah Tahir">
+                    <h4>Abdullah Tahir</h4>
+                    <div class="member-role">Lead Frontend Architect</div>
+                    <a class="member-email" href="mailto:axise140@gmail.com">axise140@gmail.com</a>
+                </div>
+                <div class="member-card reveal">
+                    <img src="assets/haider.jpeg" alt="Haider Rizwan">
+                    <h4>Haider Rizwan</h4>
+                    <div class="member-role">Dataset & Preprocessing</div>
+                    <a class="member-email" href="mailto:haidernv006@gmail.com">haidernv006@gmail.com</a>
+                </div>
+                <div class="member-card reveal">
+                    <img src="assets/abubakr.jpeg" alt="Abubakr Saqib">
+                    <h4>Abubakr Saqib</h4>
+                    <div class="member-role">Software Quality Assurance</div>
+                    <a class="member-email" href="mailto:abubakarsaqib60@gmail.com">abubakarsaqib60@gmail.com</a>
+                </div>
+            </div>
+            <div class="uni-badge reveal">
+                <span class="tag"><i class="fa fa-graduation-cap"></i> Sir Syed University of Engineering & Technology ·
+                    FYP 2026</span>
+                <span class="tag"><i class="fa fa-flask"></i> Trained on LUMS PRECON Research Dataset</span>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section class="section section-tight">
+            <div class="section-head reveal">
+                <span class="eyebrow">Questions</span>
+                <h2>Frequently asked questions.</h2>
+            </div>
+            <div class="faq-list reveal">
+                <details class="faq-item" open>
+                    <summary>Do I need a smart meter to use this?<i class="fa fa-plus"></i></summary>
+                    <div class="faq-answer">No. The engine works entirely from your appliance inventory, property
+                        details, and past bills — no hardware or smart-meter integration required.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>How accurate are the predictions?<i class="fa fa-plus"></i></summary>
+                    <div class="faq-answer">The Random Forest model achieves an R² of roughly 0.84 on held-out PRECON
+                        households, and accuracy improves further as you add your own bill history for calibration.
+                    </div>
+                </details>
+                <details class="faq-item">
+                    <summary>Is my household data private?<i class="fa fa-plus"></i></summary>
+                    <div class="faq-answer">Your profile is stored per-account in Cloud Firestore behind Firebase
+                        Authentication, and is only used to power your own predictions and the AI assistant.</div>
+                </details>
+                <details class="faq-item">
+                    <summary>Which DISCOs and tariff categories are supported?<i class="fa fa-plus"></i></summary>
+                    <div class="faq-answer">All major Pakistani DISCOs, plus Lifeline, Protected, Non-Protected, and
+                        Time-of-Use categories under NEPRA's July 2026 tariff rules.</div>
+                </details>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section class="section">
+            <div class="cta-banner reveal">
+                <h2>Stop guessing your electricity bill.</h2>
+                <p>Set up your household profile in under five minutes and get your first AI-powered prediction today.
+                </p>
+                <div class="cta-actions">
+                    <a class="btn btn-solid btn-lg" href="signup.html"><i class="fa fa-bolt"></i> Create Free
+                        Account</a>
+                    <a class="btn btn-ghost btn-lg" href="login.html"><i class="fa fa-right-to-bracket"></i> I Already
+                        Have an Account</a>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <div class="footer-brand-logo"><i class="fa fa-leaf"></i> Bill Optimizer AI</div>
+                    <p>AI-powered electricity bill prediction and optimization for Pakistani households, built on real
+                        consumption research and NEPRA 2026 tariff rules.</p>
+                </div>
+                <div class="footer-col">
+                    <h5>Product</h5>
+                    <a href="#features">Features</a>
+                    <a href="#how-it-works">How It Works</a>
+                    <a href="#architecture">AI Engine</a>
+                    <a href="#nepra">NEPRA Tariffs</a>
+                </div>
+                <div class="footer-col">
+                    <h5>Account</h5>
+                    <a href="login.html">Log In</a>
+                    <a href="signup.html">Sign Up</a>
+                    <a href="setup-profile.html">Setup Profile</a>
+                </div>
+                <div class="footer-col">
+                    <h5>Project</h5>
+                    <a href="#team">Team</a>
+                    <a href="about-us.html">About Us</a>
+                    <a href="nepra-info.html">Tariff Reference</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>© 2026 Bill Optimizer AI · Sir Syed University of Engineering and Technology, Karachi</span>
+                <span class="footer-tag">FYP 2026 · Smart Energy Management System</span>
+            </div>
+        </footer>
     </div>
+
+    <button class="scroll-top" id="scrollTopBtn" aria-label="Scroll to top"><i class="fa fa-arrow-up"></i></button>
 
     <script>
-        function togglePass(id, icon) {
-            const input = document.getElementById(id);
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.replace('fa-eye', 'fa-eye-slash');
-            } else {
-                input.type = 'password';
-                icon.classList.replace('fa-eye-slash', 'fa-eye');
-            }
+        // Mobile menu toggle
+        const burger = document.getElementById('burgerBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        burger.addEventListener('click', () => {
+            mobileMenu.classList.toggle('open');
+            burger.innerHTML = mobileMenu.classList.contains('open') ? '<i class="fa fa-xmark"></i>' : '<i class="fa fa-bars"></i>';
+        });
+        mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+            mobileMenu.classList.remove('open');
+            burger.innerHTML = '<i class="fa fa-bars"></i>';
+        }));
+
+        // Scroll reveal
+        const revealEls = document.querySelectorAll('.reveal');
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    e.target.classList.add('in');
+                    io.unobserve(e.target);
+                }
+            });
+        }, { threshold: 0.12 });
+        revealEls.forEach(el => io.observe(el));
+
+        // Tutorial bar fill animation (trigger once visible)
+        const barWrap = document.querySelector('.tutorial-panel');
+        if (barWrap) {
+            const barIo = new IntersectionObserver((entries) => {
+                entries.forEach(e => {
+                    if (e.isIntersecting) {
+                        document.querySelectorAll('.tut-bar-fill').forEach(bar => {
+                            bar.style.width = bar.dataset.w;
+                        });
+                        barIo.unobserve(e.target);
+                    }
+                });
+            }, { threshold: 0.3 });
+            barIo.observe(barWrap);
         }
 
-        function loginRequest() {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('password').value;
-            handleSignIn(email, pass);
+        // Scroll-to-top button
+        const scrollBtn = document.getElementById('scrollTopBtn');
+        window.addEventListener('scroll', () => {
+            scrollBtn.classList.toggle('visible', window.scrollY > 500);
+        }, { passive: true });
+        scrollBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+        // Navbar CTA reveal — IntersectionObserver on a hero sentinel avoids the
+        // rapid on/off flicker that a raw scroll-position check produces near the boundary.
+        const navbarEl = document.querySelector('.navbar');
+        const heroSentinel = document.getElementById('heroSentinel');
+        if (navbarEl && heroSentinel) {
+            const navIo = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    navbarEl.classList.toggle('scrolled', !entry.isIntersecting);
+                });
+            }, { root: null, rootMargin: '-68px 0px 0px 0px', threshold: 0 });
+            navIo.observe(heroSentinel);
         }
     </script>
-
-    <script src="js/config.js"></script>
-
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-
-    <script src="js/auth.js"></script>
 </body>
+
 </html>

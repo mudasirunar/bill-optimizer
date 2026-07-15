@@ -78,7 +78,7 @@ bill-optimizer/
 │   └── venv/           # Python Virtual Environment
 │
 ├── frontend/           # Responsive Web Dashboard
-│   ├── index.html      # Landing & Authentication
+│   ├── login.html      # Authentication
 │   ├── js/             # Frontend logic and API integration (config.js)
 │   ├── assets/         # UI Elements and Images
 │   └── ...

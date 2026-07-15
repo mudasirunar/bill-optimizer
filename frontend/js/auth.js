@@ -19,13 +19,13 @@ const auth = firebase.auth();
 function showErrorMessage(msg) {
     const errorDiv = document.getElementById('error-message');
     const errorSpan = document.getElementById('error-text');
-    if(errorDiv && errorSpan) {
+    if (errorDiv && errorSpan) {
         errorSpan.innerText = msg;
-        errorDiv.style.display = 'flex'; 
+        errorDiv.style.display = 'flex';
         errorDiv.style.animation = 'none';
         errorDiv.offsetHeight; // trigger reflow
         errorDiv.style.animation = 'shake 0.4s ease-in-out';
-        
+
         setTimeout(() => { errorDiv.style.display = 'none'; }, 6000);
     }
 }
@@ -108,7 +108,7 @@ async function handleSignUp(firstName, lastName, email, password, confirmPasswor
     if (!firstName.trim()) return showErrorMessage("Please enter your first name.");
     if (!lastName.trim()) return showErrorMessage("Please enter your last name.");
     if (!email.trim()) return showErrorMessage("Email address is required.");
-    
+
     // 2. Email Format Validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -135,7 +135,7 @@ async function handleSignUp(firstName, lastName, email, password, confirmPasswor
     try {
         const result = await auth.createUserWithEmailAndPassword(email, password);
         localStorage.setItem('userLoggedIn', 'true');
-        
+
         // Update Profile with Full Name for Dashboard Greeting
         const fullName = `${firstName.trim()} ${lastName.trim()}`;
         await result.user.updateProfile({ displayName: fullName });
@@ -165,7 +165,7 @@ const titleCase = (str) => str ? str.toLowerCase().split(' ').map(w => w.charAt(
 auth.onAuthStateChanged((user) => {
     if (user) {
         localStorage.setItem('userLoggedIn', 'true');
-        
+
         const nameDisplay = document.getElementById('user-name-display');
         const pfpDisplay = document.getElementById('user-pfp');
         const greetingDisplay = document.getElementById('greeting-display');
@@ -202,7 +202,7 @@ auth.onAuthStateChanged((user) => {
         // --- GLOBAL REDIRECT LOGIC ---
         const path = window.location.pathname;
         const filename = path.substring(path.lastIndexOf('/') + 1);
-        const isAuthPage = filename === "index.html" || filename === "signup.html" || filename === "" || path.endsWith("/");
+        const isAuthPage = filename === "login.html" || filename === "signup.html" || filename === "" || path.endsWith("/");
 
         if (isAuthPage) {
             // Check if account was JUST created (within the last 10 seconds)
@@ -224,12 +224,12 @@ auth.onAuthStateChanged((user) => {
         localStorage.removeItem('userPhotoURL');
         localStorage.removeItem('userUid');
 
-        // Redirect to index.html if we are currently on a protected page
+        // Redirect to login.html if we are currently on a protected page
         const path = window.location.pathname;
         const filename = path.substring(path.lastIndexOf('/') + 1);
-        const isAuthPage = filename === "index.html" || filename === "signup.html" || filename === "" || path.endsWith("/");
+        const isAuthPage = filename === "login.html" || filename === "signup.html" || filename === "" || path.endsWith("/");
         if (!isAuthPage) {
-            window.location.href = "index.html";
+            window.location.href = "login.html";
         }
     }
 });
@@ -240,11 +240,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isLoggedIn) {
         const cachedName = localStorage.getItem('userDisplayName');
         const cachedPhoto = localStorage.getItem('userPhotoURL');
-        
+
         const nameDisplay = document.getElementById('user-name-display');
         const pfpDisplay = document.getElementById('user-pfp');
         const greetingDisplay = document.getElementById('greeting-display');
-        
+
         if (nameDisplay && cachedName) {
             nameDisplay.innerText = cachedName;
         }
@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const firstName = cachedName.split(' ')[0];
             const getGreeting = () => {
                 const h = new Date().getHours();
-                if (h < 5)  return 'Good Night';
+                if (h < 5) return 'Good Night';
                 if (h < 12) return 'Good Morning';
                 if (h < 17) return 'Good Afternoon';
                 if (h < 21) return 'Good Evening';
@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 pfpDisplay.src = `https://cdn-icons-png.flaticon.com/512/3135/3135715.png`;
             }
         }
-        
+
         // Immediately add auth-verified class to body to prevent layout fade-in delay
         document.body.classList.add('auth-verified');
     }
@@ -311,7 +311,7 @@ function initDynamicBreadcrumb(currentPageTitle) {
         }
     }
 
- 
+
     if (lastPageFile && !ref.includes('dashboard.html') && !currentPath.includes(lastPageFile)) {
         navHTML += ` <i class="fa fa-chevron-right" style="font-size:0.5rem; margin:0 8px"></i> 
                      <a href="${lastPageFile}">${lastPageTitle}</a>`;

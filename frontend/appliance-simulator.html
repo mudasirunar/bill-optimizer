@@ -1275,7 +1275,8 @@
 <body>
     <nav class="navbar">
         <div class="nav-logo" onclick="window.location.href='dashboard.html'"><i class="fa fa-leaf"></i> Bill Optimizer
-            <span class="ai-tag">AI</span></div>
+            <span class="ai-tag">AI</span>
+        </div>
         <div class="nav-user-area">
             <div class="user-info"><span id="user-name-display">User</span><small>What-If Simulator</small></div>
             <div class="profile-dropdown">
@@ -1452,7 +1453,7 @@
         // ─── AUTH ───
         firebase.auth().onAuthStateChanged(user => {
             initDynamicBreadcrumb("Appliance Simulator");
-            if (!user) { window.location.href = 'index.html'; return; }
+            if (!user) { window.location.href = 'login.html'; return; }
             document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
             if (user.photoURL) document.getElementById('user-pfp').src = user.photoURL;
         });
@@ -1908,7 +1909,7 @@
         renderBasket();
         updateBasketLive();
 
-        function logout() { firebase.auth().signOut().then(() => window.location.href = 'index.html'); }
+        function logout() { firebase.auth().signOut().then(() => window.location.href = 'login.html'); }
     </script>
 </body>
 
