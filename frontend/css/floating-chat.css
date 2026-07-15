@@ -7,7 +7,7 @@
     position: fixed;
     bottom: 28px;
     right: 28px;
-    z-index: 999998;
+    z-index: 1500;
     width: 52px;
     height: 52px;
     border-radius: 50%;
@@ -49,7 +49,7 @@
     position: fixed;
     bottom: 95px;
     right: 28px;
-    z-index: 999999;
+    z-index: 1501;
     width: 380px;
     height: 520px;
     max-width: calc(100vw - 56px);

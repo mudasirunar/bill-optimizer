@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,220 +9,435 @@
     <link rel="icon" type="image/png" href="assets/favicon.png?v=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
     <style>
-        :root {
-            --g1: #059669; --g2: #10b981; --g3: #34d399; --g4: #6ee7b7;
-            --dark: #030a06; --surface: #0d1a12; --surface2: #122018;
-            --border: rgba(52,211,153,0.12); --border-hover: rgba(52,211,153,0.35);
-            --text: #f0fdf4; --text-muted: #86efac; --text-dim: #4b7a5e;
-            --glow: rgba(16,185,129,0.2); --glow-strong: rgba(16,185,129,0.45);
-            --card-bg: rgba(13,26,18,0.85); --input-bg: rgba(5,20,10,0.65);
-            --warn: #fbbf24; --error: #f87171;
+        * {
+            -webkit-tap-highlight-color: transparent;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
+        :root {
+            --g1: #059669;
+            --g2: #10b981;
+            --g3: #34d399;
+            --g4: #6ee7b7;
+            --dark: #030a06;
+            --surface: #0d1a12;
+            --surface2: #122018;
+            --border: rgba(52, 211, 153, 0.12);
+            --border-hover: rgba(52, 211, 153, 0.35);
+            --text: #f0fdf4;
+            --text-muted: #86efac;
+            --text-dim: #4b7a5e;
+            --glow: rgba(16, 185, 129, 0.2);
+            --glow-strong: rgba(16, 185, 129, 0.45);
+            --card-bg: rgba(13, 26, 18, 0.85);
+            --input-bg: rgba(5, 20, 10, 0.65);
+            --warn: #fbbf24;
+            --error: #f87171;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
 
         body {
             font-family: 'DM Sans', sans-serif;
-            background: var(--dark); color: var(--text);
-            min-height: 100vh; overflow-x: hidden;
+            background: var(--dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
         /* Ambient BG */
         body::before {
-            content: ''; position: fixed; inset: 0; z-index: 0;
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
             background:
-                radial-gradient(ellipse 80% 60% at 10% 10%, rgba(5,150,105,0.18) 0%, transparent 60%),
-                radial-gradient(ellipse 60% 80% at 90% 80%, rgba(16,185,129,0.12) 0%, transparent 55%);
+                radial-gradient(ellipse 80% 60% at 10% 10%, rgba(5, 150, 105, 0.18) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 80% at 90% 80%, rgba(16, 185, 129, 0.12) 0%, transparent 55%);
             pointer-events: none;
         }
+
         body::after {
-            content: ''; position: fixed; inset: 0; z-index: 0;
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
             background-image:
-                linear-gradient(rgba(52,211,153,0.025) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(52,211,153,0.025) 1px, transparent 1px);
-            background-size: 48px 48px; pointer-events: none;
+                linear-gradient(rgba(52, 211, 153, 0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(52, 211, 153, 0.025) 1px, transparent 1px);
+            background-size: 48px 48px;
+            pointer-events: none;
         }
 
         /* ─── DYNAMIC FLOATING COMPLETENESS ─── */
         /* ─── UNIFIED PROGRESS TRACKER (Static & Floating) ─── */
-.completeness-wrap {
-    text-align: right;
-    flex-shrink: 0;
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
-                opacity 0.3s, 
+        .completeness-wrap {
+            text-align: right;
+            flex-shrink: 0;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                opacity 0.3s,
                 padding 0.3s;
-    z-index: 1100; /* Stays above everything */
-}
+            z-index: 1100;
+            /* Stays above everything */
+        }
 
-/* State when docked in the header */
-.completeness-label { 
-    font-size: 0.72rem; 
-    color: var(--text-dim); 
-    margin-bottom: 6px; 
-    text-transform: uppercase; 
-    letter-spacing: 0.08em; 
-}
+        /* State when docked in the header */
+        .completeness-label {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
 
-/* State when floating on scroll */
-.completeness-wrap.floating {
-    position: fixed;
-    top: 80px; /* Safely below the 68px Navbar */
-    right: 5%;
-    background: rgba(13, 26, 18, 0.85); /* Dark Glass Effect */
-    backdrop-filter: blur(12px);
-    padding: 12px 18px;
-    border-radius: 22px;
-    border: 1px solid var(--border-hover);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px var(--glow);
-    transform: scale(0.8); /* Slightly smaller to save space */
-}
+        /* State when floating on scroll */
+        .completeness-wrap.floating {
+            position: fixed;
+            top: 80px;
+            /* Safely below the 68px Navbar */
+            right: 5%;
+            background: rgba(13, 26, 18, 0.85);
+            /* Dark Glass Effect */
+            backdrop-filter: blur(12px);
+            padding: 12px 18px;
+            border-radius: 22px;
+            border: 1px solid var(--border-hover);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 20px var(--glow);
+            transform: scale(0.8);
+            /* Slightly smaller to save space */
+        }
 
-.completeness-wrap.floating .completeness-label {
-    font-size: 0.55rem;
-    margin-bottom: 2px;
-    color: var(--g3);
-    font-weight: 800;
-}
+        .completeness-wrap.floating .completeness-label {
+            font-size: 0.55rem;
+            margin-bottom: 2px;
+            color: var(--g3);
+            font-weight: 800;
+        }
 
-/* Mobile tweak: Keep progress at top right, safely below navbar */
-@media (max-width: 640px) {
-    .completeness-wrap.floating {
-        top: 80px; 
-        bottom: auto;
-        right: 15px;
-        transform: scale(0.75);
-    }
-}
+        /* Mobile tweak: Keep progress at top right, safely below navbar */
+        @media (max-width: 640px) {
+            .completeness-wrap.floating {
+                top: 80px;
+                bottom: auto;
+                right: 15px;
+                transform: scale(0.75);
+            }
+        }
 
         /* ─── NAVBAR ─── */
         .navbar {
-            position: sticky; top: 0; z-index: 1200;
-            height: 68px; display: flex; align-items: center; justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1200;
+            height: 68px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             padding: 0 5%;
-            background: rgba(3,10,6,0.75); backdrop-filter: blur(20px) saturate(180%);
+            background: rgba(3, 10, 6, 0.75);
+            backdrop-filter: blur(20px) saturate(180%);
             border-bottom: 1px solid var(--border);
         }
+
         .nav-logo {
-            font-family: 'Syne', sans-serif; font-size: 1.35rem; font-weight: 800;
-            color: var(--text); display: flex; align-items: center; gap: 10px;
-            cursor: pointer; text-decoration: none; transition: opacity 0.2s;
+            font-family: 'Syne', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity 0.2s;
         }
-        .nav-logo:hover { opacity: 0.85; }
+
+        .nav-logo:hover {
+            opacity: 0.85;
+        }
+
         .nav-logo i {
-            width: 34px; height: 34px;
+            width: 34px;
+            height: 34px;
             background: linear-gradient(135deg, var(--g1), var(--g3));
-            border-radius: 9px; display: flex; align-items: center; justify-content: center;
-            font-size: 0.9rem; color: #fff; box-shadow: 0 0 14px var(--glow);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            color: #fff;
+            box-shadow: 0 0 14px var(--glow);
         }
+
         .nav-logo .ai-tag {
-            font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em;
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
             background: linear-gradient(90deg, var(--g1), var(--g3));
-            padding: 3px 8px; border-radius: 20px; color: #fff;
+            padding: 3px 8px;
+            border-radius: 20px;
+            color: #fff;
         }
 
-        .nav-user-area { display: flex; align-items: center; gap: 14px; }
-        .user-info { text-align: right; line-height: 1.2; }
-        .user-info span { font-weight: 600; font-size: 0.9rem; display: block; color: var(--text); }
-        .user-info small { font-size: 0.72rem; color: var(--text-muted); }
+        .nav-user-area {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
 
-        .profile-dropdown { position: relative; }
+        .user-info {
+            text-align: right;
+            line-height: 1.2;
+        }
+
+        .user-info span {
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: block;
+            color: var(--text);
+        }
+
+        .user-info small {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .profile-dropdown {
+            position: relative;
+        }
+
         .profile-dropdown::after {
-            content: ''; position: absolute; top: 100%; right: 0;
-            width: 100%; height: 16px; background: transparent;
+            content: '';
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 100%;
+            height: 16px;
+            background: transparent;
         }
+
         .user-avatar {
-            width: 40px; height: 40px; border-radius: 50%; object-fit: cover; cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            cursor: pointer;
             border: 2px solid var(--border);
             transition: border-color 0.3s, box-shadow 0.3s, transform 0.2s;
         }
-        .user-avatar:hover { border-color: var(--g2); box-shadow: 0 0 16px var(--glow); transform: scale(1.06); }
+
+        .user-avatar:hover {
+            border-color: var(--g2);
+            box-shadow: 0 0 16px var(--glow);
+            transform: scale(1.06);
+        }
 
         .dropdown-menu {
-            position: absolute; top: calc(100% + 8px); right: 0; width: 210px;
-            background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 8px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px var(--glow);
-            opacity: 0; visibility: hidden; pointer-events: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            width: 210px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 8px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px var(--glow);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
             transform: translateY(-8px) scale(0.97);
-            transition: opacity 0.22s ease, transform 0.22s ease, visibility 0s linear 0.22s; z-index: 1300;
+            transition: opacity 0.22s ease, transform 0.22s ease, visibility 0s linear 0.22s;
+            z-index: 1300;
         }
-        .profile-dropdown:hover .dropdown-menu, .profile-dropdown:focus-within .dropdown-menu {
-            opacity: 1; visibility: visible; pointer-events: all;
+
+        .profile-dropdown:hover .dropdown-menu,
+        .profile-dropdown:focus-within .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: all;
             transform: translateY(0) scale(1);
             transition: opacity 0.22s ease, transform 0.22s ease, visibility 0s linear 0s;
         }
+
         .dropdown-menu a {
-            display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 9px;
-            color: var(--text-muted); font-size: 0.875rem; font-weight: 500; text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 9px;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
             transition: background 0.18s, color 0.18s;
         }
-        .dropdown-menu a:hover { background: rgba(52,211,153,0.1); color: var(--g3); }
-        .dropdown-menu a i { width: 16px; text-align: center; opacity: 0.7; }
-        .dropdown-menu hr { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
-        .logout-link { color: #f87171 !important; }
-        .logout-link:hover { background: rgba(239,68,68,0.1) !important; }
+
+        .dropdown-menu a:hover {
+            background: rgba(52, 211, 153, 0.1);
+            color: var(--g3);
+        }
+
+        .dropdown-menu a i {
+            width: 16px;
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        .dropdown-menu hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 6px 0;
+        }
+
+        .logout-link {
+            color: #f87171 !important;
+        }
+
+        .logout-link:hover {
+            background: rgba(239, 68, 68, 0.1) !important;
+        }
 
         /* ─── PAGE HEADER ─── */
         .page-header {
-            position: relative; z-index: 1;
+            position: relative;
+            z-index: 1;
             padding: 44px 5% 36px;
             border-bottom: 1px solid var(--border);
-            animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) both;
+            animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
-        .breadcrumb {
-            display: flex; align-items: center; gap: 8px;
-            font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em;
-            text-transform: uppercase; color: var(--text-dim); margin-bottom: 14px;
-        }
-        .breadcrumb a { color: var(--g3); text-decoration: none; transition: opacity 0.2s; }
-        .breadcrumb a:hover { opacity: 0.75; }
-        .breadcrumb i { font-size: 0.6rem; }
 
-        .header-row { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 14px;
+        }
+
+        .breadcrumb a {
+            color: var(--g3);
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+
+        .breadcrumb a:hover {
+            opacity: 0.75;
+        }
+
+        .breadcrumb i {
+            font-size: 0.6rem;
+        }
+
+        .header-row {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
 
         .page-header h1 {
-            font-family: 'Syne', sans-serif; font-size: clamp(1.8rem,3.5vw,2.5rem);
-            font-weight: 800; letter-spacing: -0.03em; margin-bottom: 6px;
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: 6px;
         }
+
         .page-header h1 .highlight {
             background: linear-gradient(120deg, var(--g3), var(--g2));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        .page-header p { color: var(--text-dim); font-size: 0.92rem; max-width: 480px; }
+
+        .page-header p {
+            color: var(--text-dim);
+            font-size: 0.92rem;
+            max-width: 480px;
+        }
 
         /* Completeness badge */
         .completeness-ring {
-            width: 64px; height: 64px; margin: 0 auto;
-            position: relative; display: flex; align-items: center; justify-content: center;
+            width: 64px;
+            height: 64px;
+            margin: 0 auto;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .completeness-ring svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
-        .ring-bg { fill: none; stroke: var(--border); stroke-width: 5; }
+
+        .completeness-ring svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform: rotate(-90deg);
+        }
+
+        .ring-bg {
+            fill: none;
+            stroke: var(--border);
+            stroke-width: 5;
+        }
+
         .ring-fill {
-            fill: none; stroke: url(#ringGrad); stroke-width: 5;
-            stroke-linecap: round; stroke-dasharray: 163; stroke-dashoffset: 163;
-            transition: stroke-dashoffset 0.8s cubic-bezier(0.34,1.56,0.64,1);
+            fill: none;
+            stroke: url(#ringGrad);
+            stroke-width: 5;
+            stroke-linecap: round;
+            stroke-dasharray: 163;
+            stroke-dashoffset: 163;
+            transition: stroke-dashoffset 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
+
         .ring-pct {
-            font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 800;
-            color: var(--g3); z-index: 1;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--g3);
+            z-index: 1;
         }
 
         /* ─── MAIN ─── */
         .main-container {
-            position: relative; z-index: 1;
-            max-width: 960px; margin: 0 auto; padding: 40px 5% 80px;
+            position: relative;
+            z-index: 1;
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 40px 5% 80px;
         }
 
         @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .main-container.is-loading {
@@ -232,12 +448,20 @@
 
         /* ─── SECTION CARD ─── */
         .section-card {
-            background: var(--card-bg); border: 1px solid var(--border);
-            border-radius: 20px; padding: 32px; margin-bottom: 20px;
-            backdrop-filter: blur(14px); position: relative; overflow: hidden;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(14px);
+            position: relative;
+            overflow: hidden;
             transition: border-color 0.3s;
         }
-        .section-card:hover { border-color: rgba(52,211,153,0.2); }
+
+        .section-card:hover {
+            border-color: rgba(52, 211, 153, 0.2);
+        }
 
         /* Disabled Buttons*/
         button:disabled {
@@ -253,6 +477,7 @@
             background: rgba(16, 185, 129, 0.05);
             border-style: dashed;
         }
+
         /* Category Toggles */
         .category-segment-container {
             display: flex;
@@ -297,9 +522,18 @@
             box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
         }
 
-        #opt-lifeline.active { background: #10b981; }
-        #opt-protected.active { background: #059669; }
-        #opt-non_protected.active { background: #34d399; color: var(--dark); }
+        #opt-lifeline.active {
+            background: #10b981;
+        }
+
+        #opt-protected.active {
+            background: #059669;
+        }
+
+        #opt-non_protected.active {
+            background: #34d399;
+            color: var(--dark);
+        }
 
         /* Month Input */
         input[type="month"] {
@@ -384,8 +618,8 @@
 
         /* 3. Action Button Logic */
         .action-holder {
-            width: 40px; 
-            flex-shrink: 0; 
+            width: 40px;
+            flex-shrink: 0;
             display: flex;
             justify-content: center;
         }
@@ -396,8 +630,10 @@
         }
 
         .has-action .history-inputs-group {
-            margin-right: 0; /* Keeps it tight */
+            margin-right: 0;
+            /* Keeps it tight */
         }
+
         /* The invisible placeholder for the first row to keep things aligned */
         .action-placeholder {
             width: 40px;
@@ -426,47 +662,115 @@
 
         /* Top accent */
         .section-card::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
             background: linear-gradient(90deg, transparent, var(--g2), transparent);
-            opacity: 0; transition: opacity 0.3s;
+            opacity: 0;
+            transition: opacity 0.3s;
         }
-        .section-card:focus-within::before { opacity: 1; }
 
-        .section-card:nth-child(1) { animation: fadeUp 0.7s 0.15s cubic-bezier(0.16,1,0.3,1) both; }
-        .section-card:nth-child(2) { animation: fadeUp 0.7s 0.25s cubic-bezier(0.16,1,0.3,1) both; }
-        .section-card:nth-child(3) { animation: fadeUp 0.7s 0.35s cubic-bezier(0.16,1,0.3,1) both; }
+        .section-card:focus-within::before {
+            opacity: 1;
+        }
+
+        .section-card:nth-child(1) {
+            animation: fadeUp 0.7s 0.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .section-card:nth-child(2) {
+            animation: fadeUp 0.7s 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .section-card:nth-child(3) {
+            animation: fadeUp 0.7s 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
 
         .card-heading {
-            display: flex; align-items: center; gap: 14px; margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 28px;
         }
+
         .card-icon {
-            width: 42px; height: 42px; flex-shrink: 0;
-            background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.18);
-            border-radius: 11px; display: flex; align-items: center; justify-content: center;
-            font-size: 1.05rem; color: var(--g3);
+            width: 42px;
+            height: 42px;
+            flex-shrink: 0;
+            background: rgba(52, 211, 153, 0.1);
+            border: 1px solid rgba(52, 211, 153, 0.18);
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.05rem;
+            color: var(--g3);
         }
+
         .card-heading-text h3 {
-            font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 800; color: var(--text);
+            font-family: 'Syne', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--text);
         }
-        .card-heading-text p { font-size: 0.82rem; color: var(--text-dim); margin-top: 2px; }
+
+        .card-heading-text p {
+            font-size: 0.82rem;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
 
         /* ─── FORM GRID ─── */
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-        .full-width { grid-column: span 2; }
-
-        .input-group { display: flex; flex-direction: column; gap: 7px; }
-        .input-group label {
-            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.07em; color: var(--text-dim); display: flex; align-items: center; gap: 6px;
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
         }
-        .input-group label i { color: var(--g3); font-size: 0.7rem; }
 
-        .input-wrap { position: relative; }
+        .full-width {
+            grid-column: span 2;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .input-group label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .input-group label i {
+            color: var(--g3);
+            font-size: 0.7rem;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
         .input-unit {
-            position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-            font-size: 0.75rem; font-weight: 600; color: var(--text-dim);
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-dim);
             pointer-events: none;
-            z-index: 5; /* Keeps unit text visible above input */
+            z-index: 5;
+            /* Keeps unit text visible above input */
         }
 
         /* Help Trigger Styling */
@@ -481,22 +785,39 @@
             justify-content: center;
             animation: help-pulse 2s infinite;
         }
-        .help-trigger:hover { color: var(--text); transform: scale(1.2); }
+
+        .help-trigger:hover {
+            color: var(--text);
+            transform: scale(1.2);
+        }
 
         @keyframes help-pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; text-shadow: 0 0 8px var(--g2); }
-            100% { opacity: 0.6; }
+            0% {
+                opacity: 0.6;
+            }
+
+            50% {
+                opacity: 1;
+                text-shadow: 0 0 8px var(--g2);
+            }
+
+            100% {
+                opacity: 0.6;
+            }
         }
 
         /* Modal Overlay */
         .modal-overlay {
-            position: fixed; inset: 0;
+            position: fixed;
+            inset: 0;
             background: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(12px);
-            display: none; /* Hidden by default */
-            align-items: center; justify-content: center;
-            z-index: 2000; padding: 20px;
+            display: none;
+            /* Hidden by default */
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
         }
 
         /* Modal Card */
@@ -504,7 +825,8 @@
             background: var(--surface);
             border: 1px solid var(--border-hover);
             border-radius: 24px;
-            width: 100%; max-width: 450px;
+            width: 100%;
+            max-width: 450px;
             padding: 32px;
             box-shadow: 0 0 50px rgba(0, 0, 0, 0.5), 0 0 30px var(--glow);
             animation: modalSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -512,52 +834,118 @@
         }
 
         @keyframes modalSlide {
-            from { opacity: 0; transform: translateY(30px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
-        .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-        .modal-header h3 { font-family: 'Syne', sans-serif; color: var(--g3); }
-        .modal-header i.fa-times { cursor: pointer; color: var(--text-dim); transition: 0.2s; }
-        .modal-header i.fa-times:hover { color: var(--error); }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            font-family: 'Syne', sans-serif;
+            color: var(--g3);
+        }
+
+        .modal-header i.fa-times {
+            cursor: pointer;
+            color: var(--text-dim);
+            transition: 0.2s;
+        }
+
+        .modal-header i.fa-times:hover {
+            color: var(--error);
+        }
 
         /* Bill Visual Representation */
         .bill-guide {
-            background: #fff; color: #333;
-            border-radius: 12px; padding: 15px;
-            margin: 20px 0; font-family: 'DM Sans', sans-serif;
-            border-left: 5px solid #2563eb; position: relative;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+            background: #fff;
+            color: #333;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: 'DM Sans', sans-serif;
+            border-left: 5px solid #2563eb;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
         }
-        .bill-guide small { color: #666; font-size: 0.65rem; text-transform: uppercase; }
-        .bill-row { display: flex; justify-content: space-between; margin: 4px 0; border-bottom: 1px dashed #ddd; }
+
+        .bill-guide small {
+            color: #666;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+        }
+
+        .bill-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+            border-bottom: 1px dashed #ddd;
+        }
 
         .highlight-box {
-            border: 2px solid #ef4444; border-radius: 4px;
-            padding: 2px 6px; background: rgba(239, 68, 68, 0.1);
-            position: relative; animation: blink 1.5s infinite;
+            border: 2px solid #ef4444;
+            border-radius: 4px;
+            padding: 2px 6px;
+            background: rgba(239, 68, 68, 0.1);
+            position: relative;
+            animation: blink 1.5s infinite;
         }
 
-        @keyframes blink { 50% { border-color: transparent; } }
+        @keyframes blink {
+            50% {
+                border-color: transparent;
+            }
+        }
 
         .btn-dismiss {
-            width: 100%; padding: 14px;
+            width: 100%;
+            padding: 14px;
             background: linear-gradient(135deg, var(--g1), var(--g2));
-            border: none; border-radius: 12px;
-            color: #fff; font-family: 'Syne', sans-serif; font-weight: 700;
-            cursor: pointer; margin-top: 10px; transition: 0.3s;
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: 0.3s;
         }
-        .btn-dismiss:hover { opacity: 0.9; transform: translateY(-2px); }
+
+        .btn-dismiss:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
 
         /* Combined Input Style with Arrow Fix */
-        input[type="number"], input[type="text"], select {
-            width: 100%; padding: 11px 16px;
-            background: var(--input-bg); border: 1px solid var(--border); border-radius: 11px;
-            color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
-            outline: none; transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
-            appearance: none; 
-            -webkit-appearance: none; /* Removes standard browser styling */
-            -moz-appearance: textfield; /* Removes arrows in Firefox */
+        input[type="number"],
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 11px 16px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 11px;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+            appearance: none;
+            -webkit-appearance: none;
+            /* Removes standard browser styling */
+            -moz-appearance: textfield;
+            /* Removes arrows in Firefox */
         }
 
         /* Hides the up/down arrows in Chrome/Edge/Safari */
@@ -567,26 +955,42 @@
             margin: 0;
         }
 
-        input:focus, select:focus {
-            border-color: var(--g2); background: rgba(5,20,10,0.9);
-            box-shadow: 0 0 0 3px rgba(16,185,129,0.12);
+        input:focus,
+        select:focus {
+            border-color: var(--g2);
+            background: rgba(5, 20, 10, 0.9);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
         }
 
         /* Ensures unit text (kWh/Qty) doesn't overlap the numbers */
-        .input-unit ~ input, .has-unit { padding-right: 60px !important; }
+        .input-unit~input,
+        .has-unit {
+            padding-right: 60px !important;
+        }
 
         /* Custom select arrow */
-        .select-wrap { position: relative; }
+        .select-wrap {
+            position: relative;
+        }
+
         .select-wrap::after {
-            content: '\f107'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
-            position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-            color: var(--text-dim); pointer-events: none; font-size: 0.8rem;
+            content: '\f107';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+            pointer-events: none;
+            font-size: 0.8rem;
         }
 
         /* Custom row for Qty, Duration, and Frequency */
         .appliance-row {
             display: grid;
-            grid-template-columns: 0.8fr 1fr 1.2fr; /* Qty, Hours, Frequency */
+            grid-template-columns: 0.8fr 1fr 1.2fr;
+            /* Qty, Hours, Frequency */
             gap: 8px;
             align-items: center;
         }
@@ -610,118 +1014,331 @@
 
         /* Info tooltip hint */
         .field-hint {
-            font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;
-            display: flex; align-items: center; gap: 5px;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
-        .field-hint i { color: var(--g3); font-size: 0.65rem; }
+
+        .field-hint i {
+            color: var(--g3);
+            font-size: 0.65rem;
+        }
 
         /* ─── PROTECTED STATUS TOGGLE ─── */
         .toggle-row {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 14px 18px; border-radius: 12px;
-            background: rgba(52,211,153,0.05); border: 1px solid var(--border);
-            cursor: pointer; transition: background 0.2s, border-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-radius: 12px;
+            background: rgba(52, 211, 153, 0.05);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
         }
-        .toggle-row:hover { background: rgba(52,211,153,0.09); border-color: var(--border-hover); }
-        .toggle-label { font-size: 0.88rem; font-weight: 500; color: var(--text-muted); }
-        .toggle-label small { display: block; font-size: 0.75rem; color: var(--text-dim); margin-top: 2px; }
+
+        .toggle-row:hover {
+            background: rgba(52, 211, 153, 0.09);
+            border-color: var(--border-hover);
+        }
+
+        .toggle-label {
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .toggle-label small {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
 
         .toggle-switch {
-            width: 42px; height: 24px; background: var(--surface2); border: 1px solid var(--border);
-            border-radius: 30px; position: relative; transition: background 0.3s;
-            flex-shrink: 0; cursor: pointer;
+            width: 42px;
+            height: 24px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            position: relative;
+            transition: background 0.3s;
+            flex-shrink: 0;
+            cursor: pointer;
         }
+
         .toggle-switch::after {
-            content: ''; position: absolute; top: 3px; left: 3px;
-            width: 16px; height: 16px; border-radius: 50%;
-            background: var(--text-dim); transition: transform 0.3s, background 0.3s;
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            transition: transform 0.3s, background 0.3s;
         }
-        .toggle-switch.on { background: rgba(16,185,129,0.25); border-color: var(--g2); }
-        .toggle-switch.on::after { transform: translateX(18px); background: var(--g2); }
+
+        .toggle-switch.on {
+            background: rgba(16, 185, 129, 0.25);
+            border-color: var(--g2);
+        }
+
+        .toggle-switch.on::after {
+            transform: translateX(18px);
+            background: var(--g2);
+        }
 
         /* ─── SAVE BUTTON ─── */
         .save-wrap {
-            animation: fadeUp 0.7s 0.45s cubic-bezier(0.16,1,0.3,1) both;
+            animation: fadeUp 0.7s 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
         .btn-sync {
-            width: 100%; padding: 15px;
+            width: 100%;
+            padding: 15px;
             background: linear-gradient(135deg, var(--g1), var(--g2));
-            border: none; border-radius: 14px;
-            color: #fff; font-family: 'Syne', sans-serif;
-            font-size: 1rem; font-weight: 700; letter-spacing: 0.03em;
+            border: none;
+            border-radius: 14px;
+            color: #fff;
+            font-family: 'Syne', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.03em;
             cursor: pointer;
             transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 6px 24px rgba(5,150,105,0.35);
-            display: flex; align-items: center; justify-content: center; gap: 10px;
+            box-shadow: 0 6px 24px rgba(5, 150, 105, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
-        .btn-sync:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 12px 32px rgba(5,150,105,0.5); }
-        .btn-sync:active { transform: translateY(0); }
-        .btn-sync:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .btn-sync:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(5, 150, 105, 0.5);
+        }
+
+        .btn-sync:active {
+            transform: translateY(0);
+        }
+
+        .btn-sync:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
 
         /* ─── TOAST ─── */
         .toast {
-            position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: 14px; padding: 14px 24px;
-            display: flex; align-items: center; gap: 12px;
-            font-size: 0.88rem; font-weight: 500; color: var(--text-muted);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            z-index: 2000; transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s;
-            opacity: 0; white-space: nowrap;
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s;
+            opacity: 0;
+            white-space: nowrap;
         }
-        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-        .toast.success i { color: var(--g3); }
-        .toast.error   i { color: var(--error); }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success i {
+            color: var(--g3);
+        }
+
+        .toast.error i {
+            color: var(--error);
+        }
 
         /* ─── MODEL FEED INDICATOR ─── */
         .model-badge {
-            display: inline-flex; align-items: center; gap: 7px;
-            font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-            color: var(--g3); background: rgba(52,211,153,0.07);
-            border: 1px solid var(--border); padding: 5px 12px; border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--g3);
+            background: rgba(52, 211, 153, 0.07);
+            border: 1px solid var(--border);
+            padding: 5px 12px;
+            border-radius: 20px;
         }
-        .model-badge i { font-size: 0.65rem; }
+
+        .model-badge i {
+            font-size: 0.65rem;
+        }
 
         /* This forces the first letter of every word to be Capitalized globally */
-        #user-name-display, #greeting-display {
+        #user-name-display,
+        #greeting-display {
             text-transform: capitalize !important;
         }
 
         /* ─── DIVIDER ─── */
         .section-divider {
-            display: flex; align-items: center; gap: 14px; margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
         }
+
         .section-divider span {
-            font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.1em; color: var(--text-dim); white-space: nowrap;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            white-space: nowrap;
         }
-        .section-divider::before, .section-divider::after {
-            content: ''; flex: 1; height: 1px; background: var(--border);
+
+        .section-divider::before,
+        .section-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
         }
 
         /* ─── FOOTER ─── */
         .footer {
-            position: relative; z-index: 1;
-            background: rgba(3,10,6,0.8); border-top: 1px solid var(--border);
-            padding: 40px 20px; text-align: center; backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 1;
+            background: rgba(3, 10, 6, 0.8);
+            border-top: 1px solid var(--border);
+            padding: 40px 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
         }
+
         .footer-brand {
-            font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700;
-            color: var(--text-muted); margin-bottom: 6px;
+            font-family: 'Syne', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 6px;
         }
-        .footer-brand i { color: var(--g2); margin-right: 6px; }
-        .footer-sub { color: var(--text-dim); font-size: 0.8rem; margin-bottom: 10px; }
+
+        .footer-brand i {
+            color: var(--g2);
+            margin-right: 6px;
+        }
+
+        .footer-sub {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+
         .footer-tag {
-            display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
-            text-transform: uppercase; color: var(--g3); border: 1px solid var(--border);
-            padding: 4px 12px; border-radius: 20px; background: rgba(52,211,153,0.06);
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--g3);
+            border: 1px solid var(--border);
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(52, 211, 153, 0.06);
         }
 
         @media (max-width: 640px) {
-            .form-grid { grid-template-columns: 1fr; }
-            .full-width { grid-column: span 1; }
-            .header-row { flex-direction: column; align-items: flex-start; }
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .full-width {
+                grid-column: span 1;
+            }
+
+            .header-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            /* Appliance Row Stacking */
+            .appliance-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .input-wrap input.has-unit {
+                padding-right: 50px !important;
+            }
+
+            /* Historical Records Vertical Stacking */
+            .history-inputs-group {
+                flex-direction: column;
+                border-radius: 12px;
+            }
+
+            .history-inputs-group .input-wrap {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                width: 100%;
+                flex: auto !important;
+            }
+
+            .history-inputs-group .input-wrap:last-child {
+                border-bottom: none;
+            }
+
+            /* Section card padding adjustment to save screen estate */
+            .section-card {
+                padding: 20px 16px;
+            }
+
+            /* Page Header adjust */
+            .page-header {
+                padding: 28px 5% 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .category-segment-container {
+                flex-direction: column;
+                gap: 8px;
+                background: transparent;
+                border: none;
+                padding: 0;
+            }
+
+            .category-option {
+                flex: none;
+                width: 100%;
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                padding: 12px;
+                flex-direction: row;
+                justify-content: flex-start;
+                gap: 12px;
+            }
+
+            .category-option i {
+                margin-bottom: 0;
+            }
         }
 
         /* ── SCROLL TOP BUTTON ── */
@@ -742,7 +1359,8 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 6px 20px var(--glow);
-            opacity: 0; /* Hidden by default */
+            opacity: 0;
+            /* Hidden by default */
             pointer-events: none;
             transition: opacity 0.3s, transform 0.3s, background 0.3s;
         }
@@ -760,8 +1378,43 @@
         }
 
         @keyframes loadingLineMove {
-            0% { left: -50%; }
-            100% { left: 100%; }
+            0% {
+                left: -50%;
+            }
+
+            100% {
+                left: 100%;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .nav-logo {
+                font-size: 1.05rem;
+                gap: 6px;
+            }
+
+            .nav-logo i {
+                width: 28px;
+                height: 28px;
+                font-size: 0.75rem;
+            }
+
+            .nav-logo span.ai-tag {
+                font-size: 0.5rem;
+                padding: 2px 6px;
+            }
+
+            .user-info span {
+                display: none !important;
+            }
+
+            .user-info small {
+                font-size: 0.65rem;
+                letter-spacing: 0.5px;
+                text-transform: uppercase;
+                color: var(--g3);
+                font-weight: 700;
+            }
         }
     </style>
 </head>
@@ -769,8 +1422,11 @@
 <body>
 
     <!-- TOP PROGRESS LINE LOADER -->
-    <div id="top-loading-line" style="display: none; position: fixed; top: 0; left: 0; right: 0; height: 3px; background: rgba(16, 185, 129, 0.05); z-index: 10000; overflow: hidden; pointer-events: none;">
-        <div style="position: absolute; top: 0; bottom: 0; left: -50%; width: 50%; background: linear-gradient(90deg, transparent, var(--g3), transparent); animation: loadingLineMove 0.8s infinite linear;"></div>
+    <div id="top-loading-line"
+        style="display: none; position: fixed; top: 0; left: 0; right: 0; height: 3px; background: rgba(16, 185, 129, 0.05); z-index: 10000; overflow: hidden; pointer-events: none;">
+        <div
+            style="position: absolute; top: 0; bottom: 0; left: -50%; width: 50%; background: linear-gradient(90deg, transparent, var(--g3), transparent); animation: loadingLineMove 0.8s infinite linear;">
+        </div>
     </div>
 
     <!-- NAVBAR -->
@@ -784,8 +1440,8 @@
                 <small>Profile Sync</small>
             </div>
             <div class="profile-dropdown">
-                <img id="user-pfp" class="user-avatar"
-                     src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile">
+                <img id="user-pfp" class="user-avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+                    alt="Profile">
                 <div class="dropdown-menu">
                     <a href="dashboard.html"><i class="fa fa-home"></i> Dashboard</a>
                     <a href="prediction-hub.html"><i class="fa fa-bolt-lightning"></i> Prediction Hub</a>
@@ -818,12 +1474,12 @@
                     <svg viewBox="0 0 56 56" width="64" height="64">
                         <defs>
                             <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stop-color="#059669"/>
-                                <stop offset="100%" stop-color="#34d399"/>
+                                <stop offset="0%" stop-color="#059669" />
+                                <stop offset="100%" stop-color="#34d399" />
                             </linearGradient>
                         </defs>
-                        <circle class="ring-bg" cx="28" cy="28" r="26"/>
-                        <circle class="ring-fill" id="ringFill" cx="28" cy="28" r="26"/>
+                        <circle class="ring-bg" cx="28" cy="28" r="26" />
+                        <circle class="ring-fill" id="ringFill" cx="28" cy="28" r="26" />
                     </svg>
                     <span class="ring-pct" id="pctLabel">0%</span>
                 </div>
@@ -864,42 +1520,45 @@
 
                 <div class="input-group">
                     <label>
-                        <i class="fa fa-bolt"></i> Sanctioned Load 
+                        <i class="fa fa-bolt"></i> Sanctioned Load
                         <span class="help-trigger" onclick="openLoadHelp()"><i class="fa fa-circle-question"></i></span>
                     </label>
                     <div class="input-wrap">
                         <input type="number" id="load" placeholder="e.g. 5.0" step="0.5" oninput="updateCompleteness()">
                         <span class="input-unit">kW</span>
                     </div>
-                    <p style="font-size: 0.7rem; color: var(--g3); margin-top: 8px; line-height: 1.4; opacity: 0.9; font-weight: 500;">
-                        <i class="fa fa-circle-exclamation"></i> <strong>Note:</strong> This field is mandatory to unlock AI predictions and NEPRA cost calculations.
+                    <p
+                        style="font-size: 0.7rem; color: var(--g3); margin-top: 8px; line-height: 1.4; opacity: 0.9; font-weight: 500;">
+                        <i class="fa fa-circle-exclamation"></i> <strong>Note:</strong> This field is mandatory to
+                        unlock AI predictions and NEPRA cost calculations.
                     </p>
                 </div>
             </div>
 
-                <div class="full-width">
-                    <label style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; display: block;">
-                        <i class="fa fa-shield-halved" style="color:var(--g3)"></i> NEPRA Billing Category
-                    </label>
-                    <div class="category-segment-container">
-                        <div class="category-option active" id="opt-lifeline" onclick="setCategory('lifeline')">
-                            <i class="fa fa-leaf"></i>
-                            <span>Lifeline</span>
-                        </div>
-                        <div class="category-option" id="opt-protected" onclick="setCategory('protected')">
-                            <i class="fa fa-user-shield"></i>
-                            <span>Protected</span>
-                        </div>
-                        <div class="category-option" id="opt-non_protected" onclick="setCategory('non_protected')">
-                            <i class="fa fa-bolt-lightning"></i>
-                            <span>Standard</span>
-                        </div>
+            <div class="full-width">
+                <label
+                    style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; display: block;">
+                    <i class="fa fa-shield-halved" style="color:var(--g3)"></i> NEPRA Billing Category
+                </label>
+                <div class="category-segment-container">
+                    <div class="category-option active" id="opt-lifeline" onclick="setCategory('lifeline')">
+                        <i class="fa fa-leaf"></i>
+                        <span>Lifeline</span>
                     </div>
-                    <p class="field-hint" id="category-desc" style="margin-top:10px; font-size: 0.75rem;">
-                        <i class="fa fa-info-circle"></i> Lifeline: For consumers using < 100 units/month. No fixed charges.
-                    </p>
+                    <div class="category-option" id="opt-protected" onclick="setCategory('protected')">
+                        <i class="fa fa-user-shield"></i>
+                        <span>Protected</span>
+                    </div>
+                    <div class="category-option" id="opt-non_protected" onclick="setCategory('non_protected')">
+                        <i class="fa fa-bolt-lightning"></i>
+                        <span>Standard</span>
+                    </div>
                 </div>
+                <p class="field-hint" id="category-desc" style="margin-top:10px; font-size: 0.75rem;">
+                    <i class="fa fa-info-circle"></i> Lifeline: For consumers using < 100 units/month. No fixed charges.
+                        </p>
             </div>
+        </div>
         </div>
 
         <!-- SECTION 2: Lifestyle Routine -->
@@ -953,7 +1612,8 @@
 
                 <div class="full-width">
                     <p class="field-hint" style="margin-top:2px">
-                        <i class="fa fa-brain"></i> The LSTM model uses the occupant count to scale "Baseload" noise and the routine to align peak usage periods.
+                        <i class="fa fa-brain"></i> The LSTM model uses the occupant count to scale "Baseload" noise and
+                        the routine to align peak usage periods.
                     </p>
                 </div>
             </div>
@@ -965,32 +1625,34 @@
                 <div class="card-icon"><i class="fa fa-plug"></i></div>
                 <div class="card-heading-text">
                     <h3>Household Inventory</h3>
-                     <p>These values directly train the RF model — be as accurate as possible</p>
+                    <p>These values directly train the RF model — be as accurate as possible</p>
                 </div>
             </div>
 
-           <div class="form-grid">
+            <div class="form-grid">
                 <div class="input-group full-width">
                     <label><i class="fa fa-snowflake"></i> Standard AC </label>
-                        <div class="appliance-row" style="grid-template-columns: 0.8fr 1fr 1.2fr;">
-                            <input type="number" id="ac_std_qty" placeholder="Qty" oninput="toggleApplianceRow('ac_std')">
-                            <div class="input-wrap">
-                                <input type="number" id="ac_std_val" placeholder="Usage" oninput="toggleApplianceRow('ac_std')" class="has-unit">
-                                <span class="input-unit">Hrs</span>
-                            </div>
-                            <select id="ac_std_freq" class="freq-select" onchange="updateCompleteness()">
-                                <option value="30">Daily</option>
-                                <option value="4.3">Weekly</option>
-                            </select>
+                    <div class="appliance-row" style="grid-template-columns: 0.8fr 1fr 1.2fr;">
+                        <input type="number" id="ac_std_qty" placeholder="Qty" oninput="toggleApplianceRow('ac_std')">
+                        <div class="input-wrap">
+                            <input type="number" id="ac_std_val" placeholder="Usage"
+                                oninput="toggleApplianceRow('ac_std')" class="has-unit">
+                            <span class="input-unit">Hrs</span>
                         </div>
+                        <select id="ac_std_freq" class="freq-select" onchange="updateCompleteness()">
+                            <option value="30">Daily</option>
+                            <option value="4.3">Weekly</option>
+                        </select>
                     </div>
+                </div>
 
                 <div class="input-group full-width">
                     <label><i class="fa fa-bolt-lightning"></i> Inverter AC </label>
                     <div class="appliance-row" style="grid-template-columns: 0.8fr 1fr 1.2fr;">
                         <input type="number" id="ac_inv_qty" placeholder="Qty" oninput="toggleApplianceRow('ac_inv')">
                         <div class="input-wrap">
-                            <input type="number" id="ac_inv_val" placeholder="Usage" oninput="toggleApplianceRow('ac_inv')" class="has-unit">
+                            <input type="number" id="ac_inv_val" placeholder="Usage"
+                                oninput="toggleApplianceRow('ac_inv')" class="has-unit">
                             <span class="input-unit">Hrs</span>
                         </div>
                         <select id="ac_inv_freq" class="freq-select" onchange="updateCompleteness()">
@@ -1004,14 +1666,15 @@
                     <label><i class="fa fa-box"></i> Refrigerators</label>
                     <div class="appliance-row" style="grid-template-columns: 0.8fr 1.2fr 1fr 1.2fr;">
                         <input type="number" id="f_qty" placeholder="Qty" oninput="toggleApplianceRow('f')">
-                        
+
                         <select id="f_type" class="freq-select" onchange="updateCompleteness()">
                             <option value="old">Standard</option>
                             <option value="inverter">Inverter Series</option>
                         </select>
 
                         <div class="input-wrap">
-                            <input type="number" id="f_val" placeholder="Usage" oninput="toggleApplianceRow('f')" class="has-unit">
+                            <input type="number" id="f_val" placeholder="Usage" oninput="toggleApplianceRow('f')"
+                                class="has-unit">
                             <span class="input-unit">Hrs</span>
                         </div>
 
@@ -1032,7 +1695,8 @@
                             <option value="automatic">Automatic</option>
                         </select>
                         <div class="input-wrap">
-                            <input type="number" id="wm_val" placeholder="Usage" oninput="toggleApplianceRow('wm')" class="has-unit">
+                            <input type="number" id="wm_val" placeholder="Usage" oninput="toggleApplianceRow('wm')"
+                                class="has-unit">
                             <span class="input-unit">Hrs</span>
                         </div>
                         <select id="wm_freq" class="freq-select" onchange="updateCompleteness()">
@@ -1047,7 +1711,7 @@
                     <label><i class="fa fa-water"></i> Water Pump (Motor)</label>
                     <div class="appliance-row" style="grid-template-columns: 0.8fr 1.2fr 1fr 1.2fr;">
                         <input type="number" id="wp_qty" placeholder="Qty" oninput="toggleApplianceRow('wp')">
-                        
+
                         <select id="wp_type" class="freq-select" onchange="updateCompleteness()">
                             <option value="0.5">0.5 HP (Small)</option>
                             <option value="1.0" selected>1.0 HP (Standard)</option>
@@ -1056,7 +1720,8 @@
                         </select>
 
                         <div class="input-wrap">
-                            <input type="number" id="wp_val" placeholder="Usage" oninput="toggleApplianceRow('wp')" class="has-unit">
+                            <input type="number" id="wp_val" placeholder="Usage" oninput="toggleApplianceRow('wp')"
+                                class="has-unit">
                             <span class="input-unit">Hrs</span>
                         </div>
 
@@ -1072,7 +1737,7 @@
                     <label><i class="fa fa-car-battery"></i> UPS / Inverter System</label>
                     <div class="appliance-row" style="grid-template-columns: 0.6fr 1fr 1fr 1fr 0.8fr;">
                         <input type="number" id="u_qty" placeholder="Qty" oninput="toggleApplianceRow('u')">
-                        
+
                         <select id="u_type" class="freq-select" onchange="updateCompleteness()">
                             <option value="modified">Modified (Local)</option>
                             <option value="pure">Pure Sine (Branded)</option>
@@ -1084,7 +1749,8 @@
                         </select>
 
                         <div class="input-wrap">
-                            <input type="number" id="u_val" placeholder="Usage" oninput="toggleApplianceRow('u')" class="has-unit">
+                            <input type="number" id="u_val" placeholder="Usage" oninput="toggleApplianceRow('u')"
+                                class="has-unit">
                             <span class="input-unit">Hrs</span>
                         </div>
 
@@ -1093,7 +1759,8 @@
                             <option value="4.3">Weekly</option>
                         </select>
                     </div>
-                    <p class="field-hint"><i class="fa fa-bolt"></i> Local UPS + Lead-Acid batteries have high charging losses (up to 35%).</p>
+                    <p class="field-hint"><i class="fa fa-bolt"></i> Local UPS + Lead-Acid batteries have high charging
+                        losses (up to 35%).</p>
                 </div>
 
                 <div class="input-group full-width">
@@ -1103,7 +1770,8 @@
                             <input type="number" id="k_qty" placeholder="Qty" oninput="toggleApplianceRow('k')">
                         </div>
                         <div class="input-wrap">
-                            <input type="number" id="k_val" placeholder="Usage" oninput="toggleApplianceRow('k')" class="has-unit">
+                            <input type="number" id="k_val" placeholder="Usage" oninput="toggleApplianceRow('k')"
+                                class="has-unit">
                             <span class="input-unit">Hrs</span>
                         </div>
                         <select id="k_freq" class="freq-select" onchange="updateCompleteness()">
@@ -1121,7 +1789,8 @@
                             <input type="number" id="iron_qty" placeholder="Qty" oninput="toggleApplianceRow('iron')">
                         </div>
                         <div class="input-wrap">
-                            <input type="number" id="iron_val" placeholder="Usage" oninput="toggleApplianceRow('iron')" class="has-unit">
+                            <input type="number" id="iron_val" placeholder="Usage" oninput="toggleApplianceRow('iron')"
+                                class="has-unit">
                             <span class="input-unit">Hrs</span>
                         </div>
                         <select id="iron_freq" class="freq-select" onchange="updateCompleteness()">
@@ -1136,15 +1805,18 @@
                     <label><i class="fa fa-fan"></i> Household Fans (Ceiling/Pedestal)</label>
                     <div class="appliance-row" style="grid-template-columns: 1fr 1fr;">
                         <div class="input-wrap">
-                            <input type="number" id="fan_ac_qty" placeholder="Qty Standard (AC)" oninput="updateCompleteness()">
+                            <input type="number" id="fan_ac_qty" placeholder="Qty Standard (AC)"
+                                oninput="updateCompleteness()">
                             <span class="input-unit">Standard</span>
                         </div>
                         <div class="input-wrap">
-                            <input type="number" id="fan_dc_qty" placeholder="Qty Inverter (AC/DC)" oninput="updateCompleteness()">
+                            <input type="number" id="fan_dc_qty" placeholder="Qty Inverter (AC/DC)"
+                                oninput="updateCompleteness()">
                             <span class="input-unit">Inverter</span>
                         </div>
                     </div>
-                    <p class="field-hint"><i class="fa fa-info-circle"></i> Inverter fans consume 60% less electricity.</p>
+                    <p class="field-hint"><i class="fa fa-info-circle"></i> Inverter fans consume 60% less electricity.
+                    </p>
                 </div>
             </div>
         </div>
@@ -1169,10 +1841,10 @@
             </div>
 
             <div id="bill-log-container">
-                </div>
+            </div>
 
             <button type="button" id="addMonthBtn" onclick="addBillRow()" class="btn-add-month" disabled>
-                <i class="fa fa-plus-circle"></i> 
+                <i class="fa fa-plus-circle"></i>
                 <span>Add Another Month</span>
             </button>
         </div>
@@ -1201,7 +1873,9 @@
                 <h3><i class="fa fa-magnifying-glass"></i> Finding Total Units</h3>
                 <i class="fa fa-times" onclick="closeUnitHelp()"></i>
             </div>
-            <p style="font-size: 0.9rem; color: var(--text-muted);">Look for the <strong>"Total Units"</strong> or <strong>"Consumed Units"</strong> section. It is usually next to the billing month.</p>
+            <p style="font-size: 0.9rem; color: var(--text-muted);">Look for the <strong>"Total Units"</strong> or
+                <strong>"Consumed Units"</strong> section. It is usually next to the billing month.
+            </p>
             <div class="bill-guide" style="background: #f8fafc; border-left-color: #10b981;">
                 <div class="bill-row"><span>Billing Month:</span> <span>FEB-2026</span></div>
                 <div class="bill-row" style="margin-top:8px">
@@ -1220,9 +1894,10 @@
                 <h3><i class="fa fa-magnifying-glass"></i> Finding Load kW</h3>
                 <i class="fa fa-times" onclick="closeLoadHelp()"></i>
             </div>
-            
+
             <div style="font-size: 0.9rem; line-height: 1.6; color: var(--text-muted);">
-                Look at the **middle or top-right** section of your physical or digital bill. It is listed as "Sanctioned Load" or "Connected Load".
+                Look at the **middle or top-right** section of your physical or digital bill. It is listed as
+                "Sanctioned Load" or "Connected Load".
             </div>
 
             <div class="bill-guide">
@@ -1256,477 +1931,507 @@
     <script src="js/chat-bot.js"></script>
     <script src="js/auth.js"></script>
     <script>
-    /* ── State ── */
-    const db = firebase.firestore();
-    let selectedCategory = 'lifeline';
+        /* ── State ── */
+        const db = firebase.firestore();
+        let selectedCategory = 'lifeline';
 
-    /* ── Auth & Loading Logic ── */
-    firebase.auth().onAuthStateChanged(user => {
-        initDynamicBreadcrumb("Setup Profile");
-        if (!user) { window.location.href = "index.html"; return; }
+        /* ── Auth & Loading Logic ── */
+        firebase.auth().onAuthStateChanged(user => {
+            initDynamicBreadcrumb("Setup Profile");
+            if (!user) { window.location.href = "index.html"; return; }
 
-        setFormState(true);
+            setFormState(true);
 
-        document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
-        if (user.photoURL) document.getElementById('user-pfp').src = user.photoURL;
+            document.getElementById('user-name-display').innerText = user.displayName || user.email.split('@')[0];
+            if (user.photoURL) document.getElementById('user-pfp').src = user.photoURL;
 
-        db.collection('users').doc(user.uid).get().then(doc => {
-            const d = doc.exists ? doc.data() : {};
+            db.collection('users').doc(user.uid).get().then(doc => {
+                const d = doc.exists ? doc.data() : {};
 
-            // 1. System & Household Context
-            setValue('disco', d.disco, '');
-            setValue('load', d.sanctioned_load, '');
-            setValue('person_count', d.person_count, '');
-            setValue('user_routine', d.user_routine, 'standard');
-            setValue('property_area', d.property_area, '');
-            setValue('floors', d.floors, '1');
-            
-            // 2. Load New Fan Inputs
-            setValue('fan_ac_qty', d.fan_ac_qty, '');
-            setValue('fan_dc_qty', d.fan_dc_qty, '');
-            
-            // 3. Handle NEPRA Category
-            if (d.user_category) setCategory(d.user_category);
-            else setCategory('lifeline');
+                // 1. System & Household Context
+                setValue('disco', d.disco, '');
+                setValue('load', d.sanctioned_load, '');
+                setValue('person_count', d.person_count, '');
+                setValue('user_routine', d.user_routine, 'standard');
+                setValue('property_area', d.property_area, '');
+                setValue('floors', d.floors, '1');
 
-            // 4. Load Appliance Details (Synchronized with UI changes)
-            const appliances = ['ac_std', 'ac_inv', 'f', 'wp', 'k', 'u', 'wm', 'iron'];
-            appliances.forEach(prefix => {
-                setValue(prefix + '_qty', d[prefix + '_qty'], '');
-                setValue(prefix + '_val', d[prefix + '_val'], '');
-                
-                // Set Frequencies (Defaults: WM is 4.3, others are 30)
-                const defaultFreq = (prefix === 'wm' ? '4.3' : '30');
-                setValue(prefix + '_freq', d[prefix + '_freq'], defaultFreq);
-                
-                // Set Types (Dropdowns)
-                if (d[prefix + '_type']) {
-                    let fallback = 'standard';
-                    if (prefix === 'wp') fallback = '1.0';
-                    if (prefix === 'wm') fallback = 'manual';
-                    if (prefix === 'u')  fallback = 'modified';
-                    setValue(prefix + '_type', d[prefix + '_type'], fallback);
-                }
+                // 2. Load New Fan Inputs
+                setValue('fan_ac_qty', d.fan_ac_qty, '');
+                setValue('fan_dc_qty', d.fan_dc_qty, '');
 
-                // SPECIAL FIX: Load UPS Battery specifically
-                if (prefix === 'u' && d.u_battery) {
-                    setValue('u_battery', d.u_battery, 'lead_acid');
-                }
+                // 3. Handle NEPRA Category
+                if (d.user_category) setCategory(d.user_category);
+                else setCategory('lifeline');
 
-                toggleApplianceRow(prefix); 
-            });
+                // 4. Load Appliance Details (Synchronized with UI changes)
+                const appliances = ['ac_std', 'ac_inv', 'f', 'wp', 'k', 'u', 'wm', 'iron'];
+                appliances.forEach(prefix => {
+                    setValue(prefix + '_qty', d[prefix + '_qty'], '');
+                    setValue(prefix + '_val', d[prefix + '_val'], '');
 
-            // 5. Load Bill History (Sorted - Newest First)
-            const logContainer = document.getElementById('bill-log-container');
-            logContainer.innerHTML = ""; 
-            if (d.bill_history && d.bill_history.length > 0) {
-                [...d.bill_history]
-                    .sort((a, b) => b.month.localeCompare(a.month))
-                    .forEach(b => addBillRow(b.month, b.units, b.amount));
-            } else {
-                addBillRow(); 
-            }
-            
-            setFormState(false);
-            updateCompleteness();
+                    // Set Frequencies (Defaults: WM is 4.3, others are 30)
+                    const defaultFreq = (prefix === 'wm' ? '4.3' : '30');
+                    setValue(prefix + '_freq', d[prefix + '_freq'], defaultFreq);
 
-        }).catch(err => {
-            console.error("Firebase Fetch Error:", err);
-            setFormState(false);
-        });
-    });
+                    // Set Types (Dropdowns)
+                    if (d[prefix + '_type']) {
+                        let fallback = 'standard';
+                        if (prefix === 'wp') fallback = '1.0';
+                        if (prefix === 'wm') fallback = 'manual';
+                        if (prefix === 'u') fallback = 'modified';
+                        setValue(prefix + '_type', d[prefix + '_type'], fallback);
+                    }
 
-    function setFormState(loading, isSyncing = false) {
-        const container = document.querySelector('.main-container');
-        const syncBtn = document.getElementById('syncBtn');
-        const addBtn = document.getElementById('addMonthBtn');
-        const allInputs = document.querySelectorAll('input, select, .category-option');
-        const loadingLine = document.getElementById('top-loading-line');
+                    // SPECIAL FIX: Load UPS Battery specifically
+                    if (prefix === 'u' && d.u_battery) {
+                        setValue('u_battery', d.u_battery, 'lead_acid');
+                    }
 
-        if (loading) {
-            // Trigger the grey-out effect
-            container.classList.add('is-loading');
-            syncBtn.disabled = true;
-            if (addBtn) addBtn.disabled = true;
-
-            if (loadingLine) loadingLine.style.display = 'block';
-
-            if (!isSyncing) {
-                syncBtn.innerHTML = '<i class="fa fa-circle-notch fa-spin"></i> Initializing Memory...';
-            }
-        } else {
-            // Remove grey-out and restore text
-            container.classList.remove('is-loading');
-            syncBtn.disabled = false;
-            if (addBtn) addBtn.disabled = false;
-            syncBtn.innerHTML = '<i class="fa fa-brain"></i> Sync AI Memory';
-
-            if (loadingLine) loadingLine.style.display = 'none';
-        }
-
-        // Disable all fields so they are unclickable
-        allInputs.forEach(el => {
-            if (el.tagName === "INPUT" || el.tagName === "SELECT") {
-                el.disabled = loading;
-            } else {
-                // For category divs
-                el.style.pointerEvents = loading ? "none" : "auto";
-            }
-        });
-    }
-
-    function updateCompleteness() {
-        let score = 0;
-        // Total Points: 3 (Tariff) + 4 (Lifestyle) + 8 (Inventory) + 1 (History) = 16
-        const totalPoints = 16; 
-        
-        const hasVal = (id) => {
-            const el = document.getElementById(id);
-            return el && el.value !== "";
-        };
-
-        // --- 1. Location & Tariff (3 pts) ---
-        if (hasVal('disco')) score++;
-        if (hasVal('load')) score++;
-        if (selectedCategory) score++;
-
-        // --- 2. Household Dynamics (4 pts) ---
-        if (hasVal('person_count')) score++;
-        if (hasVal('user_routine')) score++;
-        if (hasVal('property_area')) score++;
-        if (hasVal('floors')) score++;
-        
-        // --- 3. Household Inventory (8 pts) ---
-        // Fans (AC or DC)
-        if (hasVal('fan_ac_qty') || hasVal('fan_dc_qty')) score++;
-        
-        // Air Conditioners (Standard or Inverter)
-        if (hasVal('ac_std_qty') || hasVal('ac_inv_qty')) score++;
-
-        // Refrigerator
-        if (hasVal('f_qty')) score++;
-
-        // Washing Machine
-        if (hasVal('wm_qty')) score++;
-
-        // Water Pump
-        if (hasVal('wp_qty')) score++;
-
-        // UPS System
-        if (hasVal('u_qty')) score++;
-
-        // Kitchen Appliances
-        if (hasVal('k_qty')) score++;
-
-        // Clothes Iron
-        if (hasVal('iron_qty')) score++;
-
-        // --- 4. Historical Record (1 pt) ---
-        const histRow = document.querySelector('.bill-history-row');
-        if (histRow) {
-            const m = histRow.querySelector('.hist-month').value;
-            const u = histRow.querySelector('.hist-units').value;
-            if (m !== "" && u !== "") score++;
-        }
-
-        // --- Calculate & Update Ring ---
-        const pct = Math.round((score / totalPoints) * 100);
-        const ring = document.getElementById('ringFill');
-        if (ring) {
-            // 163 is the dash-offset for your SVG circle
-            ring.style.strokeDashoffset = 163 - (pct / 100) * 163;
-        }
-        document.getElementById('pctLabel').textContent = pct + '%';
-    }
-
-    async function saveProfile() {
-        const user = firebase.auth().currentUser;
-        if (!user) return;
-
-        setFormState(true, true);
-        const btn = document.getElementById('syncBtn');
-        btn.innerHTML = '<i class="fa fa-circle-notch fa-spin"></i> Syncing...';
-
-        try {
-            // ─── 1. DATA EXTRACTION HELPERS ───
-            const v  = (id) => parseFloat(document.getElementById(id)?.value) || 0;
-            const gv = (id) => document.getElementById(id)?.value || '';
-            const getSafeVal = (id_prefix) => (v(id_prefix + '_qty') > 0 ? v(id_prefix + '_val') : 0);
-
-            // Database-specific values (save empty string if user left it blank)
-            const dbVal = (id) => {
-                const el = document.getElementById(id);
-                return (el && el.value !== "") ? parseFloat(el.value) : "";
-            };
-            const dbSafeVal = (id_prefix) => {
-                const qtyEl = document.getElementById(id_prefix + '_qty');
-                const valEl = document.getElementById(id_prefix + '_val');
-                if (!qtyEl || qtyEl.value === "") return "";
-                if (parseFloat(qtyEl.value) === 0) return 0;
-                return valEl && valEl.value !== "" ? parseFloat(valEl.value) : "";
-            };
-
-            // ─── 2. APPLIANCE CALCULATIONS (As per your Logic) ───
-            
-            // AC: Hours-based scaling
-            const ac_std_monthly = v('ac_std_qty') * 1.50 * getSafeVal('ac_std') * v('ac_std_freq');
-            const ac_inv_monthly = v('ac_inv_qty') * 0.75 * getSafeVal('ac_inv') * v('ac_inv_freq');
-            const total_ac_monthly = ac_std_monthly + ac_inv_monthly;
-
-            // Refrigerator (Explicit Duty Cycle Model)
-            const f_type = gv('f_type');
-            const f_peak = f_type === 'inverter' ? 0.12 : 0.25; // Peak compressor draw
-            const f_duty = f_type === 'inverter' ? 0.40 : 0.60; // 40% for Inverter, 60% for Standard
-
-            // Formula: Qty * Peak Power * Usage Hours * Frequency * Duty Cycle
-            const f_monthly = v('f_qty') * f_peak * getSafeVal('f') * v('f_freq') * f_duty;
-
-            // Water Pump: Convert HP to kW, then scale by usage
-            const wp_kw = (parseFloat(gv('wp_type')) || 1.0) * 0.746;
-            const wp_monthly = v('wp_qty') * wp_kw * getSafeVal('wp') * v('wp_freq');
-            
-            // Kitchen Appliances: Flat scaling (Oven/Kettle)
-            const k_monthly  = v('k_qty') * 1.20 * getSafeVal('k') * v('k_freq');
-            
-            // Clothes Iron: Flat scaling (1.0kW)
-            const iron_monthly = v('iron_qty') * 1.00 * getSafeVal('iron') * v('iron_freq');
-            
-            // UPS Math: 400W Base * Loss Factors
-            const ups_efficiency = gv('u_type') === 'pure' ? 1.05 : 1.25; 
-            const battery_loss = gv('u_battery') === 'lithium' ? 1.02 : 1.20;
-            const u_monthly = v('u_qty') * 0.40 * ups_efficiency * battery_loss * getSafeVal('u') * v('u_freq');
-
-            // Washing Machine Logic (Manual ~0.35kW, Automatic ~0.8kW)
-            const wm_load = gv('wm_type') === 'automatic' ? 0.8 : 0.35;
-            const wm_monthly = v('wm_qty') * wm_load * getSafeVal('wm') * v('wm_freq');
-            
-            // ── FAN MATH (Standard ~80W, Inverter ~35W) ──
-            const fan_ac_monthly = v('fan_ac_qty') * 0.080 * 12 * 30; // 12h avg
-            const fan_dc_monthly = v('fan_dc_qty') * 0.035 * 12 * 30; 
-            const total_fan_monthly = fan_ac_monthly + fan_dc_monthly;
-            
-            // ─── 3. DYNAMIC BASELOAD & MEAN HOURLY ───
-            const person_baseload = Math.max(v('person_count'), 1) * 14.0;
-            const area_baseload   = Math.min((v('property_area') || 500) * 0.006, 15.0);
-            
-            const mean_hourly = (total_ac_monthly + f_monthly + wp_monthly + k_monthly + 
-                                u_monthly + wm_monthly + total_fan_monthly + iron_monthly + 
-                                person_baseload + area_baseload) / 720;
-
-            // ─── 4. BILLING HISTORY CALIBRATION ───
-            const allHistoryRows = Array.from(document.querySelectorAll('.bill-history-row'));
-            const bill_history = allHistoryRows.map(row => ({
-                month:  row.querySelector('.hist-month').value,
-                units:  parseFloat(row.querySelector('.hist-units').value) || 0,
-                amount: parseFloat(row.querySelector('.hist-amount').value) || 0
-            })).filter(b => b.month !== "")
-              .sort((a, b) => b.month.localeCompare(a.month));
-
-            const validHistory = bill_history.filter(b => b.units > 5);
-            const historical_avg_units = validHistory.length > 0
-                ? validHistory.reduce((s, b) => s + b.units, 0) / validHistory.length
-                : 0;
-
-            // ─── 5. THE AI MEMORY DATA PACKET ───
-            const data = {
-                disco:            gv('disco'),
-                sanctioned_load:  dbVal('load'),
-                user_category:    selectedCategory,
-                property_area:    dbVal('property_area'),
-                person_count:     dbVal('person_count'),
-                floors:           gv('floors'),
-                user_routine:     gv('user_routine'),
-                fan_qty:          dbVal('fan_qty'),
-
-                // Raw inputs sanitized for AI (No Contradictions)
-                ac_std_qty: dbVal('ac_std_qty'), ac_std_val: dbSafeVal('ac_std'), ac_std_freq: dbVal('ac_std_freq'),
-                ac_inv_qty: dbVal('ac_inv_qty'), ac_inv_val: dbSafeVal('ac_inv'), ac_inv_freq: dbVal('ac_inv_freq'),
-                ac_qty: v('ac_std_qty') + v('ac_inv_qty'),
-                f_qty:  dbVal('f_qty'),  f_type:  gv('f_type'),  f_val:  dbSafeVal('f'), f_freq: dbVal('f_freq'),
-                wm_qty: dbVal('wm_qty'), wm_type: gv('wm_type'), wm_val: dbSafeVal('wm'), wm_freq: dbVal('wm_freq'),
-                wp_qty: dbVal('wp_qty'), wp_type: gv('wp_type'), wp_val:  dbSafeVal('wp'), wp_freq: dbVal('wp_freq'),
-                k_qty:  dbVal('k_qty'),  k_val:   dbSafeVal('k'),  k_freq:  dbVal('k_freq'),
-                u_qty:  dbVal('u_qty'),  u_type: gv('u_type'), u_battery: gv('u_battery'), u_val:   dbSafeVal('u'),  u_freq:  dbVal('u_freq'),
-                iron_qty: dbVal('iron_qty'), iron_val: dbSafeVal('iron'), iron_freq: dbVal('iron_freq'),
-                fan_ac_qty: dbVal('fan_ac_qty'), fan_dc_qty: dbVal('fan_dc_qty'), fan_qty: v('fan_ac_qty') + v('fan_dc_qty'),
-
-                // Computed Monthly kWh for RF Features
-                ac_monthly:           total_ac_monthly,
-                refrigerator_monthly: f_monthly,
-                kitchen_monthly:      k_monthly,
-                ups_monthly:          u_monthly,
-                wp_monthly:           wp_monthly, 
-                wm_monthly:           wm_monthly, 
-                fan_monthly:          total_fan_monthly,
-                iron_monthly:         iron_monthly,
-
-                // Derived Anchors
-                mean_hourly,
-                historical_avg_units,
-                bill_history,
-                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-            };
-
-            // ─── 6. CLOUD SYNC & REDIRECT ───
-            
-            // Save to Firestore first (Primary Truth)
-            try {
-                await fetch(`${API_BASE_URL}/api/setup_profile`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ uid: user.uid, data }),
-                    signal: AbortSignal.timeout(3000) // Don't hang if Flask is off
+                    toggleApplianceRow(prefix);
                 });
-            } catch (apiErr) {
-                console.warn("Flask API offline, but profile saved to Cloud.");
+
+                // 5. Load Bill History (Sorted - Newest First)
+                const logContainer = document.getElementById('bill-log-container');
+                logContainer.innerHTML = "";
+                if (d.bill_history && d.bill_history.length > 0) {
+                    [...d.bill_history]
+                        .sort((a, b) => b.month.localeCompare(a.month))
+                        .forEach(b => addBillRow(b.month, b.units, b.amount));
+                } else {
+                    refreshRowActions();
+                }
+
+                setFormState(false);
+                updateCompleteness();
+
+            }).catch(err => {
+                console.error("Firebase Fetch Error:", err);
+                setFormState(false);
+            });
+        });
+
+        function setFormState(loading, isSyncing = false) {
+            const container = document.querySelector('.main-container');
+            const syncBtn = document.getElementById('syncBtn');
+            const addBtn = document.getElementById('addMonthBtn');
+            const allInputs = document.querySelectorAll('input, select, .category-option');
+            const loadingLine = document.getElementById('top-loading-line');
+
+            if (loading) {
+                // Trigger the grey-out effect
+                container.classList.add('is-loading');
+                syncBtn.disabled = true;
+                if (addBtn) addBtn.disabled = true;
+
+                if (loadingLine) loadingLine.style.display = 'block';
+
+                if (!isSyncing) {
+                    syncBtn.innerHTML = '<i class="fa fa-circle-notch fa-spin"></i> Initializing Memory...';
+                }
+            } else {
+                // Remove grey-out and restore text
+                container.classList.remove('is-loading');
+                syncBtn.disabled = false;
+                if (addBtn) addBtn.disabled = false;
+                syncBtn.innerHTML = '<i class="fa fa-brain"></i> Sync AI Memory';
+
+                if (loadingLine) loadingLine.style.display = 'none';
             }
 
-            showToast('AI Memory Updated!');
-            setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
-
-        } catch (e) {
-            console.error("Sync Error:", e);
-            setFormState(false); 
-            showToast('Sync failed!', 'error'); // This will now show the X icon
+            // Disable all fields so they are unclickable
+            allInputs.forEach(el => {
+                if (el.tagName === "INPUT" || el.tagName === "SELECT") {
+                    el.disabled = loading;
+                } else {
+                    // For category divs
+                    el.style.pointerEvents = loading ? "none" : "auto";
+                }
+            });
         }
-    }
 
-    /* ── Helper Functions ── */
-    function setValue(id, val, fallback) {
-        const el = document.getElementById(id);
-        if (!el) return;
-        let finalVal = (val !== undefined && val !== null) ? val : fallback;
-        el.value = finalVal;
-    }
+        function updateCompleteness() {
+            let score = 0;
+            // Total Points: 3 (Tariff) + 4 (Lifestyle) + 8 (Inventory) + 1 (History) = 16
+            const totalPoints = 16;
 
-    function setCategory(cat) {
-        selectedCategory = cat;
-        document.querySelectorAll('.category-option').forEach(opt => opt.classList.remove('active'));
-        const target = document.getElementById('opt-' + cat);
-        if(target) target.classList.add('active');
-        updateCompleteness();
-    }
+            const hasVal = (id) => {
+                const el = document.getElementById(id);
+                return el && el.value !== "";
+            };
 
-    function toggleApplianceRow(prefix) {
-        const qtyEl = document.getElementById(prefix + '_qty');
-        const qtyValue = qtyEl.value;
-        const qty = parseFloat(qtyValue) || 0;
-        
-        // Dependent elements
-        const dependents = [
-            document.getElementById(prefix + '_val'),
-            document.getElementById(prefix + '_freq'),
-            document.getElementById(prefix + '_type'),
-            document.getElementById(prefix + '_battery') // Specific for UPS
-        ];
+            // --- 1. Location & Tariff (3 pts) ---
+            if (hasVal('disco')) score++;
+            if (hasVal('load')) score++;
+            if (selectedCategory) score++;
 
-        // If Qty is empty, 0, or negative -> Lock and Reset
-        const shouldDisable = (qtyValue === "" || qty <= 0);
+            // --- 2. Household Dynamics (4 pts) ---
+            if (hasVal('person_count')) score++;
+            if (hasVal('user_routine')) score++;
+            if (hasVal('property_area')) score++;
+            if (hasVal('floors')) score++;
 
-        dependents.forEach(el => {
-            if (el) {
-                el.disabled = shouldDisable;
-                el.style.opacity = shouldDisable ? "0.4" : "1";
-                if (shouldDisable) {
-                    // Reset value to avoid sending "Ghost Data" to AI
-                    if (el.tagName === "SELECT") {
-                        // Reset selects to their first option (usually the default)
-                        el.selectedIndex = 0; 
-                    } else {
-                        el.value = "";
+            // --- 3. Household Inventory (8 pts) ---
+            // Fans (AC or DC)
+            if (hasVal('fan_ac_qty') || hasVal('fan_dc_qty')) score++;
+
+            // Air Conditioners (Standard or Inverter)
+            if (hasVal('ac_std_qty') || hasVal('ac_inv_qty')) score++;
+
+            // Refrigerator
+            if (hasVal('f_qty')) score++;
+
+            // Washing Machine
+            if (hasVal('wm_qty')) score++;
+
+            // Water Pump
+            if (hasVal('wp_qty')) score++;
+
+            // UPS System
+            if (hasVal('u_qty')) score++;
+
+            // Kitchen Appliances
+            if (hasVal('k_qty')) score++;
+
+            // Clothes Iron
+            if (hasVal('iron_qty')) score++;
+
+            // --- 4. Historical Record (1 pt) ---
+            const histRow = document.querySelector('.bill-history-row');
+            if (histRow) {
+                const m = histRow.querySelector('.hist-month').value;
+                const u = histRow.querySelector('.hist-units').value;
+                if (m !== "" && u !== "") score++;
+            }
+
+            // --- Calculate & Update Ring ---
+            const pct = Math.round((score / totalPoints) * 100);
+            const ring = document.getElementById('ringFill');
+            if (ring) {
+                // 163 is the dash-offset for your SVG circle
+                ring.style.strokeDashoffset = 163 - (pct / 100) * 163;
+            }
+            document.getElementById('pctLabel').textContent = pct + '%';
+        }
+
+        async function saveProfile() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            setFormState(true, true);
+            const btn = document.getElementById('syncBtn');
+            btn.innerHTML = '<i class="fa fa-circle-notch fa-spin"></i> Syncing...';
+
+            try {
+                // ─── 1. DATA EXTRACTION HELPERS ───
+                const v = (id) => parseFloat(document.getElementById(id)?.value) || 0;
+                const gv = (id) => document.getElementById(id)?.value || '';
+                const getSafeVal = (id_prefix) => (v(id_prefix + '_qty') > 0 ? v(id_prefix + '_val') : 0);
+
+                // Database-specific values (save empty string if user left it blank)
+                const dbVal = (id) => {
+                    const el = document.getElementById(id);
+                    return (el && el.value !== "") ? parseFloat(el.value) : "";
+                };
+                const dbSafeVal = (id_prefix) => {
+                    const qtyEl = document.getElementById(id_prefix + '_qty');
+                    const valEl = document.getElementById(id_prefix + '_val');
+                    if (!qtyEl || qtyEl.value === "") return "";
+                    if (parseFloat(qtyEl.value) === 0) return 0;
+                    return valEl && valEl.value !== "" ? parseFloat(valEl.value) : "";
+                };
+
+                // ─── 2. APPLIANCE CALCULATIONS (As per your Logic) ───
+
+                // AC: Hours-based scaling
+                const ac_std_monthly = v('ac_std_qty') * 1.50 * getSafeVal('ac_std') * v('ac_std_freq');
+                const ac_inv_monthly = v('ac_inv_qty') * 0.75 * getSafeVal('ac_inv') * v('ac_inv_freq');
+                const total_ac_monthly = ac_std_monthly + ac_inv_monthly;
+
+                // Refrigerator (Explicit Duty Cycle Model)
+                const f_type = gv('f_type');
+                const f_peak = f_type === 'inverter' ? 0.12 : 0.25; // Peak compressor draw
+                const f_duty = f_type === 'inverter' ? 0.40 : 0.60; // 40% for Inverter, 60% for Standard
+
+                // Formula: Qty * Peak Power * Usage Hours * Frequency * Duty Cycle
+                const f_monthly = v('f_qty') * f_peak * getSafeVal('f') * v('f_freq') * f_duty;
+
+                // Water Pump: Convert HP to kW, then scale by usage
+                const wp_kw = (parseFloat(gv('wp_type')) || 1.0) * 0.746;
+                const wp_monthly = v('wp_qty') * wp_kw * getSafeVal('wp') * v('wp_freq');
+
+                // Kitchen Appliances: Flat scaling (Oven/Kettle)
+                const k_monthly = v('k_qty') * 1.20 * getSafeVal('k') * v('k_freq');
+
+                // Clothes Iron: Flat scaling (1.0kW)
+                const iron_monthly = v('iron_qty') * 1.00 * getSafeVal('iron') * v('iron_freq');
+
+                // UPS Math: 400W Base * Loss Factors
+                const ups_efficiency = gv('u_type') === 'pure' ? 1.05 : 1.25;
+                const battery_loss = gv('u_battery') === 'lithium' ? 1.02 : 1.20;
+                const u_monthly = v('u_qty') * 0.40 * ups_efficiency * battery_loss * getSafeVal('u') * v('u_freq');
+
+                // Washing Machine Logic (Manual ~0.35kW, Automatic ~0.8kW)
+                const wm_load = gv('wm_type') === 'automatic' ? 0.8 : 0.35;
+                const wm_monthly = v('wm_qty') * wm_load * getSafeVal('wm') * v('wm_freq');
+
+                // ── FAN MATH (Standard ~80W, Inverter ~35W) ──
+                const fan_ac_monthly = v('fan_ac_qty') * 0.080 * 12 * 30; // 12h avg
+                const fan_dc_monthly = v('fan_dc_qty') * 0.035 * 12 * 30;
+                const total_fan_monthly = fan_ac_monthly + fan_dc_monthly;
+
+                // ─── 3. DYNAMIC BASELOAD & MEAN HOURLY ───
+                const person_baseload = Math.max(v('person_count'), 1) * 14.0;
+                const area_baseload = Math.min((v('property_area') || 500) * 0.006, 15.0);
+
+                const mean_hourly = (total_ac_monthly + f_monthly + wp_monthly + k_monthly +
+                    u_monthly + wm_monthly + total_fan_monthly + iron_monthly +
+                    person_baseload + area_baseload) / 720;
+
+                // ─── 4. BILLING HISTORY CALIBRATION (Strict Validation) ───
+                const allHistoryRows = Array.from(document.querySelectorAll('.bill-history-row'));
+                const bill_history = allHistoryRows.map(row => {
+                    const mInput = row.querySelector('.hist-month').value;
+                    const uInput = row.querySelector('.hist-units').value;
+                    const aInput = row.querySelector('.hist-amount').value;
+
+                    return {
+                        month: mInput,
+                        units: uInput !== "" ? parseFloat(uInput) : "",
+                        amount: aInput !== "" ? parseFloat(aInput) : ""
+                    };
+                }).filter(b => {
+                    // All three values must be fully filled to be saved
+                    const isComplete = (b.month !== "" && b.units !== "" && b.amount !== "");
+
+                    // If any field is partially filled or missing, drop it completely
+                    return isComplete && !isNaN(b.units) && !isNaN(b.amount);
+                }).sort((a, b) => b.month.localeCompare(a.month));
+
+                const validHistory = bill_history.filter(b => b.units > 5);
+                const historical_avg_units = validHistory.length > 0
+                    ? validHistory.reduce((s, b) => s + b.units, 0) / validHistory.length
+                    : 0;
+
+                // ─── 5. THE AI MEMORY DATA PACKET ───
+                const data = {
+                    disco: gv('disco'),
+                    sanctioned_load: dbVal('load'),
+                    user_category: selectedCategory,
+                    property_area: dbVal('property_area'),
+                    person_count: dbVal('person_count'),
+                    floors: gv('floors'),
+                    user_routine: gv('user_routine'),
+                    fan_qty: dbVal('fan_qty'),
+
+                    // Raw inputs sanitized for AI (No Contradictions)
+                    ac_std_qty: dbVal('ac_std_qty'), ac_std_val: dbSafeVal('ac_std'), ac_std_freq: dbVal('ac_std_freq'),
+                    ac_inv_qty: dbVal('ac_inv_qty'), ac_inv_val: dbSafeVal('ac_inv'), ac_inv_freq: dbVal('ac_inv_freq'),
+                    ac_qty: v('ac_std_qty') + v('ac_inv_qty'),
+                    f_qty: dbVal('f_qty'), f_type: gv('f_type'), f_val: dbSafeVal('f'), f_freq: dbVal('f_freq'),
+                    wm_qty: dbVal('wm_qty'), wm_type: gv('wm_type'), wm_val: dbSafeVal('wm'), wm_freq: dbVal('wm_freq'),
+                    wp_qty: dbVal('wp_qty'), wp_type: gv('wp_type'), wp_val: dbSafeVal('wp'), wp_freq: dbVal('wp_freq'),
+                    k_qty: dbVal('k_qty'), k_val: dbSafeVal('k'), k_freq: dbVal('k_freq'),
+                    u_qty: dbVal('u_qty'), u_type: gv('u_type'), u_battery: gv('u_battery'), u_val: dbSafeVal('u'), u_freq: dbVal('u_freq'),
+                    iron_qty: dbVal('iron_qty'), iron_val: dbSafeVal('iron'), iron_freq: dbVal('iron_freq'),
+                    fan_ac_qty: dbVal('fan_ac_qty'), fan_dc_qty: dbVal('fan_dc_qty'), fan_qty: v('fan_ac_qty') + v('fan_dc_qty'),
+
+                    // Computed Monthly kWh for RF Features
+                    ac_monthly: total_ac_monthly,
+                    refrigerator_monthly: f_monthly,
+                    kitchen_monthly: k_monthly,
+                    ups_monthly: u_monthly,
+                    wp_monthly: wp_monthly,
+                    wm_monthly: wm_monthly,
+                    fan_monthly: total_fan_monthly,
+                    iron_monthly: iron_monthly,
+
+                    // Derived Anchors
+                    mean_hourly,
+                    historical_avg_units,
+                    bill_history,
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                // ─── 6. CLOUD SYNC & REDIRECT ───
+
+                // Save to Firestore first (Primary Truth)
+                try {
+                    await fetch(`${API_BASE_URL}/api/setup_profile`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ uid: user.uid, data }),
+                        signal: AbortSignal.timeout(3000) // Don't hang if Flask is off
+                    });
+                } catch (apiErr) {
+                    console.warn("Flask API offline, but profile saved to Cloud.");
+                }
+
+                showToast('AI Memory Updated!');
+                setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
+
+            } catch (e) {
+                console.error("Sync Error:", e);
+                setFormState(false);
+                showToast('Sync failed!', 'error'); // This will now show the X icon
+            }
+        }
+
+        /* ── Helper Functions ── */
+        function setValue(id, val, fallback) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            let finalVal = (val !== undefined && val !== null) ? val : fallback;
+            el.value = finalVal;
+        }
+
+        function setCategory(cat) {
+            selectedCategory = cat;
+            document.querySelectorAll('.category-option').forEach(opt => opt.classList.remove('active'));
+            const target = document.getElementById('opt-' + cat);
+            if (target) target.classList.add('active');
+            updateCompleteness();
+        }
+
+        function toggleApplianceRow(prefix) {
+            const qtyEl = document.getElementById(prefix + '_qty');
+            const qtyValue = qtyEl.value;
+            const qty = parseFloat(qtyValue) || 0;
+
+            // Dependent elements
+            const dependents = [
+                document.getElementById(prefix + '_val'),
+                document.getElementById(prefix + '_freq'),
+                document.getElementById(prefix + '_type'),
+                document.getElementById(prefix + '_battery') // Specific for UPS
+            ];
+
+            // If Qty is empty, 0, or negative -> Lock and Reset
+            const shouldDisable = (qtyValue === "" || qty <= 0);
+
+            dependents.forEach(el => {
+                if (el) {
+                    el.disabled = shouldDisable;
+                    el.style.opacity = shouldDisable ? "0.4" : "1";
+                    if (shouldDisable) {
+                        // Reset value to avoid sending "Ghost Data" to AI
+                        if (el.tagName === "SELECT") {
+                            // Reset selects to their first option (usually the default)
+                            el.selectedIndex = 0;
+                        } else {
+                            el.value = "";
+                        }
                     }
                 }
-            }
-        });
-        updateCompleteness();
-    }
+            });
+            updateCompleteness();
+        }
 
-    function addBillRow(m="", u="", a="") {
-        const container = document.getElementById('bill-log-container');
-        // FIXED: Truly unique ID per row to prevent incorrect deletion
-        const rowId = `row-${Math.random().toString(36).substring(2, 11)}`;
-        
-        const div = document.createElement('div');
-        div.className = 'bill-history-row';
-        div.id = rowId;
-        div.innerHTML = `
+        function refreshRowActions() {
+            const container = document.getElementById('bill-log-container');
+            const rows = container.querySelectorAll('.bill-history-row');
+
+            // Handle Empty State Placeholder Text
+            let emptyState = document.getElementById('history-empty-state');
+            if (rows.length === 0) {
+                if (!emptyState) {
+                    emptyState = document.createElement('div');
+                    emptyState.id = 'history-empty-state';
+                    emptyState.style.cssText = "text-align:center; padding:30px 20px; color:var(--text-dim); font-size:0.85rem; font-weight:500; display:flex; flex-direction:column; align-items:center; gap:10px;";
+                    emptyState.innerHTML = `<i class="fa fa-folder-open" style="font-size:1.8rem; opacity:0.3; color:var(--g3)"></i><p>No billing logs added. Click below to add your ground-truth records.</p>`;
+                    container.appendChild(emptyState);
+                }
+            } else if (emptyState) {
+                emptyState.remove();
+            }
+
+            // If there are rows left, ensure the delete icon is visible on all of them
+            rows.forEach((r) => {
+                r.querySelector('.action-holder').style.display = 'flex';
+            });
+        }
+
+        function addBillRow(m = "", u = "", a = "") {
+            const container = document.getElementById('bill-log-container');
+            const rowId = `row-${Math.random().toString(36).substring(2, 11)}`;
+
+            const div = document.createElement('div');
+            div.className = 'bill-history-row';
+            div.id = rowId;
+            div.innerHTML = `
             <div class="history-inputs-group">
                 <div class="input-wrap" style="flex: 1.4;"><input type="month" class="hist-month" value="${m}" oninput="updateCompleteness()"></div>
                 <div class="input-wrap"><input type="number" class="hist-units" value="${u}" oninput="updateCompleteness()"><span class="input-unit">kWh</span></div>
                 <div class="input-wrap"><input type="number" class="hist-amount" value="${a}" oninput="updateCompleteness()"><span class="input-unit">Rs.</span></div>
             </div>
             <div class="action-holder"><button type="button" onclick="removeBillRow('${rowId}')" class="btn-delete-row"><i class="fa fa-trash-can"></i></button></div>`;
-        container.appendChild(div);
-        refreshRowActions();
-    }
-
-    function removeBillRow(id) { 
-        const el = document.getElementById(id);
-        if(el) el.remove(); 
-        refreshRowActions(); 
-        updateCompleteness(); 
-    }
-
-    function refreshRowActions() {
-        const rows = document.querySelectorAll('.bill-history-row');
-        rows.forEach((r, i) => r.querySelector('.action-holder').style.display = (i === 0) ? 'none' : 'flex');
-    }
-
-    function showToast(m, t = 'success') {
-        const toast = document.getElementById('toast');
-        const msg = document.getElementById('toast-msg');
-        const icon = document.getElementById('toast-icon');
-
-        // Set Message
-        msg.innerText = m;
-
-        // Reset and Set Classes/Icons
-        toast.className = 'toast ' + t + ' show';
-        
-        if (t === 'error') {
-            icon.className = 'fa fa-circle-xmark'; // The X icon
-        } else {
-            icon.className = 'fa fa-check-circle'; // The Tick icon
+            container.appendChild(div);
+            refreshRowActions();
         }
 
-        // Hide after 3 seconds
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
-    }
-
-    function openLoadHelp() { document.getElementById('loadHelpModal').style.display = 'flex'; }
-    function closeLoadHelp() { document.getElementById('loadHelpModal').style.display = 'none'; }
-    function openUnitHelp() { document.getElementById('unitHelpModal').style.display = 'flex'; }
-    function closeUnitHelp() { document.getElementById('unitHelpModal').style.display = 'none'; }
-
-    // ─── FLOATING PROGRESS TRACKER LOGIC ───
-    const progressWrap = document.querySelector('.completeness-wrap');
-    const headerRow = document.querySelector('.header-row');
-    const pageHeader = document.querySelector('.page-header');
-
-    window.addEventListener('scroll', () => {
-        // Determine when the header has scrolled out of view
-        // Navbar height (68) + extra padding
-        const triggerThreshold = pageHeader.offsetTop + pageHeader.offsetHeight - 80;
-
-        if (window.scrollY > triggerThreshold) {
-            if (!progressWrap.classList.contains('floating')) {
-                // MOVE TO BODY: This escapes the CSS Transform Trap of the header
-                document.body.appendChild(progressWrap);
-                progressWrap.classList.add('floating');
-            }
-        } else {
-            if (progressWrap.classList.contains('floating')) {
-                // SNAP BACK: Returns to its original place in the header
-                headerRow.appendChild(progressWrap);
-                progressWrap.classList.remove('floating');
-            }
+        function removeBillRow(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+            refreshRowActions();
+            updateCompleteness();
         }
-    });
 
-    function logout() { firebase.auth().signOut().then(() => window.location.href = "index.html"); }
+        function showToast(m, t = 'success') {
+            const toast = document.getElementById('toast');
+            const msg = document.getElementById('toast-msg');
+            const icon = document.getElementById('toast-icon');
 
-</script>
+            // Set Message
+            msg.innerText = m;
+
+            // Reset and Set Classes/Icons
+            toast.className = 'toast ' + t + ' show';
+
+            if (t === 'error') {
+                icon.className = 'fa fa-circle-xmark'; // The X icon
+            } else {
+                icon.className = 'fa fa-check-circle'; // The Tick icon
+            }
+
+            // Hide after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function openLoadHelp() { document.getElementById('loadHelpModal').style.display = 'flex'; }
+        function closeLoadHelp() { document.getElementById('loadHelpModal').style.display = 'none'; }
+        function openUnitHelp() { document.getElementById('unitHelpModal').style.display = 'flex'; }
+        function closeUnitHelp() { document.getElementById('unitHelpModal').style.display = 'none'; }
+
+        // ─── FLOATING PROGRESS TRACKER LOGIC ───
+        const progressWrap = document.querySelector('.completeness-wrap');
+        const headerRow = document.querySelector('.header-row');
+        const pageHeader = document.querySelector('.page-header');
+
+        window.addEventListener('scroll', () => {
+            // Determine when the header has scrolled out of view
+            // Navbar height (68) + extra padding
+            const triggerThreshold = pageHeader.offsetTop + pageHeader.offsetHeight - 80;
+
+            if (window.scrollY > triggerThreshold) {
+                if (!progressWrap.classList.contains('floating')) {
+                    // MOVE TO BODY: This escapes the CSS Transform Trap of the header
+                    document.body.appendChild(progressWrap);
+                    progressWrap.classList.add('floating');
+                }
+            } else {
+                if (progressWrap.classList.contains('floating')) {
+                    // SNAP BACK: Returns to its original place in the header
+                    headerRow.appendChild(progressWrap);
+                    progressWrap.classList.remove('floating');
+                }
+            }
+        });
+
+        function logout() { firebase.auth().signOut().then(() => window.location.href = "index.html"); }
+
+    </script>
 </body>
+
 </html>

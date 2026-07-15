@@ -12,6 +12,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
         :root {
             --g1: #059669;
             --g2: #10b981;
@@ -371,7 +374,11 @@
 
         @media (max-width: 860px) {
             .left-panel { display: none; }
-            .right-panel { width: 100%; border-left: none; }
+            .right-panel {
+                width: 100%; border-left: none;
+                background: radial-gradient(circle at 50% 25%, rgba(5, 150, 105, 0.12) 0%, var(--dark) 80%);
+            }
+            .mobile-branding-footer { display: block !important; }
         }
     </style>
 </head>
@@ -529,6 +536,12 @@
             <p class="terms-note">By signing up you agree to our Terms of Service and Privacy Policy.</p>
 
             <p class="footer-link">Already a member? <a href="index.html">Sign In</a></p>
+
+            <!-- Mobile-only SSUET branding footer -->
+            <div class="mobile-branding-footer" style="display: none; margin-top: 30px; text-align: center; font-size: 0.72rem; color: var(--text-dim); line-height: 1.5; font-weight: 500;">
+                <i class="fa fa-graduation-cap" style="color: var(--g2); margin-right: 4px;"></i> Sir Syed University of Engineering & Technology<br>
+                <span>FYP 2026 · Smart Energy Management System</span>
+            </div>
         </div>
     </div>
 
