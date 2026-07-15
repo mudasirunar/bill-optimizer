@@ -288,12 +288,20 @@
                     chatHistory.push({ role: "model", text: data.reply });
                     sessionStorage.setItem(cacheKey, JSON.stringify(chatHistory));
                 } else {
-                    const errMsg = data.error || "Could not retrieve response from AI. Please try again.";
+                    const errMsg = data.error || "The assistant encountered an unexpected error processing your request. Please try again.";
+                    const errorHtml = `
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <div class="error-content">
+                            <span class="error-title">ERR_SERVER_ERROR</span>
+                            <span class="error-description">${errMsg}</span>
+                        </div>
+                    `;
                     if (pendingBubble) {
                         pendingBubble.removeAttribute("id");
-                        pendingBubble.innerHTML = `⚠️ Error: ${errMsg}`;
+                        pendingBubble.className = "chat-bubble error";
+                        pendingBubble.innerHTML = errorHtml;
                     } else {
-                        appendBubble(`⚠️ Error: ${errMsg}`, "model");
+                        appendBubble(errorHtml, "error");
                     }
                     chatInput.disabled = false;
                     chatSendBtn.disabled = false;
@@ -301,11 +309,19 @@
                 }
             } catch (err) {
                 const pendingBubble = document.getElementById("chatPendingReply");
+                const errorHtml = `
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <div class="error-content">
+                        <span class="error-title">ERR_CONNECTION_FAILED</span>
+                        <span class="error-description">We couldn't connect to our optimization servers. Please check your internet connection or try again shortly.</span>
+                    </div>
+                `;
                 if (pendingBubble) {
                     pendingBubble.removeAttribute("id");
-                    pendingBubble.innerHTML = "⚠️ Connection failure. Make sure your Python Flask backend is running on port 5001.";
+                    pendingBubble.className = "chat-bubble error";
+                    pendingBubble.innerHTML = errorHtml;
                 } else {
-                    appendBubble("⚠️ Connection failure. Make sure your Python Flask backend is running on port 5001.", "model");
+                    appendBubble(errorHtml, "error");
                 }
                 chatInput.disabled = false;
                 chatSendBtn.disabled = false;
@@ -387,6 +403,8 @@
             
             if (role === "model") {
                 bubble.innerHTML = formatMarkdown(text);
+            } else if (role === "error") {
+                bubble.innerHTML = text;
             } else {
                 bubble.textContent = text;
             }
