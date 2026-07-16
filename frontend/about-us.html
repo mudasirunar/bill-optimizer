@@ -649,33 +649,19 @@
 <body>
 
     <nav class="navbar">
-        <div class="nav-logo" onclick="window.location.href='dashboard.html'"><i class="fa fa-leaf"></i> Bill Optimizer
+        <div class="nav-logo" onclick="window.location.href = localStorage.getItem('userLoggedIn') === 'true' ? 'dashboard.html' : 'index.html'">
+            <i class="fa fa-leaf"></i> Bill Optimizer
             <span class="ai-tag">AI</span>
         </div>
-        <div class="nav-user-area">
+        <div class="nav-user-area" style="padding-right: 10px;">
             <div class="user-info">
-                <span id="user-name-display">User</span>
-                <small>System Overview</small>
-            </div>
-            <div class="profile-dropdown">
-                <img id="user-pfp" class="user-avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
-                <div class="dropdown-menu">
-                    <a href="dashboard.html"><i class="fa fa-home"></i> Dashboard</a>
-                    <a href="prediction-hub.html"><i class="fa fa-bolt-lightning"></i> Prediction Hub</a>
-                    <a href="setup-profile.html"><i class="fa fa-cog"></i> Setup Profile</a>
-                    <a href="ai-memory.html"><i class="fa fa-brain"></i> AI Memory</a>
-                    <a href="nepra-info.html"><i class="fa fa-landmark"></i> NEPRA Info</a>
-                    <hr>
-                    <a href="#" onclick="logout()" class="logout-link"><i class="fa fa-sign-out-alt"></i> Logout</a>
-                </div>
+                <small style="font-size: 0.8rem; font-weight: 700; color: var(--g3); text-transform: uppercase; letter-spacing: 1px;">System Overview</small>
             </div>
         </div>
     </nav>
 
     <div class="page-header">
-        <div id="dynamic-breadcrumb" class="breadcrumb">
-            <a href="dashboard.html">Dashboard</a> <i class="fa fa-chevron-right"></i> <span>About Us</span>
-        </div>
+
         <h1>The <span class="highlight">Architectural</span> Vision</h1>
         <p style="color:var(--text-dim); margin-top:8px; max-width:600px;">
             Developing high-precision neural energy models to bridge the gap between academic research and residential
@@ -1005,26 +991,23 @@
         <p class="footer-sub"><i class="fa fa-map-marker-alt"></i> Gulshan-e-Iqbal, Karachi, Pakistan</p>
         <div class="footer-tag">FYP 2026 · Smart Energy Management System</div>
     </footer>
+    <button class="scroll-top" id="scrollTopBtn" aria-label="Scroll to top"><i class="fa fa-arrow-up"></i></button>
 
     <script src="js/config.js"></script>
-    <script src="js/chat-bot.js"></script>
     <script src="js/auth.js"></script>
     <script>
         firebase.auth().onAuthStateChanged(user => {
-            initDynamicBreadcrumb("About Us");
-
-            if (user) {
-                const nameToDisplay = user.displayName || user.email.split('@')[0];
-                document.getElementById('user-name-display').innerText = nameToDisplay;
-                if (user.photoURL) {
-                    document.getElementById('user-pfp').src = user.photoURL;
-                }
-            } else {
-                window.location.href = "login.html";
-            }
+            // Public Page (No breadcrumb initialization)
         });
 
         function logout() { logDetailedEvent('logout'); firebase.auth().signOut().then(() => window.location.href = 'login.html'); }
+
+        // Scroll to top logic
+        const scrollBtn = document.getElementById('scrollTopBtn');
+        window.addEventListener('scroll', () => {
+            scrollBtn.classList.toggle('visible', window.scrollY > 500);
+        }, { passive: true });
+        scrollBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
     </script>
 </body>
 

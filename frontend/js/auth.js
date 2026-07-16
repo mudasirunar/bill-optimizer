@@ -264,7 +264,8 @@ auth.onAuthStateChanged((user) => {
         const path = window.location.pathname;
         const filename = path.substring(path.lastIndexOf('/') + 1);
         const isAuthPage = filename === "login.html" || filename === "signup.html" || filename === "" || path.endsWith("/");
-        if (!isAuthPage) {
+        const isPublicPage = filename === "about-us.html" || filename === "nepra-info.html";
+        if (!isAuthPage && !isPublicPage) {
             window.location.href = "login.html";
         }
     }
@@ -332,8 +333,11 @@ function initDynamicBreadcrumb(currentPageTitle) {
         'about-us.html': 'About Us'
     };
 
-    // Start with Dashboard as the permanent root
-    let navHTML = `<a href="dashboard.html">Dashboard</a>`;
+    // Start with Dashboard or Home depending on session
+    const isLoggedIn = localStorage.getItem('userLoggedIn') === 'true';
+    let navHTML = isLoggedIn 
+        ? `<a href="dashboard.html">Dashboard</a>`
+        : `<a href="index.html">Home</a>`;
 
     // 2. Identify the Referrer (Where you just came from)
     let lastPageFile = null;
