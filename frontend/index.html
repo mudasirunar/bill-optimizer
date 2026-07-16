@@ -2405,10 +2405,27 @@
         }
         firebase.analytics();
 
-        // Redirect logged-in users to dashboard
+        // Redirect logged-in users to dashboard only when they click login/signup links
+        let isUserLoggedIn = localStorage.getItem('userLoggedIn') === 'true';
         firebase.auth().onAuthStateChanged((user) => {
+            isUserLoggedIn = !!user;
             if (user) {
-                window.location.href = "dashboard.html";
+                localStorage.setItem('userLoggedIn', 'true');
+            } else {
+                localStorage.removeItem('userLoggedIn');
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('a');
+            if (link) {
+                const href = link.getAttribute('href');
+                if (href && (href.includes('login.html') || href.includes('signup.html'))) {
+                    if (isUserLoggedIn) {
+                        e.preventDefault();
+                        window.location.href = "dashboard.html";
+                    }
+                }
             }
         });
     </script>
