@@ -238,7 +238,7 @@ auth.onAuthStateChanged((user) => {
         // --- GLOBAL REDIRECT LOGIC ---
         const path = window.location.pathname;
         const filename = path.substring(path.lastIndexOf('/') + 1);
-        const isAuthPage = filename === "login.html" || filename === "signup.html" || filename === "" || path.endsWith("/");
+        const isAuthPage = filename === "login.html" || filename === "signup.html" || filename === "login" || filename === "signup" || filename === "" || path.endsWith("/");
 
         if (isAuthPage) {
             // Check if account was JUST created (within the last 10 seconds)
@@ -263,8 +263,8 @@ auth.onAuthStateChanged((user) => {
         // Redirect to login.html if we are currently on a protected page
         const path = window.location.pathname;
         const filename = path.substring(path.lastIndexOf('/') + 1);
-        const isAuthPage = filename === "login.html" || filename === "signup.html" || filename === "" || path.endsWith("/");
-        const isPublicPage = filename === "about-us.html" || filename === "nepra-info.html";
+        const isAuthPage = filename === "login.html" || filename === "signup.html" || filename === "login" || filename === "signup" || filename === "" || path.endsWith("/");
+        const isPublicPage = filename === "about-us.html" || filename === "nepra-info.html" || filename === "about-us" || filename === "nepra-info";
         if (!isAuthPage && !isPublicPage) {
             window.location.href = "login.html";
         }
@@ -344,7 +344,8 @@ function initDynamicBreadcrumb(currentPageTitle) {
     let lastPageTitle = null;
 
     for (const [file, title] of Object.entries(pageMap)) {
-        if (ref.includes(file)) {
+        const cleanFile = file.replace('.html', '');
+        if (ref.includes(file) || ref.endsWith('/' + cleanFile) || ref.includes('/' + cleanFile + '?') || ref.includes('/' + cleanFile + '#')) {
             lastPageFile = file;
             lastPageTitle = title;
             break;

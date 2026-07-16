@@ -2420,7 +2420,7 @@
             const link = e.target.closest('a');
             if (link) {
                 const href = link.getAttribute('href');
-                if (href && (href.includes('login.html') || href.includes('signup.html'))) {
+                if (href && (href.includes('login') || href.includes('signup'))) {
                     if (isUserLoggedIn) {
                         e.preventDefault();
                         window.location.href = "dashboard.html";
