@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /about-us
+Allow: /about-us.html
+Allow: /nepra-info
+Allow: /nepra-info.html
+Allow: /login
+Allow: /login.html
+Allow: /signup
+Allow: /signup.html
+Disallow: /dashboard
+Disallow: /dashboard.html
+Disallow: /prediction-hub
+Disallow: /prediction-hub.html
+Disallow: /load-forecaster
+Disallow: /load-forecaster.html
+Disallow: /appliance-simulator
+Disallow: /appliance-simulator.html
+Disallow: /ai-memory
+Disallow: /ai-memory.html
+Disallow: /setup-profile
+Disallow: /setup-profile.html
+
+Sitemap: https://bill-optimizer.vercel.app/sitemap.xml
