@@ -17,6 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
 
     <style>
         * {
@@ -1233,6 +1234,7 @@
             document.querySelectorAll('.routine-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             activeRoutine = btn.dataset.routine;
+            logDetailedEvent('forecaster_routine_changed', { routine: activeRoutine });
             runForecaster(true);
         }
 
@@ -1264,6 +1266,7 @@
 
         // ── Main forecaster ──
         async function runForecaster(isSimulation = false) {
+            logDetailedEvent('forecaster_run_started', { is_simulation: isSimulation });
             const loadingOverlay = document.getElementById('loading');
             const spinner = document.getElementById('loading-spinner');
             const loadText = document.getElementById('loading-text');
@@ -1378,6 +1381,13 @@
                     const loadingLine = document.getElementById('top-loading-line');
                     if (loadingLine) loadingLine.style.display = 'none';
 
+                    logDetailedEvent('forecaster_run_success', {
+                        is_simulation: isSimulation,
+                        routine: activeRoutine,
+                        ac_scale: data.ac_scale,
+                        total_cost: Math.round(simulatedFinance.monthly_cost)
+                    });
+
                     loadingOverlay.style.opacity = '0';
                     setTimeout(() => loadingOverlay.style.display = 'none', 300);
                 } else {
@@ -1385,6 +1395,7 @@
                 }
             } catch (err) {
                 console.error("Forecaster Error:", err);
+                logDetailedEvent('forecaster_run_failed', { is_simulation: isSimulation, error_message: err.message || String(err) });
                 // FIXED: Safety toggle prevents line from getting permanently stuck on error
                 const loadingLine = document.getElementById('top-loading-line');
                 if (loadingLine) loadingLine.style.display = 'none';
@@ -1650,6 +1661,7 @@
 
         // ---  MODAL LOGIC ---
         function openHourModal(hour, load) {
+            logDetailedEvent('forecaster_hour_details_opened', { hour: hour, load: load });
             // 1. UI Safety: Lock Scroll & Reset Modal
             document.body.style.overflow = 'hidden';
             const auditContainer = document.getElementById('m-audit-list');
@@ -1851,7 +1863,7 @@
             textEl.innerText = d.text;
             card.style.display = 'block';
         }
-        function logout() { firebase.auth().signOut().then(() => window.location.href = 'login.html'); }
+        function logout() { logDetailedEvent('logout'); firebase.auth().signOut().then(() => window.location.href = 'login.html'); }
     </script>
     <div class="modal-overlay" id="hour-modal">
         <div class="modal-content">

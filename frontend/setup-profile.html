@@ -16,6 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
 
     <style>
         * {
@@ -2118,6 +2119,7 @@
             const user = firebase.auth().currentUser;
             if (!user) return;
 
+            logDetailedEvent('profile_save_started');
             setFormState(true, true);
             const btn = document.getElementById('syncBtn');
             btn.innerHTML = '<i class="fa fa-circle-notch fa-spin"></i> Syncing...';
@@ -2267,11 +2269,35 @@
                     console.warn("Flask API offline, but profile saved to Cloud.");
                 }
 
+                logDetailedEvent('profile_save_success', {
+                    disco: data.disco,
+                    sanctioned_load: data.sanctioned_load,
+                    user_category: data.user_category,
+                    property_area: data.property_area,
+                    person_count: data.person_count,
+                    floors: data.floors,
+                    user_routine: data.user_routine,
+                    ac_qty: data.ac_qty,
+                    fan_qty: data.fan_qty,
+                    f_qty: data.f_qty,
+                    f_type: data.f_type,
+                    wm_qty: data.wm_qty,
+                    wm_type: data.wm_type,
+                    wp_qty: data.wp_qty,
+                    wp_type: data.wp_type,
+                    u_qty: data.u_qty,
+                    u_type: data.u_type,
+                    u_battery: data.u_battery,
+                    iron_qty: data.iron_qty,
+                    history_months_count: data.bill_history ? data.bill_history.length : 0
+                });
+
                 showToast('AI Memory Updated!');
                 setTimeout(() => { window.location.href = 'dashboard.html'; }, 1200);
 
             } catch (e) {
                 console.error("Sync Error:", e);
+                logDetailedEvent('profile_save_failed', { error_message: e.message || String(e) });
                 setFormState(false);
                 showToast('Sync failed!', 'error'); // This will now show the X icon
             }
@@ -2429,7 +2455,7 @@
             }
         });
 
-        function logout() { firebase.auth().signOut().then(() => window.location.href = "login.html"); }
+        function logout() { logDetailedEvent('logout'); firebase.auth().signOut().then(() => window.location.href = "login.html"); }
 
     </script>
 </body>

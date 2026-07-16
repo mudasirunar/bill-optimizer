@@ -15,6 +15,32 @@ if (!firebase.apps.length) {
 }
 const auth = firebase.auth();
 
+// 2b. Initialize Analytics safely
+const analytics = (typeof firebase.analytics === 'function') ? firebase.analytics() : null;
+
+// Helper to log event safely
+function logDetailedEvent(eventName, params = {}) {
+    if (analytics) {
+        try {
+            // Automatically inject current user info if available
+            const currentUser = firebase.auth().currentUser;
+            if (currentUser) {
+                params.user_uid = currentUser.uid;
+                params.user_email = currentUser.email;
+            }
+            // Inject current page
+            params.page_path = window.location.pathname;
+            
+            analytics.logEvent(eventName, params);
+            console.log(`📊 [Analytics] Logged: ${eventName}`, params);
+        } catch (e) {
+            console.error(`📊 [Analytics] Error logging event ${eventName}:`, e);
+        }
+    } else {
+        console.warn(`📊 [Analytics Page Missing Script] Event not logged: ${eventName}`, params);
+    }
+}
+
 // 3. UI Error Message with Shake
 function showErrorMessage(msg) {
     const errorDiv = document.getElementById('error-message');
@@ -75,13 +101,16 @@ async function handleGoogleLogin() {
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     showAuthLoading("Authenticating with Google");
+    logDetailedEvent('login_started', { method: 'google' });
     try {
         await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         const result = await auth.signInWithPopup(provider);
         localStorage.setItem('userLoggedIn', 'true');
+        logDetailedEvent('login_success', { method: 'google', is_new_user: result.additionalUserInfo?.isNewUser || false });
         handleAuthRedirect(result);
     } catch (error) {
         hideAuthLoading();
+        logDetailedEvent('login_failed', { method: 'google', error_message: error.message, error_code: error.code });
         showErrorMessage(error.message);
     }
 }
@@ -90,13 +119,16 @@ async function handleGoogleLogin() {
 async function handleSignIn(email, password) {
     if (!email || !password) return showErrorMessage("Please enter both email and password.");
     showAuthLoading("Signing in");
+    logDetailedEvent('login_started', { method: 'email' });
     try {
         await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
         const result = await auth.signInWithEmailAndPassword(email, password);
         localStorage.setItem('userLoggedIn', 'true');
+        logDetailedEvent('login_success', { method: 'email', is_new_user: result.additionalUserInfo?.isNewUser || false });
         handleAuthRedirect(result);
     } catch (error) {
         hideAuthLoading();
+        logDetailedEvent('login_failed', { method: 'email', error_message: error.message, error_code: error.code });
         showErrorMessage("Invalid email or password.");
     }
 }
@@ -132,6 +164,7 @@ async function handleSignUp(firstName, lastName, email, password, confirmPasswor
     }
 
     showAuthLoading("Creating your account");
+    logDetailedEvent('signup_started');
     try {
         const result = await auth.createUserWithEmailAndPassword(email, password);
         localStorage.setItem('userLoggedIn', 'true');
@@ -139,6 +172,8 @@ async function handleSignUp(firstName, lastName, email, password, confirmPasswor
         // Update Profile with Full Name for Dashboard Greeting
         const fullName = `${firstName.trim()} ${lastName.trim()}`;
         await result.user.updateProfile({ displayName: fullName });
+
+        logDetailedEvent('signup_success');
 
         // One-time Setup Redirect for New Users
         if (result.additionalUserInfo?.isNewUser) {
@@ -148,6 +183,7 @@ async function handleSignUp(firstName, lastName, email, password, confirmPasswor
         }
     } catch (error) {
         hideAuthLoading();
+        logDetailedEvent('signup_failed', { error_message: error.message, error_code: error.code });
         // Handle Firebase-specific errors (e.g., Email already exists)
         if (error.code === 'auth/email-already-in-use') {
             showErrorMessage("This email is already registered. Try logging in.");

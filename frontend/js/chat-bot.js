@@ -222,6 +222,9 @@
 
             // Render User Bubble
             appendBubble(messageText, "user");
+            if (typeof logDetailedEvent === "function") {
+                logDetailedEvent('chatbot_message_sent', { message_length: messageText.length });
+            }
             chatInput.value = "";
             chatInput.style.height = "auto";
             chatInput.style.overflowY = "hidden";
@@ -299,6 +302,10 @@
                         desc = `The server responded with an error status: ${res.status} ${res.statusText || ""}.`;
                     }
 
+                    if (typeof logDetailedEvent === "function") {
+                        logDetailedEvent('chatbot_message_failed', { error_message: desc });
+                    }
+
                     const errorHtml = `
                         <i class="fa-solid fa-triangle-exclamation"></i>
                         <div class="error-content">
@@ -325,6 +332,9 @@
                 
                 const pendingBubble = document.getElementById("chatPendingReply");
                 if (data.status === "success" && data.reply) {
+                    if (typeof logDetailedEvent === "function") {
+                        logDetailedEvent('chatbot_message_received', { reply_length: data.reply.length });
+                    }
                     if (pendingBubble) {
                         pendingBubble.removeAttribute("id");
                         const html = formatMarkdown(data.reply);
@@ -347,6 +357,9 @@
                     sessionStorage.setItem(cacheKey, JSON.stringify(chatHistory));
                 } else {
                     const errMsg = data.error || "The assistant encountered an unexpected error processing your request. Please try again.";
+                    if (typeof logDetailedEvent === "function") {
+                        logDetailedEvent('chatbot_message_failed', { error_message: errMsg });
+                    }
                     const errorHtml = `
                         <i class="fa-solid fa-triangle-exclamation"></i>
                         <div class="error-content">
@@ -367,6 +380,9 @@
                 }
             } catch (err) {
                 clearTimeout(timeoutId);
+                if (typeof logDetailedEvent === "function") {
+                    logDetailedEvent('chatbot_message_failed', { error_message: err.message || String(err) });
+                }
                 const pendingBubble = document.getElementById("chatPendingReply");
                 
                 let errorHtml = "";

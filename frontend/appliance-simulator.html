@@ -15,6 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
 
     <style>
         * {
@@ -1667,9 +1668,11 @@
 
         function toggleAppliance(id) {
             if (basket[id]) {
+                logDetailedEvent('simulator_item_toggled', { id: id, active: false });
                 removeFromBasket(id);
             } else {
                 basket[id] = { qty: 1, hours: 8 };
+                logDetailedEvent('simulator_item_toggled', { id: id, active: true });
                 renderBasket();
                 buildCatalog();
             }
@@ -1702,6 +1705,7 @@
 
             if (items.length === 0) return;
 
+            logDetailedEvent('simulator_basket_cleared');
             footer.classList.add('footer-fade-out');
             items.forEach(item => item.classList.add('removing'));
 
@@ -1835,6 +1839,7 @@
         }
 
         async function runBasketSim() {
+            logDetailedEvent('simulator_run_started');
             const btn = document.getElementById('basket-sim-btn');
             const baseline = parseFloat(document.getElementById('basket-baseline').value) || 0;
             const load = parseFloat(document.getElementById('calc-load').value) || 5;
@@ -1867,6 +1872,13 @@
                 const baseBill = Math.round(baseRes.simulation.total_bill);
                 const newBill = Math.round(newRes.simulation.total_bill);
                 const diff = newBill - baseBill;
+                logDetailedEvent('simulator_run_success', {
+                    basket_items_count: Object.keys(basket).length,
+                    total_units: Math.round(baseline + addedKwh),
+                    base_cost: baseBill,
+                    new_cost: newBill,
+                    cost_difference: diff
+                });
                 const diffSign = diff >= 0 ? '+' : '';
                 const diffColor = diff > 0 ? 'var(--error)' : 'var(--g3)';
 
@@ -1896,6 +1908,7 @@
             `;
                 strip.classList.add('visible');
             } catch {
+                logDetailedEvent('simulator_run_failed', { error_message: 'Backend offline or API failed' });
                 document.getElementById('compare-strip').innerHTML = `<p style="color:var(--error);font-size:0.8rem;text-align:center"><i class="fa fa-triangle-exclamation"></i> Backend offline — is Flask running?</p>`;
                 document.getElementById('compare-strip').classList.add('visible');
             } finally {
@@ -1909,7 +1922,7 @@
         renderBasket();
         updateBasketLive();
 
-        function logout() { firebase.auth().signOut().then(() => window.location.href = 'login.html'); }
+        function logout() { logDetailedEvent('logout'); firebase.auth().signOut().then(() => window.location.href = 'login.html'); }
     </script>
 </body>
 

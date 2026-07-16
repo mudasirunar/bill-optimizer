@@ -16,6 +16,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
 
     <style>
         * {
@@ -1119,6 +1120,7 @@
         });
 
         function logout() {
+            logDetailedEvent('logout');
             firebase.auth().signOut().then(() => window.location.href = "login.html");
         }
 

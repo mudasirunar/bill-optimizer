@@ -16,6 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
@@ -1670,6 +1671,7 @@
         let currentPredictionData = null; // Global to store results for modal
 
         async function runInference() {
+            logDetailedEvent('prediction_run_started');
             const btn = document.getElementById('predictBtn');
             const loader = document.getElementById('btnLoader');
             const btnText = document.getElementById('btnText');
@@ -1727,6 +1729,12 @@
 
                 if (result.status === "success") {
                     currentPredictionData = result;
+                    logDetailedEvent('prediction_run_success', {
+                        predicted_units: result.kwh,
+                        predicted_amount: Math.round(result.bill.total_bill),
+                        disco: result.bill.applied_disco || '',
+                        user_category: result.bill.applied_category || ''
+                    });
                     animateValue("bill-amount", 0, Math.round(result.bill.total_bill), 1000);
 
                     // ─── 1. RANGE CALCULATION FOR THE CHIP ───
@@ -1821,8 +1829,10 @@
                     `;
 
                     updateEngineDisplay("Engine Error", result.error || "Inference failed", false);
+                    logDetailedEvent('prediction_run_failed', { error_message: result.error || 'API returned failure status' });
                 }
             } catch (e) {
+                logDetailedEvent('prediction_run_failed', { error_message: e.message || String(e) });
                 document.getElementById('bill-amount').innerText = "--";
                 document.getElementById('unit-label').innerHTML = '<i class="fa fa-microchip" style="margin-right:8px; opacity:0.7"></i> -- Predicted Units';
 
@@ -2049,6 +2059,7 @@
         }
 
         function retryAnnualForecast() {
+            logDetailedEvent('annual_forecast_retry');
             if (cachedProfileDoc) {
                 fetchAnnualPreview(cachedProfileDoc.bill_history || [], cachedProfileDoc);
             } else {
@@ -3560,6 +3571,7 @@
             updateSolarSimulation(); // Initial run
         }
 
+        let solarTrackingTimeout = null;
         function updateSolarSimulation() {
             if (!currentSolarRes) return;
 
@@ -3605,6 +3617,17 @@
             document.getElementById('solar-kw').innerText = recommendedKw + " kW";
             document.getElementById('self-use-units').innerText = Math.round(selfUseUnits) + " kWh";
             document.getElementById('solar-payback-text').innerHTML = `Recovery: <b style="color:var(--g3)">${paybackYears} Years</b>`;
+
+            // Debounced Analytics Tracking
+            if (solarTrackingTimeout) clearTimeout(solarTrackingTimeout);
+            solarTrackingTimeout = setTimeout(() => {
+                logDetailedEvent('solar_simulation_changed', {
+                    shift_pct: shiftPct,
+                    recommended_kw: parseFloat(recommendedKw),
+                    monthly_savings: Math.round(monthlySavings),
+                    payback_years: parseFloat(paybackYears)
+                });
+            }, 1500);
         }
 
         function openBreakdownModal() {
@@ -3908,7 +3931,7 @@
             window.requestAnimationFrame(step);
         }
 
-        function logout() { firebase.auth().signOut().then(() => window.location.href = 'login.html'); }
+        function logout() { logDetailedEvent('logout'); firebase.auth().signOut().then(() => window.location.href = 'login.html'); }
     </script>
 </body>
 

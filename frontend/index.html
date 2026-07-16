@@ -2387,6 +2387,23 @@
             navIo.observe(heroSentinel);
         }
     </script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyB1KDRJv0pR8RcgrHhmZBOlzRNVeQEp8K0",
+            authDomain: "bill-optimizer-34de9.firebaseapp.com",
+            projectId: "bill-optimizer-34de9",
+            storageBucket: "bill-optimizer-34de9.firebasestorage.app",
+            messagingSenderId: "205204930353",
+            appId: "1:205204930353:web:55d44cab9645e5127a7a10",
+            measurementId: "G-BG5ETT4MHD"
+        };
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        firebase.analytics();
+    </script>
 </body>
 
 </html>
