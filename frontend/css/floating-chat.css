@@ -507,3 +507,38 @@
     line-height: 1.45;
     color: #fca5a5;
 }
+
+/* Clickable Internal & External Links inside AI Responses */
+.chat-bubble.model a.chat-internal {
+    display: inline-block;
+    padding: 4px 10px;
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--g3);
+    border: 1px solid rgba(52, 211, 153, 0.25);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 2px 4px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+.chat-bubble.model a.chat-internal:hover {
+    background: var(--g2);
+    color: #fff;
+    border-color: var(--g2);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+.chat-bubble.model a.chat-external {
+    color: #6ee7b7;
+    text-decoration: none;
+    font-weight: 600;
+    border-bottom: 1px dashed #6ee7b7;
+    transition: all 0.2s ease;
+    display: inline;
+}
+.chat-bubble.model a.chat-external:hover {
+    color: #fff;
+    border-bottom-style: solid;
+    border-bottom-color: #fff;
+}

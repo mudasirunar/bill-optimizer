@@ -243,7 +243,6 @@
                 return;
             }
 
-            chatInput.disabled = true;
             chatSendBtn.disabled = true;
             
             // Create the model response bubble ahead of time displaying loading dots
@@ -321,7 +320,6 @@
                     } else {
                         appendBubble(errorHtml, "error");
                     }
-                    chatInput.disabled = false;
                     chatSendBtn.disabled = false;
                     chatInput.focus();
                     scrollToBottom();
@@ -340,13 +338,11 @@
                         const html = formatMarkdown(data.reply);
                         
                         typewriteHTML(pendingBubble, html, 6, () => {
-                            chatInput.disabled = false;
                             chatSendBtn.disabled = false;
                             chatInput.focus();
                         });
                     } else {
                         appendBubble(data.reply, "model");
-                        chatInput.disabled = false;
                         chatSendBtn.disabled = false;
                         chatInput.focus();
                     }
@@ -374,7 +370,6 @@
                     } else {
                         appendBubble(errorHtml, "error");
                     }
-                    chatInput.disabled = false;
                     chatSendBtn.disabled = false;
                     chatInput.focus();
                 }
@@ -422,7 +417,6 @@
                 } else {
                     appendBubble(errorHtml, "error");
                 }
-                chatInput.disabled = false;
                 chatSendBtn.disabled = false;
                 chatInput.focus();
                 console.error("Chatbot Fetch Error:", err);
@@ -442,7 +436,19 @@
             html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
             
             // Parse markdown links [Text](url) to HTML anchors
-            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
+                const isExternal = url.startsWith('http://') || url.startsWith('https://');
+                if (isExternal) {
+                    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="chat-link chat-external">${text} <i class="fa fa-external-link" style="font-size:0.72rem; margin-left:2px;"></i></a>`;
+                } else {
+                    let targetUrl = url;
+                    const usesHtml = window.location.pathname.includes('.html');
+                    if (usesHtml && !targetUrl.endsWith('.html') && !targetUrl.includes('#') && !targetUrl.includes('?')) {
+                        targetUrl += '.html';
+                    }
+                    return `<a href="${targetUrl}" class="chat-link chat-internal">${text}</a>`;
+                }
+            });
 
             // Parse bullet lists (* or - at start of line)
             if (html.includes('\n* ') || html.includes('\n- ') || html.startsWith('* ') || html.startsWith('- ')) {
