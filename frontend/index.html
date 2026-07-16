@@ -2388,6 +2388,7 @@
         }
     </script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
     <script>
         const firebaseConfig = {
@@ -2403,6 +2404,13 @@
             firebase.initializeApp(firebaseConfig);
         }
         firebase.analytics();
+
+        // Redirect logged-in users to dashboard
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                window.location.href = "dashboard.html";
+            }
+        });
     </script>
 </body>
 
