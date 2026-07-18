@@ -6,6 +6,7 @@ backend/venv/
 **/*.pyc
 .DS_Store
 .vscode/
+.idea/
 
 # ──────────────────────────────────────────────────────────
 # 2. DATA FOLDER LOGIC (backend/data)
