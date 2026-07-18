@@ -228,6 +228,7 @@
             chatInput.value = "";
             chatInput.style.height = "auto";
             chatInput.style.overflowY = "hidden";
+            chatInput.focus(); // Retain focus to prevent mobile keyboard from sliding down
 
             // Instant offline detection before hitting backend
             if (!navigator.onLine) {
