@@ -1,112 +1,116 @@
 # ⚡ AI-Powered Electricity Bill Optimizer (FYP 2026)
 
-**University:** Sir Syed University of Engineering and Technology (SSUET)  
-**Focus:** Seasonal Intelligence, Load Forecasting, and NEPRA Tariff Optimization
-
-## 🚀 Overview
-
-A sophisticated cross-platform energy management system tailored for the Pakistani energy landscape. Utilizing the **PRECON Dataset**, this project employs a hybrid machine learning approach—combining **Random Forest Regression** for accurate seasonal bill prediction and **Bi-LSTM (Bidirectional Long Short-Term Memory)** networks for precise 24-hour load forecasting.
-
-The ecosystem comprises a responsive Web Application, a native Android App, and a scalable Python/Flask Backend, all synchronized via Firebase.
+**Institution:** Department of Software Engineering, Sir Syed University of Engineering and Technology (SSUET), Karachi, Pakistan  
+**Focus:** Seasonal Intelligence, Bi-LSTM Load Forecasting, and NEPRA Tariff Optimization  
+**Project Classification:** Final Year Project (FYP)
 
 ---
 
-## 🌐 Live Demos & Deployments
+## 🚀 System Overview
 
-- **Frontend Web App:** https://bill-optimizer.vercel.app
-- **Backend API:** https://bill-optimizer-fyp-lj83m.ondigitalocean.app
+The **AI-Powered Electricity Bill Optimizer** is a comprehensive, cross-platform energy intelligence ecosystem designed specifically for the Pakistani energy landscape. By leveraging real-world consumption data from the **PRECON (LUMS) Dataset**, the system deploys a dual machine learning core:
+1. **Random Forest Regression** for accurate monthly consumption and cost predictions based on seasonal appliance scaling.
+2. **Bidirectional LSTM (Long Short-Term Memory)** networks for generating high-resolution 24-hour load forecasting curves.
 
----
-
-## 🛠️ Tech Stack & Ecosystem
-
-### 1. 🐍 Backend (Machine Learning & Core Logic)
-- **Framework:** Flask (Python 3.10)
-- **Deployment:** DigitalOcean App Platform (Dockerized)
-- **Machine Learning:** TensorFlow 2.x, Scikit-Learn, Pandas, NumPy
-- **Key Features:**
-  - `NepraEngine`: Accurately models Pakistani NEPRA slabs, protected/lifeline categories, and taxes.
-  - Generates synthetic 24-hour load curves via LSTM and applies Random Forest for monthly forecasting.
-  - Cross-platform configuration with dynamic OS-agnostic Virtual Environment redirection.
-
-### 2. 💻 Frontend (Web Dashboard)
-- **Technologies:** HTML5, CSS3, Vanilla JavaScript
-- **UI/UX:** Immersive dark theme, dynamic glassmorphism aesthetics, responsive grids.
-- **Visualization:** Chart.js for real-time 24-hour load curve analysis and appliance breakdown.
-- **Key Features:** Setup profiles, interactive AI Memory dashboard, NEPRA tariff info, and dynamic appliance simulation.
-
-### 3. 📱 Mobile App (Android Native)
-- **Platform:** Android (Kotlin)
-- **Architecture:** MVVM Architecture
-- **Features:**
-  - Secure authentication and synchronization via Firebase.
-  - On-the-go bill predictions, 24-hour load forecasting, and appliance simulation.
-  - Integrated with the Flask Backend REST APIs.
-
-### 4. ☁️ Database & Authentication
-- **Service:** Firebase Firestore & Firebase Authentication
-- **Role:** Real-time data synchronization between the Web Dashboard and the Mobile App. Secure storage of user archetypes and AI memory.
-
-### 5. 🤖 AI Energy Assistant (RAG System)
-- **Retrieval-Augmented Generation (RAG) Architecture**: Integrates a Python Flask API endpoint (`/api/chat`) backed by the **Google Gemini 3.1 Flash Lite** model (`gemini-3.1-flash-lite`). When a user submits a query, the backend automatically retrieves their live profile data from Cloud Firestore (occupancy count, DISCO category, sanctioned load, current-month LSTM predicted consumption, and appliance inventory metadata).
-- **Context Augmentation**: This retrieved profile is serialized and injected into the LLM system instructions template, restricting the LLM to context-aware, hyper-personalized tariff optimization advice and preventing out-of-bounds general knowledge hallucination.
-- **Session Persistence & Synchronization**: Stores conversation state client-side using `sessionStorage` (Web) or local cache structures (Android) segregated by Firebase `userUid`, and integrates auth state change listeners to dynamically flush cached conversations on logout to ensure data privacy.
+The platform coordinates real-time user inventory tracking, NEPRA slab notifications, and appliance upgrade simulators across a distributed Web Application, a native Android client wrapper, and a scalable Python backend.
 
 ---
 
-## 🧠 Machine Learning Engine (v2)
+## 🌐 Project Architecture & Deployments
 
-Our intelligence engine is powered by five specialized sub-systems:
-- **KNN Archetype Matching:** Discovers a user's "Energy Twin" from real-world PRECON household signatures.
-- **Seasonal Scaling Engine:** Dynamically modulates appliance load constraints (AC, Refrigerators) using thermal coefficients tailored for the Pakistani climate.
-- **Recency-Weighted Calibration:** An exponential decay filter applied to historical bill data, prioritizing recent behavioral shifts over stale usage.
-- **Bi-LSTM Forecaster:** Deep neural network with Layer Normalization generating granular next-day consumption spikes.
-- **Retrieval-Augmented Generation (RAG) System:** Integrates a dynamic context-retrieval pipeline that fetches user-specific inventory profiles, slab limits, and forecast units, augmenting this metadata into LLM system instructions to generate tailored conservation feedback.
+The system is deployed and distributed across the following environments:
+
+| Component | Platform / Host | Current Status | Access Endpoint |
+| :--- | :--- | :--- | :--- |
+| **Frontend Web Portal** | Vercel | **Active** | [AI Bill Optimizer Web Portal](https://bill-optimizer.vercel.app) |
+| **Backend REST API** | DigitalOcean | **Active** (Dockerized) | `https://bill-optimizer-fyp-lj83m.ondigitalocean.app` |
+| **Android Client App** | GitHub Releases | **Active** (v2.0.1, Release Build) | [AI Bill Optimizer Android App (v2.0.1)](https://github.com/mudasirunar/bill-optimizer/releases/tag/v2.0.1) |
+| **Database & Auth** | Cloud Firestore | **Active** | Firebase Integration Sandbox |
 
 ---
 
-## 📁 Project Structure
+## 🛠️ Sub-System Specifications
+
+### 1. 📱 Android Mobile Client (`android_app/`) — v2.0.1
+The legacy native Jetpack Compose views have been upgraded to a production-grade, highly optimized **full-screen WebView wrapper** designed for seamless desktop-mobile sync.
+* **Persistent Sessions & Autofill**: Configured third-party cookie access and scheduled automatic database flushes (`CookieManager.getInstance().flush()`). This eliminates Google 2FA loop warnings and allows password managers to autofill logins natively.
+* **OAuth Cancel Interception**: Implemented custom dialog `OnDismissListener` interfaces. If a user dismisses the Google Login window manually (by hitting the back button or tapping outside), the app destroys the popup instance, prompting the web app's Firebase Auth SDK to throw the `auth/popup-closed-by-user` cancel exception and clear stuck loading indicators.
+* **Real-Time Connectivity Monitor**: Uses Android's `ConnectivityManager` callbacks. If connection drops, it instantly overlays a custom Compose offline warning screen. When the network returns, it automatically triggers `webView.reload()` without requiring user interaction.
+* **Flicker-Free Transitions**: Visually binds layout states to page loading values. The WebView is programmatically set to invisible during load phases to prevent browser connection logs or blank frames from flickering.
+* **R8 Minification & Proguard**: Obfuscated and optimized using custom rules to protect JavaScript interfaces, keeping the final APK light, secure, and fast.
+
+### 2. 💻 Web Dashboard Application (`frontend/`)
+A high-performance single-page web dashboard styled with CSS3 (glassmorphic theme, custom charts, responsive grids).
+* **Interactive Visualization**: Leverages `Chart.js` canvas overlays to display 24-hour predictive load spikes and compare standard vs. inverter appliance setups.
+* **Local Caching & Auth**: Directly integrates Firebase client SDKs for password and Google Authentication. User metadata like `userDisplayName` and `userEmail` are managed locally to persist sessions across page reloads.
+
+### 3. 🐍 Python Flask Backend (`backend/`)
+The computational logic center deployed on DigitalOcean using Docker containers.
+* **NepraEngine**: Models complex fiscal tariffs, including protected/lifeline categories, FPA (Fuel Price Adjustment), and QTA (Quarterly Tariff Adjustment) taxes.
+* **Hybrid Prediction Pipeline**: Combines KNN Archetype search (discovering a user's "Energy Twin" from PRECON signatures) with Random Forest and Bi-LSTM neural networks to construct load forecasts.
+
+### 4. 🤖 AI Chatbot Assistant (RAG Engine)
+An intelligent energy conservation assistant powered by **Google Gemini 3.1 Flash Lite** API requests.
+* **Platform & Device Detection**: Appends `" AiBillOptimizerAndroid"` to the mobile app's user-agent. The chatbot javascript detects this header flag and updates the API request `platform` payload to `"android"`. The AI reads this context, adjusts its advice to mobile tab references, and changes its greetings.
+* **Personalized Context Integration**: Merges active Firebase Auth session credentials with Firestore profile variables. The chatbot safely reads the user's first name, full name, and email, enabling occasional personalized name greetings while maintaining privacy filters (never volunteering emails or full names).
+
+---
+
+## 📁 Project Directory Layout
 
 ```text
 bill-optimizer/
 │
-├── backend/            # Flask API, ML models, and NEPRA tariff logic
-│   ├── app.py          # Main backend application and API routes
-│   ├── Dockerfile      # Docker configuration for DigitalOcean
-│   ├── data/           # Dataset (Local) & Processed ML Models (.pkl, .keras)
-│   ├── utils/          # NEPRA Engine computation logic
-│   └── venv/           # Python Virtual Environment
+├── android_app/         # Android Client App Wrapper (Kotlin)
+│   ├── app/             # Application source, WebView controllers, and assets
+│   └── build.gradle.kts # Kotlin Gradle DSL build configs (v2.0.1, Code 3)
 │
-├── frontend/           # Responsive Web Dashboard
-│   ├── login.html      # Authentication
-│   ├── js/             # Frontend logic and API integration (config.js)
-│   ├── assets/         # UI Elements and Images
-│   └── ...
+├── backend/             # Python Flask API & Machine Learning Engine
+│   ├── app.py           # REST Controllers and routing entrypoint
+│   ├── Dockerfile       # Containerization instructions for DigitalOcean
+│   ├── data/            # Pre-trained models (.pkl, .keras) and LUMS PRECON data
+│   └── utils/           # Nepra computation core & chatbot prompting managers
 │
-└── android-app/        # Native Android Application (Kotlin)
-    ├── app/            # Source code, UI layouts, Jetpack Compose
-    └── build.gradle    # Android build configurations
+├── frontend/            # Web Portal Frontend (HTML5, CSS3, JS)
+│   ├── js/              # Configuration logic, auth scripts, and API wrappers
+│   └── index.html       # Primary application entrypoint
+│
+└── fyp-docs/            # Project documentation, diagrams, and system requirements
 ```
 
 ---
 
-## 💻 Local Setup Instructions
+## 💻 Local Setup & Execution
 
-### Backend Setup
-1. Open the terminal and navigate to the project root.
-2. The project contains an auto-redirecting `app.py`. Simply run:
+### 1. Execute Backend Server
+1. Navigate to the project root directory.
+2. Launch the Flask auto-redirection environment loader:
    ```bash
    python3 backend/app.py
    ```
-   *(It will automatically execute within the virtual environment.)*
-3. The server will run at `http://127.0.0.1:5001`.
+   *(This automatically resolves library dependencies inside the local Python virtual environment)*.
+3. The API service will start on port `5001`.
 
-### Frontend Setup
-1. Ensure the backend is running locally.
-2. The `frontend/js/config.js` file automatically detects `localhost` and routes API calls to port `5001`.
-3. Open `frontend/index.html` in your browser or run via Live Server.
+### 2. Launch Frontend
+1. Ensure the Python backend is active on your host.
+2. The web config file [config.js](file:///Users/apple/University/Final Year Project/bill-optimizer/frontend/js/config.js) will automatically direct client requests to `localhost:5001`.
+3. Open `frontend/index.html` inside a web browser or spin up a local Live Server.
 
-### Android App Setup
-1. Open the `android-app/` directory in Android Studio.
-2. Let Gradle sync and resolve dependencies.
-3. Build and run on an Emulator or Physical Device.
+### 3. Compile Android Client
+1. Open the [android_app](file:///Users/apple/University/Final Year Project/bill-optimizer/android_app) folder inside Android Studio.
+2. Sync the project Gradle structures.
+3. Connect an emulator or developer device, compile the debug sources, or package a release APK via:
+   ```bash
+   ./gradlew assembleRelease
+   ```
+
+---
+
+## 👥 FYP Project Team & Responsibilities
+
+| Student Name | Seat Number | Role | Primary Technical Responsibilities |
+| :--- | :--- | :--- | :--- |
+| **Mudasir Ali** | 2022F-SE-030 | **Team Lead** | Neural model architecture (Bi-LSTM, RF, KNN), data preprocessing, Android WebView wrapper implementation, session caching, and API integration. |
+| **Haider Rizwan** | 2022F-SE-020 | **Backend Developer** | Flask REST API framework development and hardcoding NEPRA tariff engine rules. |
+| **Abu Bakar Saqib** | 2022F-SE-037 | **Database & QA Engineer** | Firestore NoSQL schema management, database sync pipelines, and system testing. |
+| **Abdullah Tahir** | 2022F-SE-080 | **Frontend Designer** | Single-page application layouts, Chart.js visual graphs, and dashboard design. |
