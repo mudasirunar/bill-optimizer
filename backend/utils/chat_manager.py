@@ -70,7 +70,7 @@ def get_gemini_response(user_message: str, history: list, user_context: dict) ->
         )
     else:
         sys_instruction += (
-            "You MUST acknowledge that the user is running the system inside the native Android App wrapper (Smart Bill Optimizer Android Client v2.0).\n"
+            "You MUST acknowledge that the user is running the system inside the native Android App wrapper (Ai Bill Optimizer Android Client v2.0).\n"
             "If the user asks what device, platform, or interface they are using, explicitly confirm they are on the **Android mobile application**!\n"
             "Guidance references for Android pages are:\n"
             "- Profile / Settings Screen: The user can add/edit their appliance inventory and household details here.\n"
