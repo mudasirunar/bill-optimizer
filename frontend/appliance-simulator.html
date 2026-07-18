@@ -583,9 +583,10 @@
 
         .builder-grid {
             display: grid;
-            grid-template-columns: 1fr 420px;
+            grid-template-columns: 480px 420px;
             gap: 24px;
             align-items: start;
+            justify-content: center;
         }
 
         @media(max-width:1100px) {
@@ -600,14 +601,60 @@
             border-radius: 24px;
             padding: 32px;
             backdrop-filter: blur(14px);
+            min-width: 0;
+            height: 470px;
         }
 
-        /* Category tabs */
+        /* Category tabs slider wrapper */
+        .tabs-slider-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            position: relative;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .slider-btn {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .slider-btn:hover {
+            border-color: var(--g2);
+            color: var(--g3);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        /* Category tabs scrollable row */
         .cat-tabs {
             display: flex;
             gap: 6px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            scroll-behavior: smooth;
+            flex-grow: 1;
+            /* Hide scrollbars */
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            padding: 4px 0;
+            min-width: 0;
+            width: 0;
+        }
+
+        .cat-tabs::-webkit-scrollbar {
+            display: none;
         }
 
         .cat-tab {
@@ -623,6 +670,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
+            flex-shrink: 0;
         }
 
         .cat-tab:hover {
@@ -636,11 +684,52 @@
             color: var(--g3);
         }
 
-        /* Appliance catalog grid */
+        /* Scrollable container capping height to approximately 3 rows (around 290px) */
+        .catalog-scroll-container {
+            height: 345px;
+            overflow-y: auto;
+            padding: 4px 6px 4px 0;
+            transition: all 0.3s ease;
+            min-width: 0;
+            width: 100%;
+
+            /* Firefox Scrollbar styling: transparent until hover */
+            scrollbar-width: thin;
+            scrollbar-color: transparent transparent;
+        }
+
+        .catalog-scroll-container:hover {
+            scrollbar-color: rgba(16, 185, 129, 0.4) transparent;
+        }
+
+        /* Webkit Scrollbar styling: transparent until hover */
+        .catalog-scroll-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .catalog-scroll-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .catalog-scroll-container::-webkit-scrollbar-thumb {
+            background: transparent;
+            border-radius: 3px;
+            transition: background-color 0.3s;
+        }
+
+        .catalog-scroll-container:hover::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.4);
+        }
+
+        .catalog-scroll-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(16, 185, 129, 0.8);
+        }
+
         .catalog-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: 1fr 1fr;
             gap: 10px;
+            width: 100%;
         }
 
         .catalog-tile {
@@ -1390,8 +1479,14 @@
             <div class="builder-grid">
                 <!-- Left: Catalog -->
                 <div class="builder-card">
-                    <div class="cat-tabs" id="cat-tabs"></div>
-                    <div class="catalog-grid" id="catalog-grid"></div>
+                    <div class="tabs-slider-wrapper">
+                        <button class="slider-btn prev-btn" onclick="scrollTabs(-1)"><i class="fa fa-chevron-left"></i></button>
+                        <div class="cat-tabs" id="cat-tabs"></div>
+                        <button class="slider-btn next-btn" onclick="scrollTabs(1)"><i class="fa fa-chevron-right"></i></button>
+                    </div>
+                    <div class="catalog-scroll-container">
+                        <div class="catalog-grid" id="catalog-grid"></div>
+                    </div>
                 </div>
 
                 <!-- Right: Basket + Result -->
@@ -1586,45 +1681,73 @@
             }
         }
 
-        // ═══════════════════════════════════════
-        //  SECTION 2: APPLIANCE LOAD BUILDER
-        // ═══════════════════════════════════════
+        // ─── TABS SCROLLER ───
+        function scrollTabs(dir) {
+            const container = document.getElementById('cat-tabs');
+            const scrollAmount = 150;
+            container.scrollBy({ left: dir * scrollAmount, behavior: 'smooth' });
+        }
+
         const CATALOG = {
             'Cooling': [
-                { id: 'ac_std', name: 'Standard AC 1.5T', icon: 'fa-snowflake', watts: 1500, desc: 'Fixed speed compressor' },
-                { id: 'ac_inv', name: 'Inverter AC 1.5T', icon: 'fa-bolt-lightning', watts: 900, desc: 'DC inverter, avg load' },
-                { id: 'ac_1t', name: '1-Ton AC (Fixed)', icon: 'fa-wind', watts: 1000, desc: 'Smaller room AC' },
-                { id: 'fan_ac', name: 'Ceiling Fan (AC)', icon: 'fa-fan', watts: 80, desc: 'Standard motor fan' },
-                { id: 'fan_dc', name: 'Ceiling Fan (DC)', icon: 'fa-fan', watts: 35, desc: 'Inverter BLDC fan' },
-                { id: 'cooler', name: 'Air Cooler', icon: 'fa-water', watts: 150, desc: 'Evaporative cooler' },
+                { id: 'ac_std_1.5', name: 'Standard AC 1.5T', icon: 'fa-snowflake', watts: 1800, desc: 'Fixed speed, high peak load' },
+                { id: 'ac_inv_1.5', name: 'Inverter AC 1.5T', icon: 'fa-bolt-lightning', watts: 900, desc: 'DC inverter energy saver' },
+                { id: 'ac_std_1.0', name: 'Standard AC 1.0T', icon: 'fa-snowflake', watts: 1200, desc: 'Fixed speed, smaller room' },
+                { id: 'ac_inv_1.0', name: 'Inverter AC 1.0T', icon: 'fa-bolt-lightning', watts: 600, desc: 'DC inverter, 1 Ton model' },
+                { id: 'fan_ac', name: 'Ceiling Fan (AC)', icon: 'fa-fan', watts: 80, desc: 'Standard induction motor' },
+                { id: 'fan_bldc', name: 'Ceiling Fan (BLDC)', icon: 'fa-fan', watts: 35, desc: 'Inverter energy saver fan' },
+                { id: 'fan_ped', name: 'Pedestal Fan', icon: 'fa-fan', watts: 100, desc: 'Standard portable fan' },
+                { id: 'cooler_lahori', name: 'Lahori Room Cooler', icon: 'fa-water', watts: 200, desc: 'Evaporative fan & pump' }
             ],
             'Kitchen': [
-                { id: 'fridge_old', name: 'Fridge (Standard)', icon: 'fa-box', watts: 200, desc: 'Older compressor' },
-                { id: 'fridge_inv', name: 'Fridge (Inverter)', icon: 'fa-box-open', watts: 120, desc: 'Modern inverter type' },
-                { id: 'freezer', name: 'Deep Freezer', icon: 'fa-icicles', watts: 250, desc: 'Chest type ~2.5kWh/day' },
-                { id: 'microwave', name: 'Microwave Oven', icon: 'fa-circle-radiation', watts: 1000, desc: 'Standard 1000W' },
-                { id: 'kettle', name: 'Electric Kettle', icon: 'fa-mug-hot', watts: 1500, desc: '1500W per boil' },
-                { id: 'dispenser', name: 'Water Dispenser', icon: 'fa-droplet', watts: 500, desc: 'Hot & cold type' },
+                { id: 'fridge_old', name: 'Fridge (Standard)', icon: 'fa-box', watts: 250, desc: 'Conventional compressor' },
+                { id: 'fridge_inv', name: 'Fridge (Inverter)', icon: 'fa-box-open', watts: 120, desc: 'Low continuous cooling draw' },
+                { id: 'freezer', name: 'Chest Deep Freezer', icon: 'fa-icicles', watts: 200, desc: 'Standard Pakistani home size' },
+                { id: 'microwave', name: 'Microwave Oven', icon: 'fa-circle-radiation', watts: 1200, desc: 'Standard heating load' },
+                { id: 'kettle', name: 'Electric Kettle', icon: 'fa-mug-hot', watts: 1800, desc: 'High load during boils' },
+                { id: 'dispenser', name: 'Water Dispenser', icon: 'fa-droplet', watts: 400, desc: 'Hot & cold compressor load' },
+                { id: 'air_fryer', name: 'Air Fryer', icon: 'fa-wind', watts: 1500, desc: 'High-heat convection oven' },
+                { id: 'blender_grinder', name: 'Juicer & Blender', icon: 'fa-blender', watts: 450, desc: 'Kitchen processor motor' }
             ],
             'Utilities': [
-                { id: 'pump', name: 'Water Pump 1HP', icon: 'fa-water', watts: 746, desc: 'Submersible 1HP' },
-                { id: 'pump_1h5', name: 'Water Pump 1.5HP', icon: 'fa-water', watts: 1119, desc: 'Submersible 1.5HP' },
-                { id: 'geyser', name: 'Electric Geyser', icon: 'fa-hot-tub-person', watts: 3000, desc: 'Storage geyser 3kW' },
-                { id: 'ups', name: 'UPS / Inverter', icon: 'fa-car-battery', watts: 400, desc: 'Charging load avg' },
-                { id: 'iron', name: 'Clothes Iron', icon: 'fa-shirt', watts: 1000, desc: '1000W dry iron' },
-                { id: 'washing', name: 'Washing Machine', icon: 'fa-soap', watts: 500, desc: 'Semi-automatic' },
+                { id: 'pump_donkey', name: 'Water Pump (Donkey)', icon: 'fa-water', watts: 746, desc: '1 HP municipal suction pump' },
+                { id: 'pump_sub', name: 'Water Pump (Sub)', icon: 'fa-water', watts: 1120, desc: '1.5 HP deep bore pump' },
+                { id: 'geyser_storage', name: 'Geyser (Storage)', icon: 'fa-hot-tub-person', watts: 2000, desc: 'Storage geyser heating element' },
+                { id: 'geyser_instant', name: 'Geyser (Instant)', icon: 'fa-fire', watts: 3000, desc: 'High speed instant heating' },
+                { id: 'ups_charging', name: 'UPS Charging Load', icon: 'fa-car-battery', watts: 300, desc: 'Avg battery restoration draw' },
+                { id: 'iron_dry', name: 'Clothes Iron (Stri)', icon: 'fa-shirt', watts: 1000, desc: 'Standard dry iron heating' },
+                { id: 'wash_single', name: 'Washing Machine', icon: 'fa-soap', watts: 350, desc: 'Standard single tub motor' },
+                { id: 'wash_auto', name: 'Washing (Automatic)', icon: 'fa-soap', watts: 600, desc: 'Twin-tub/Top load automatic' },
+                { id: 'vacuum_cleaner', name: 'Vacuum Cleaner', icon: 'fa-wind', watts: 1400, desc: 'Suction motor load' },
+                { id: 'hair_dryer', name: 'Hair Dryer', icon: 'fa-wind', watts: 1500, desc: 'High heating blower load' }
             ],
             'Entertainment': [
-                { id: 'tv_led', name: 'LED TV 43"', icon: 'fa-tv', watts: 60, desc: 'Energy-efficient LED' },
-                { id: 'tv_old', name: 'LCD TV 40"', icon: 'fa-television', watts: 120, desc: 'Older LCD panel' },
-                { id: 'desktop', name: 'Desktop PC', icon: 'fa-desktop', watts: 250, desc: 'With monitor' },
-                { id: 'laptop', name: 'Laptop', icon: 'fa-laptop', watts: 65, desc: 'On charger' },
-                { id: 'router', name: 'WiFi Router', icon: 'fa-wifi', watts: 10, desc: 'Always on' },
-                { id: 'ev', name: 'EV Charger L2', icon: 'fa-charging-station', watts: 7200, desc: 'Level 2 home charger' },
+                { id: 'tv_led', name: 'LED TV 43"', icon: 'fa-tv', watts: 60, desc: 'Energy-efficient LED panel' },
+                { id: 'tv_old', name: 'LCD TV 40"', icon: 'fa-tv', watts: 120, desc: 'Older LCD display panel' },
+                { id: 'desktop', name: 'Desktop PC', icon: 'fa-desktop', watts: 250, desc: 'Standard tower with monitor' },
+                { id: 'laptop', name: 'Laptop Computer', icon: 'fa-laptop', watts: 65, desc: 'Average active charging draw' },
+                { id: 'gaming_console', name: 'Gaming Console', icon: 'fa-gamepad', watts: 200, desc: 'Active play (PS5/Xbox)' },
+                { id: 'audio_soundbar', name: 'Soundbar / Speakers', icon: 'fa-volume-high', watts: 100, desc: 'Home theater sound system' }
+            ],
+            'Lighting & Smart': [
+                { id: 'bulb_cfl', name: 'Energy Saver (CFL)', icon: 'fa-lightbulb', watts: 24, desc: 'Older compact fluorescent' },
+                { id: 'bulb_led', name: 'LED Bulb 12W', icon: 'fa-lightbulb', watts: 12, desc: 'Modern high efficiency bulb' },
+                { id: 'tube_led', name: 'LED Tube Light 18W', icon: 'fa-lightbulb', watts: 18, desc: 'Modern slim tube light' },
+                { id: 'bulb_filament', name: 'Incandescent Bulb', icon: 'fa-lightbulb', watts: 60, desc: 'Legacy glass filament bulb' },
+                { id: 'cctv_system', name: 'CCTV Security System', icon: 'fa-video', watts: 40, desc: 'DVR + 4 cameras 24/7' },
+                { id: 'router_wifi', name: 'WiFi Router & ONT', icon: 'fa-wifi', watts: 12, desc: 'Internet connection 24/7' },
+                { id: 'charger_phone', name: 'Smart Phone Charger', icon: 'fa-mobile', watts: 18, desc: 'Fast charging average' }
+            ],
+            'Heavy & Solar': [
+                { id: 'ev_charger', name: 'EV Charger Level 2', icon: 'fa-charging-station', watts: 7200, desc: 'Level 2 home charger load' },
+                { id: 'dishwasher', name: 'Dishwasher', icon: 'fa-sink', watts: 1500, desc: 'Water heating wash cycle' },
+                { id: 'treadmill', name: 'Fitness Treadmill', icon: 'fa-person-running', watts: 1000, desc: 'DC motor running load' },
+                { id: 'solar_charging', name: 'Solar Grid Charging', icon: 'fa-solar-panel', watts: 200, desc: 'Idle inverter bypass draw' }
             ]
         };
 
         const basket = {};
+        const catalogScrollState = {};
         let activeCat = 'Cooling';
 
         function buildTabs() {
@@ -1637,13 +1760,39 @@
         }
 
         function getCatIcon(cat) {
-            return { Cooling: 'fa-snowflake', Kitchen: 'fa-utensils', Utilities: 'fa-plug', Entertainment: 'fa-tv' }[cat] || 'fa-box';
+            return { 
+                Cooling: 'fa-snowflake', 
+                Kitchen: 'fa-utensils', 
+                Utilities: 'fa-plug', 
+                Entertainment: 'fa-tv',
+                'Lighting & Smart': 'fa-lightbulb',
+                'Heavy & Solar': 'fa-solar-panel'
+            }[cat] || 'fa-box';
         }
 
         function switchCat(cat) {
+            const container = document.querySelector('.catalog-scroll-container');
+            if (container) {
+                catalogScrollState[activeCat] = container.scrollTop;
+            }
+
             activeCat = cat;
             buildTabs();
             buildCatalog();
+
+            if (container) {
+                setTimeout(() => {
+                    container.scrollTop = catalogScrollState[activeCat] || 0;
+                }, 0);
+            }
+
+            // Smoothly scroll the selected chip just enough to make it fully visible if cut off
+            setTimeout(() => {
+                const activeBtn = document.querySelector('.cat-tab.active');
+                if (activeBtn) {
+                    activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+                }
+            }, 50);
         }
 
         function buildCatalog() {
