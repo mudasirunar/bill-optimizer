@@ -144,6 +144,27 @@ fun WebViewScreen(
                     setProgressBackgroundColorSchemeColor(android.graphics.Color.parseColor("#0D1A12"))
                 }
 
+                val isAllowedInternalOrAuthUrl: (String?) -> Boolean = { url ->
+                    if (url == null) false
+                    else {
+                        val cleanUrl = url.lowercase().trim()
+                        val isExactHomepage = cleanUrl == "https://bill-optimizer.vercel.app" ||
+                                cleanUrl == "https://bill-optimizer.vercel.app/" ||
+                                cleanUrl == "http://bill-optimizer.vercel.app" ||
+                                cleanUrl == "http://bill-optimizer.vercel.app/"
+                        
+                        if (isExactHomepage) {
+                            false // Force exact homepage link to open in external browser
+                        } else {
+                            cleanUrl.contains("bill-optimizer.vercel.app") ||
+                                    cleanUrl.contains("accounts.google.com") ||
+                                    cleanUrl.contains("firebaseapp.com") ||
+                                    cleanUrl.contains("google.co") ||
+                                    (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://"))
+                        }
+                    }
+                }
+
                 val view = WebView(context).apply {
                     layoutParams = ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -170,13 +191,32 @@ fun WebViewScreen(
                             }
                         }
 
+                        private fun handleExternalLink(url: String?): Boolean {
+                            if (url == null) return false
+                            val isAllowed = isAllowedInternalOrAuthUrl(url)
+                            
+                            return if (isAllowed) {
+                                false // Load internally inside the WebView
+                            } else {
+                                try {
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)).apply {
+                                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    context.startActivity(intent)
+                                    true // Handled external redirection natively
+                                } catch (e: Exception) {
+                                    false // Fallback to WebView on failure
+                                }
+                            }
+                        }
+
                         @Deprecated("Deprecated in Java")
                         override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                            return false // Let WebView handle redirection naturally
+                            return handleExternalLink(url)
                         }
 
                         override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                            return false // Let WebView handle redirection naturally
+                            return handleExternalLink(request?.url?.toString())
                         }
 
                         @Deprecated("Deprecated in Java")
@@ -227,7 +267,6 @@ fun WebViewScreen(
                                 )
                                 
                                 setBackgroundColor(android.graphics.Color.parseColor("#030A06"))
-                                webViewClient = object : WebViewClient() {}
                                 
                                 // Enable cookies on popup window
                                 android.webkit.CookieManager.getInstance().setAcceptCookie(true)
@@ -252,6 +291,36 @@ fun WebViewScreen(
                                     android.webkit.CookieManager.getInstance().flush()
                                 }
                                 show()
+                             }
+
+                            popupWebView.webViewClient = object : WebViewClient() {
+                                private fun handleExternalPopupLink(url: String?): Boolean {
+                                    if (url == null) return false
+                                    val isAllowed = isAllowedInternalOrAuthUrl(url)
+                                    return if (isAllowed) {
+                                        false // Load internally (Google Login flow)
+                                    } else {
+                                        try {
+                                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)).apply {
+                                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            }
+                                            ctx.startActivity(intent)
+                                            dialog.dismiss() // Dismiss the blank dialog popup window
+                                            true
+                                        } catch (e: Exception) {
+                                            false
+                                        }
+                                    }
+                                }
+
+                                @Deprecated("Deprecated in Java")
+                                override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                                    return handleExternalPopupLink(url)
+                                }
+
+                                override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                                    return handleExternalPopupLink(request?.url?.toString())
+                                }
                             }
                             
                             popupWebView.webChromeClient = object : WebChromeClient() {
