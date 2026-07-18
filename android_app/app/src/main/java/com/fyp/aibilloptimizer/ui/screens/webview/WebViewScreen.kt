@@ -240,7 +240,7 @@ fun WebViewScreen(
                                     setSupportMultipleWindows(true)
                                     setJavaScriptCanOpenWindowsAutomatically(true)
                                     val defaultUA = userAgentString
-                                    userAgentString = defaultUA.replace(Regex("Version/[0-9.]+"), "")
+                                    userAgentString = defaultUA.replace(Regex("Version/[0-9.]+"), "") + " AiBillOptimizerAndroid"
                                 }
                             }
                             
@@ -277,7 +277,7 @@ fun WebViewScreen(
                         setSupportMultipleWindows(true)
                         setJavaScriptCanOpenWindowsAutomatically(true)
                         val defaultUA = userAgentString
-                        userAgentString = defaultUA.replace(Regex("Version/[0-9.]+"), "")
+                        userAgentString = defaultUA.replace(Regex("Version/[0-9.]+"), "") + " AiBillOptimizerAndroid"
                         cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
                     }
                     

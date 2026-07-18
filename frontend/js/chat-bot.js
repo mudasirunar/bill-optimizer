@@ -273,6 +273,10 @@
             try {
                 // Post payload to backend chat endpoint
                 const url = (typeof API_BASE_URL !== "undefined") ? `${API_BASE_URL}/api/chat` : "http://127.0.0.1:5001/api/chat";
+                const isAndroid = navigator.userAgent.includes("AiBillOptimizerAndroid");
+                const platform = isAndroid ? "android" : "web";
+                const displayName = localStorage.getItem('userDisplayName') || '';
+                const email = localStorage.getItem('userEmail') || '';
                 const res = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -281,7 +285,9 @@
                         message: messageText,
                         history: formattedHistory,
                         page: window.location.pathname,
-                        platform: "web"
+                        platform: platform,
+                        displayName: displayName,
+                        email: email
                     }),
                     signal: controller.signal
                 });

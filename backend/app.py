@@ -942,6 +942,8 @@ def chat_with_assistant():
         history = data.get('history', [])
         page = data.get('page', '')
         platform = data.get('platform', 'web')
+        client_display_name = data.get('displayName', '')
+        client_email = data.get('email', '')
 
         if not uid or not message:
             return jsonify({"error": "Missing uid or message"}), 400
@@ -949,7 +951,17 @@ def chat_with_assistant():
         # 1. Fetch user data from Firestore
         user_doc = db.collection('users').document(uid).get()
         if not user_doc.exists:
-            fallback_context = {"disco": "Unknown", "category_display": "Unknown", "inventory": {}, "page": page, "platform": platform}
+            fallback_first = client_display_name.split(' ')[0] if client_display_name else 'User'
+            fallback_context = {
+                "disco": "Unknown",
+                "category_display": "Unknown",
+                "inventory": {},
+                "page": page,
+                "platform": platform,
+                "first_name": fallback_first or 'User',
+                "full_name": client_display_name or 'User',
+                "email": client_email or 'Unknown'
+            }
             reply = get_gemini_response(message, history, fallback_context)
             return jsonify({"status": "success", "reply": reply})
 
@@ -1004,7 +1016,17 @@ def chat_with_assistant():
             completeness_score += 1
 
         # 4. Construct user profile context
+        # Extract full name, first name, and email safely
+        raw_first = u.get('firstName') or u.get('first_name', '')
+        raw_last = u.get('lastName') or u.get('last_name', '')
+        constructed_full = f"{raw_first} {raw_last}".strip()
+        final_full_name = constructed_full or u.get('name') or client_display_name or 'User'
+        final_first_name = raw_first or u.get('name', '').split(' ')[0] or (client_display_name.split(' ')[0] if client_display_name else '') or 'User'
+        
         user_context = {
+            "first_name": final_first_name,
+            "full_name": final_full_name,
+            "email": u.get('email') or u.get('email_address') or client_email or 'Unknown',
             "disco": u.get('disco', 'Unknown'),
             "category_display": "Un-Protected" if cat == 'non_protected' else "Protected" if cat == 'protected' else "Lifeline",
             "is_protected": "Yes" if cat == 'protected' else "No",
