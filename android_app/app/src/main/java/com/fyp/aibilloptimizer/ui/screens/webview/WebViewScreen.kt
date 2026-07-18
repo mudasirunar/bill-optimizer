@@ -150,6 +150,10 @@ fun WebViewScreen(
                         ViewGroup.LayoutParams.MATCH_PARENT
                     )
                     
+                    // Enable cookies and third-party cookies for Google OAuth session state sharing
+                    android.webkit.CookieManager.getInstance().setAcceptCookie(true)
+                    android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+                    
                     // Prevent white flash by setting default background to Dark Obsidian
                     setBackgroundColor(android.graphics.Color.parseColor("#030A06"))
                     
@@ -158,6 +162,8 @@ fun WebViewScreen(
                             super.onPageFinished(view, url)
                             swipeRefreshLayout.isRefreshing = false
                             canGoBack = view?.canGoBack() == true
+                            // Flush cookies to disk to guarantee session persistence across app launches
+                            android.webkit.CookieManager.getInstance().flush()
                             // Only disable loading screen if we didn't hit a connection error
                             if (!isError) {
                                 isLoading = false
@@ -223,9 +229,14 @@ fun WebViewScreen(
                                 setBackgroundColor(android.graphics.Color.parseColor("#030A06"))
                                 webViewClient = object : WebViewClient() {}
                                 
+                                // Enable cookies on popup window
+                                android.webkit.CookieManager.getInstance().setAcceptCookie(true)
+                                android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+                                
                                 settings.apply {
                                     javaScriptEnabled = true
                                     domStorageEnabled = true
+                                    databaseEnabled = true
                                     setSupportMultipleWindows(true)
                                     setJavaScriptCanOpenWindowsAutomatically(true)
                                     val defaultUA = userAgentString
@@ -235,6 +246,11 @@ fun WebViewScreen(
                             
                             val dialog = android.app.Dialog(ctx, android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
                                 setContentView(popupWebView)
+                                setCancelable(true)
+                                setOnDismissListener {
+                                    popupWebView.destroy()
+                                    android.webkit.CookieManager.getInstance().flush()
+                                }
                                 show()
                             }
                             
