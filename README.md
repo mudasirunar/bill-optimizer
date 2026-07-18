@@ -24,14 +24,14 @@ The system is deployed and distributed across the following environments:
 | :--- | :--- | :--- | :--- |
 | **Frontend Web Portal** | Vercel | **Active** | [AI Bill Optimizer Web Portal](https://bill-optimizer.vercel.app) |
 | **Backend REST API** | DigitalOcean | **Active** (Dockerized) | `https://bill-optimizer-fyp-lj83m.ondigitalocean.app` |
-| **Android Client App** | GitHub Releases | **Active** (v2.0.1, Release Build) | [AI Bill Optimizer Android App (v2.0.1)](https://github.com/mudasirunar/bill-optimizer/releases/tag/v2.0.1) |
+| **Android Client App** | GitHub Releases | **Active** (Latest Release Build) | [AI Bill Optimizer Android App (Latest Release)](https://github.com/mudasirunar/bill-optimizer/releases/latest) |
 | **Database & Auth** | Cloud Firestore | **Active** | Firebase Integration Sandbox |
 
 ---
 
 ## 🛠️ Sub-System Specifications
 
-### 1. 📱 Android Mobile Client (`android_app/`) — v2.0.1
+### 1. 📱 Android Mobile Client (`android_app/`)
 The legacy native Jetpack Compose views have been upgraded to a production-grade, highly optimized **full-screen WebView wrapper** designed for seamless desktop-mobile sync.
 * **Persistent Sessions & Autofill**: Configured third-party cookie access and scheduled automatic database flushes (`CookieManager.getInstance().flush()`). This eliminates Google 2FA loop warnings and allows password managers to autofill logins natively.
 * **OAuth Cancel Interception**: Implemented custom dialog `OnDismissListener` interfaces. If a user dismisses the Google Login window manually (by hitting the back button or tapping outside), the app destroys the popup instance, prompting the web app's Firebase Auth SDK to throw the `auth/popup-closed-by-user` cancel exception and clear stuck loading indicators.
@@ -63,7 +63,7 @@ bill-optimizer/
 │
 ├── android_app/         # Android Client App Wrapper (Kotlin)
 │   ├── app/             # Application source, WebView controllers, and assets
-│   └── build.gradle.kts # Kotlin Gradle DSL build configs (v2.0.1, Code 3)
+│   └── build.gradle.kts # Kotlin Gradle DSL build configs (Production Configured)
 │
 ├── backend/             # Python Flask API & Machine Learning Engine
 │   ├── app.py           # REST Controllers and routing entrypoint
