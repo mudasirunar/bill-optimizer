@@ -624,6 +624,140 @@
                 display: block !important;
             }
         }
+
+        /* Terms & Policy Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+            animation: modalFadeIn 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .modal-header h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0;
+        }
+
+        .modal-close-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-close-btn:hover {
+            color: #0f172a;
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            color: #334155;
+            font-size: 0.88rem;
+            line-height: 1.6;
+            text-align: left;
+        }
+
+        .modal-body h3 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 16px 0 8px;
+        }
+
+        .modal-body h3:first-child {
+            margin-top: 0;
+        }
+
+        .modal-body p {
+            margin: 0 0 16px;
+        }
+
+        .modal-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .modal-ok-btn {
+            background: #0f172a;
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 24px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-ok-btn:hover {
+            background: #1e293b;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+        }
+        
+        .modal-body::-webkit-scrollbar {
+            width: 6px;
+        }
+        .modal-body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .modal-body::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.3);
+            border-radius: 3px;
+        }
+        .modal-body:hover::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.5);
+        }
     </style>
 </head>
 
@@ -796,7 +930,7 @@
                 Sign up with Google
             </button>
 
-            <p class="terms-note">By signing up you agree to our Terms of Service and Privacy Policy.</p>
+            <p class="terms-note">By signing up you agree to our <a href="#" onclick="openTermsModal(event)" style="color: var(--g3); text-decoration: underline; font-weight: 600;">Terms of Service & Privacy Policy</a>.</p>
 
             <p class="footer-link">Already a member? <a href="login.html">Sign In</a></p>
 
@@ -810,7 +944,63 @@
         </div>
     </div>
 
+    <!-- TERMS AND CONDITIONS MODAL -->
+    <div id="terms-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Terms & Conditions</h2>
+                <button class="modal-close-btn" onclick="closeTermsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3>1. Academic Project & Scope</h3>
+                <p>Smart Bill Optimizer AI is a Final Year Project developed at Sir Syed University of Engineering & Technology (SSUET) for 2026. This platform is designed strictly as an educational and simulation utility for residential energy consumers in Pakistan. It is not an official utility billing portal or public auditor.</p>
+                
+                <h3>2. Authentication & Profile Security</h3>
+                <p>We use <strong>Firebase Authentication</strong> to secure user access. Registration can be completed using standard email/password credentials or through Google OAuth. Users are responsible for maintaining the confidentiality of their login sessions.</p>
+                
+                <h3>3. Data Collection & Firebase Storage</h3>
+                <p>By registering, you authorize the storage of your billing profile parameters on <strong>Firebase Firestore</strong>, including:
+                    <ul>
+                        <li>Account connection type (Single-phase vs. Three-phase) and sanctioned load limit.</li>
+                        <li>Historical monthly utility bills (units consumed and billing amounts).</li>
+                        <li>Custom household appliance inventories selected in the What-If Simulator.</li>
+                    </ul>
+                This data is stored securely and is accessed solely to calibrate the forecasting algorithms.</p>
+                
+                <h3>4. Machine Learning & Forecasting Models</h3>
+                <p>The system runs predictive models on the backend:
+                    <ul>
+                        <li><strong>Random Forest Regressor</strong>: Processes historical billing logs to predict upcoming monthly unit consumption.</li>
+                        <li><strong>LSTM (Long Short-Term Memory) Network</strong>: Synthesizes hourly patterns to forecast load distributions.</li>
+                    </ul>
+                All predictions are mathematical models and do not guarantee exact utility meter readings.</p>
+                
+                <h3>5. Context-Aware AI Chatbot (Gemini API)</h3>
+                <p>Our interactive chatbot leverages the <strong>Google Gemini API</strong>. To provide custom insights, the chatbot retrieves your connection profiles and consumption history from Firestore and appends it to the LLM query context. Active conversation transcripts are cached locally on your device's browser (Local Storage) to enable context-aware discussions and are not saved on the database server. We do not use your logs for training public foundation models.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-ok-btn" onclick="closeTermsModal()">Done</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        function openTermsModal(event) {
+            if (event) event.preventDefault();
+            document.getElementById('terms-modal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function closeTermsModal() {
+            document.getElementById('terms-modal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('terms-modal');
+            if (event.target === modal) {
+                closeTermsModal();
+            }
+        });
+
         function showRules(visible) { document.getElementById('pass-rules').style.display = visible ? 'block' : 'none'; }
         function togglePass(id, icon) {
             const input = document.getElementById(id);
