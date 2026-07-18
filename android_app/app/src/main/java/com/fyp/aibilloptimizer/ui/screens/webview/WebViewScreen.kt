@@ -1,5 +1,10 @@
 package com.fyp.aibilloptimizer.ui.screens.webview
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.view.ViewGroup
 import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
@@ -35,6 +40,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +51,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -66,9 +73,56 @@ fun WebViewScreen(
     var isLoading by remember { mutableStateOf(true) }
     var isError by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+    var isOnline by remember { mutableStateOf(true) }
+
     // Intercept back presses to go back in WebView history
     BackHandler(enabled = canGoBack) {
         webView?.goBack()
+    }
+
+    // Real-Time Network Connectivity Monitor with Auto-Reload on Restore
+    DisposableEffect(context) {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        
+        // Initial setup check
+        val activeNetwork = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
+        isOnline = capabilities != null && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        if (!isOnline) {
+            isError = true
+        }
+
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                if (!isOnline) {
+                    isOnline = true
+                    // Auto-reload the WebView once network is restored!
+                    if (isError) {
+                        isError = false
+                        isLoading = true
+                        webView?.post {
+                            webView?.reload()
+                        }
+                    }
+                }
+            }
+
+            override fun onLost(network: Network) {
+                isOnline = false
+                isError = true // Instantly trigger offline screen without waiting for page fails
+            }
+        }
+
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+
+        connectivityManager.registerNetworkCallback(request, callback)
+
+        onDispose {
+            connectivityManager.unregisterNetworkCallback(callback)
+        }
     }
 
     // Animation for spinner
