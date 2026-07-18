@@ -1,6 +1,10 @@
 package com.fyp.aibilloptimizer.ui.screens.webview
 
 import android.view.ViewGroup
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
@@ -17,10 +21,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +47,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -52,6 +64,7 @@ fun WebViewScreen(
     var webView: WebView? by remember { mutableStateOf(null) }
     var canGoBack by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
+    var isError by remember { mutableStateOf(false) }
 
     // Intercept back presses to go back in WebView history
     BackHandler(enabled = canGoBack) {
@@ -91,16 +104,55 @@ fun WebViewScreen(
                             super.onPageFinished(view, url)
                             swipeRefreshLayout.isRefreshing = false
                             canGoBack = view?.canGoBack() == true
-                            isLoading = false // Hide loader when content is ready
+                            // Only disable loading screen if we didn't hit a connection error
+                            if (!isError) {
+                                isLoading = false
+                            }
                         }
 
                         @Deprecated("Deprecated in Java")
                         override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                             return false // Let WebView handle redirection naturally
                         }
+
+                        override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                            return false // Let WebView handle redirection naturally
+                        }
+
+                        @Deprecated("Deprecated in Java")
+                        override fun onReceivedError(
+                            view: WebView?,
+                            errorCode: Int,
+                            description: String?,
+                            failingUrl: String?
+                        ) {
+                            super.onReceivedError(view, errorCode, description, failingUrl)
+                            isError = true
+                        }
+
+                        override fun onReceivedError(
+                            view: WebView?,
+                            request: WebResourceRequest?,
+                            error: WebResourceError?
+                        ) {
+                            super.onReceivedError(view, request, error)
+                            // Triggers on mainframe loading failure (e.g. offline)
+                            if (request?.isForMainFrame == true) {
+                                isError = true
+                            }
+                        }
                     }
 
-                    webChromeClient = object : android.webkit.WebChromeClient() {
+                    webChromeClient = object : WebChromeClient() {
+                        // Redirect JS console logs to Android Logcat to trace web failures
+                        override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
+                            android.util.Log.d(
+                                "WebViewConsole", 
+                                "${consoleMessage?.message()} -- From line ${consoleMessage?.lineNumber()} of ${consoleMessage?.sourceId()}"
+                            )
+                            return true
+                        }
+
                         override fun onCreateWindow(
                             view: WebView?,
                             isDialog: Boolean,
@@ -132,7 +184,7 @@ fun WebViewScreen(
                                 show()
                             }
                             
-                            popupWebView.webChromeClient = object : android.webkit.WebChromeClient() {
+                            popupWebView.webChromeClient = object : WebChromeClient() {
                                 override fun onCloseWindow(window: WebView?) {
                                     super.onCloseWindow(window)
                                     dialog.dismiss()
@@ -164,6 +216,9 @@ fun WebViewScreen(
                 
                 webView = view
                 swipeRefreshLayout.setOnRefreshListener {
+                    // Reset errors on pull-to-refresh
+                    isError = false
+                    isLoading = true
                     view.reload()
                 }
                 swipeRefreshLayout.addView(view)
@@ -175,10 +230,13 @@ fun WebViewScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .systemBarsPadding()
+                .graphicsLayer {
+                    alpha = if (isLoading || isError) 0f else 1f
+                }
         )
 
         // Loading Overlay (Acts as our brand Custom Splash Screen while WebView loads the URL)
-        if (isLoading) {
+        if (isLoading && !isError) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -240,6 +298,69 @@ fun WebViewScreen(
                         letterSpacing = 2.sp
                     )
                 )
+            }
+        }
+
+        // Native Connection Error Screen Overlay (No web-dinosaur pages)
+        if (isError) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(DarkObsidian),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = "Connection Warning",
+                    tint = MintNeon,
+                    modifier = Modifier.size(64.dp)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "Connection Failed",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    ),
+                    color = Color.White
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Unable to connect to Smart Bill Optimizer. Please check your network connection and try again.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.6f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 32.dp)
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Button(
+                    onClick = {
+                        isError = false
+                        isLoading = true
+                        webView?.reload()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MintNeon,
+                        contentColor = DarkObsidian
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth(0.6f)
+                        .height(48.dp)
+                ) {
+                    Text(
+                        text = "Retry Connection",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                }
             }
         }
     }

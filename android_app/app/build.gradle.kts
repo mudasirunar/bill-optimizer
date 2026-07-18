@@ -46,6 +46,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
     // Unused Native UI libraries removed. WebView wrapper core remains.
+    implementation("androidx.compose.material:material-icons-core")
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
