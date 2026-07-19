@@ -134,42 +134,37 @@
 
                 <div class="hero-visual">
                     <div class="float-chip fc1">
-                        <i style="background:rgba(103,232,249,0.14);color:var(--info)" class="fa fa-wave-square"></i>
-                        <div><b>LSTM Live</b><span>24h forecast synced</span></div>
+                        <i style="background:rgba(16,185,129,0.14);color:var(--g3)" class="fa fa-tree"></i>
+                        <div><b>RF Predictor</b><span>Monthly bill estimation</span></div>
                     </div>
                     <div class="predict-card">
-                        <div class="predict-top">
-                            <span class="predict-tag"><i class="fa fa-circle-nodes"></i> AI Prediction</span>
-                            <span class="predict-mini">K-Electric · Non-Protected</span>
+                        <div class="play-slider-container" style="margin-top:5px">
+                            <div class="play-slider-header">
+                                <span>Consumption</span>
+                                <span id="playUnitsVal" class="mono font-bold">300 kWh</span>
+                            </div>
+                            <input type="range" id="playUnitsSlider" min="50" max="800" step="10" value="300" class="play-slider">
                         </div>
-                        <div class="predict-amount">Rs. 18,240 <span>/ month</span></div>
-                        <div class="predict-sub">Projected from 312 units · Confidence: high</div>
-                        <svg class="predict-chart" viewBox="0 0 320 120" preserveAspectRatio="none">
-                            <defs>
-                                <linearGradient id="chartGrad" x1="0" y1="0" x2="1" y2="0">
-                                    <stop offset="0%" stop-color="#059669" />
-                                    <stop offset="100%" stop-color="#34d399" />
-                                </linearGradient>
-                                <linearGradient id="chartFillGrad" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stop-color="#34d399" stop-opacity="0.28" />
-                                    <stop offset="100%" stop-color="#34d399" stop-opacity="0" />
-                                </linearGradient>
-                            </defs>
-                            <path class="chart-fill"
-                                d="M0,90 C40,70 60,95 90,80 C130,60 150,88 190,60 C230,35 250,55 280,30 L320,20 L320,120 L0,120 Z"
-                                fill="url(#chartFillGrad)" />
-                            <path class="chart-line"
-                                d="M0,90 C40,70 60,95 90,80 C130,60 150,88 190,60 C230,35 250,55 280,30 L320,20" />
-                        </svg>
-                        <div class="predict-slabs">
-                            <div class="slab-chip"><b>101–200</b><span>Slab Rate</span></div>
-                            <div class="slab-chip"><b>Rs 3.2</b><span>FCA Adj.</span></div>
-                            <div class="slab-chip"><b>17%</b><span>GST</span></div>
+                        <div class="predict-amount" id="playBillVal" style="font-size:2.0rem">Rs. 18,240 <span>/ month</span></div>
+                        <div class="predict-sub" id="playBillSub">Projected from standard NEPRA rates.</div>
+                        <div class="predict-alert alert-unprotected" id="playLimitAlert">
+                            <i class="fa fa-triangle-exclamation"></i>
+                            <span><strong>Protected Status Lost!</strong> Exceeding 200 units triggers a cumulative slab pricing increase of ~80% across all units.</span>
                         </div>
+                        
+                        <!-- Slab details breakdown -->
+                        <div class="predict-slabs" id="playSlabsGrid" style="margin-top:10px">
+                            <div class="slab-chip" id="playSlabRate"><b>Rs 33.1</b><span>Slab Rate</span></div>
+                            <div class="slab-chip" id="playSlabFca"><b>Rs 0.34</b><span>FCA Adj.</span></div>
+                            <div class="slab-chip" id="playSlabStatus"><b>Non-Prot</b><span>Category</span></div>
+                        </div>
+                        <button class="btn btn-primary" id="playForecastBtn" style="width:100%;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px">
+                            <i class="fa fa-chart-line"></i> Predict Cost with AI
+                        </button>
                     </div>
                     <div class="float-chip fc2">
-                        <i style="background:rgba(52,211,153,0.14);color:var(--g3)" class="fa fa-plug"></i>
-                        <div><b>Rs. 2,140 saved</b><span>via AC swap simulation</span></div>
+                        <i style="background:rgba(103,232,249,0.14);color:var(--info)" class="fa fa-wave-square"></i>
+                        <div><b>LSTM Live</b><span>24h forecast synced</span></div>
                     </div>
                 </div>
             </div>

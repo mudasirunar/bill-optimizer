@@ -88,11 +88,17 @@ function hideAuthLoading() {
 
 // 4. Handle Redirect Logic
 function handleAuthRedirect(userCredential) {
-    const isNewUser = userCredential.additionalUserInfo?.isNewUser;
-    if (isNewUser) {
-        window.location.href = "setup-profile.html";
+    const redirectPage = sessionStorage.getItem('redirectAfterLogin');
+    if (redirectPage) {
+        sessionStorage.removeItem('redirectAfterLogin');
+        window.location.href = redirectPage;
     } else {
-        window.location.href = "dashboard.html";
+        const isNewUser = userCredential.additionalUserInfo?.isNewUser;
+        if (isNewUser) {
+            window.location.href = "setup-profile.html";
+        } else {
+            window.location.href = "dashboard.html";
+        }
     }
 }
 
@@ -176,10 +182,16 @@ async function handleSignUp(firstName, lastName, email, password, confirmPasswor
         logDetailedEvent('signup_success');
 
         // One-time Setup Redirect for New Users
-        if (result.additionalUserInfo?.isNewUser) {
-            window.location.href = "setup-profile.html";
+        const redirectPage = sessionStorage.getItem('redirectAfterLogin');
+        if (redirectPage) {
+            sessionStorage.removeItem('redirectAfterLogin');
+            window.location.href = redirectPage;
         } else {
-            window.location.href = "dashboard.html";
+            if (result.additionalUserInfo?.isNewUser) {
+                window.location.href = "setup-profile.html";
+            } else {
+                window.location.href = "dashboard.html";
+            }
         }
     } catch (error) {
         hideAuthLoading();

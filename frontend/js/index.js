@@ -97,3 +97,162 @@
                 }
             }
         });
+
+        // ─── PLAYGROUND INTERACTIVE WIDGET LOGIC ───
+        // Tab 1: NEPRA Tariff Calculator
+        const unitsSlider = document.getElementById('playUnitsSlider');
+        const unitsVal = document.getElementById('playUnitsVal');
+        const billVal = document.getElementById('playBillVal');
+        const billSub = document.getElementById('playBillSub');
+        const slabRateVal = document.getElementById('playSlabRate').querySelector('b');
+        const slabFcaVal = document.getElementById('playSlabFca').querySelector('b');
+        const slabStatusVal = document.getElementById('playSlabStatus').querySelector('b');
+
+        // NEPRA Engine Rates (matched with nepra_engine.py & config.py)
+        const NEPRA_FCA = 0.3364;
+        const NEPRA_QTA = -1.9857;
+
+        function calculateNepraBill(units) {
+            let energyCost = 0;
+            let category = "non_protected";
+            let fixedCharges = 0;
+            
+            const gstRate = 0.18;
+            const edRate = 0.015;
+            const tvFee = 35.0;
+            const loadKw = 1.0; // Standard domestic connection base
+
+            if (units <= 200) {
+                category = "protected";
+                if (units <= 100) {
+                    energyCost = units * 10.54;
+                    fixedCharges = loadKw * 200.0;
+                } else {
+                    energyCost = (100 * 10.54) + ((units - 100) * 13.01);
+                    fixedCharges = loadKw * 300.0;
+                }
+            } else {
+                category = "non_protected";
+                let tempUnits = units;
+                
+                const slabs = [
+                    [1, 100, 22.44], [101, 200, 28.91], [201, 300, 33.10],
+                    [301, 400, 36.46], [401, 500, 38.97], [501, 600, 40.22],
+                    [601, 700, 41.85], [701, Infinity, 47.20]
+                ];
+                
+                let prevLimit = 0;
+                for (const [low, high, rate] of slabs) {
+                    if (tempUnits <= 0) break;
+                    const chunk = Math.min(tempUnits, high - prevLimit);
+                    energyCost += chunk * rate;
+                    tempUnits -= chunk;
+                    prevLimit = high;
+                }
+                
+                const fixedRates = [
+                    [100, 275.0], [200, 300.0], [300, 350.0],
+                    [400, 400.0], [500, 500.0], [700, 675.0], [Infinity, 675.0]
+                ];
+                
+                let ratePerKw = 675.0;
+                for (const [limit, rate] of fixedRates) {
+                    if (units <= limit) {
+                        ratePerKw = rate;
+                        break;
+                    }
+                }
+                fixedCharges = loadKw * ratePerKw;
+            }
+            
+            const fca = units * NEPRA_FCA;
+            const qta = units * NEPRA_QTA;
+            
+            const taxableAmount = energyCost + fixedCharges + fca + qta;
+            const gst = taxableAmount * gstRate;
+            const ed = energyCost * edRate;
+            
+            const total = energyCost + fixedCharges + fca + qta + gst + ed + tvFee;
+            
+            let rateDisplay = 47.20;
+            if (units <= 100) rateDisplay = category === "protected" ? 10.54 : 22.44;
+            else if (units <= 200) rateDisplay = category === "protected" ? 13.01 : 28.91;
+            else if (units <= 300) rateDisplay = 33.10;
+            else if (units <= 400) rateDisplay = 36.46;
+            else if (units <= 500) rateDisplay = 38.97;
+            else if (units <= 600) rateDisplay = 40.22;
+            else if (units <= 700) rateDisplay = 41.85;
+            
+            return {
+                totalBill: Math.round(total),
+                slabRate: rateDisplay,
+                category: category === "protected" ? "Protected" : "Non-Prot"
+            };
+        }
+
+        function updatePlaygroundTariff() {
+            const units = parseInt(unitsSlider.value);
+            unitsVal.innerText = `${units} kWh`;
+            
+            const calc = calculateNepraBill(units);
+            
+            billVal.innerHTML = `Rs. ${calc.totalBill.toLocaleString()} <span>/ month</span>`;
+            slabRateVal.innerText = `Rs ${calc.slabRate.toFixed(1)}`;
+            slabFcaVal.innerText = `Rs ${NEPRA_FCA.toFixed(2)}`;
+            slabStatusVal.innerText = calc.category;
+
+            const limitAlert = document.getElementById('playLimitAlert');
+            if (limitAlert) {
+                if (units <= 100) {
+                    billSub.innerText = "Subsidized lifeline tariff applied.";
+                    limitAlert.className = "predict-alert alert-lifeline";
+                    limitAlert.style.opacity = "1";
+                    limitAlert.innerHTML = `
+                        <i class="fa fa-shield-halved"></i>
+                        <span><strong>Lifeline Pricing Active!</strong> Heavily subsidized lifeline pricing enabled at Rs 10.54/unit for low energy consumers.</span>
+                    `;
+                } else if (units <= 200) {
+                    billSub.innerText = "Subsidized tariff applied (Protected Status).";
+                    limitAlert.className = "predict-alert alert-protected";
+                    limitAlert.style.opacity = "1";
+                    limitAlert.innerHTML = `
+                        <i class="fa fa-circle-check"></i>
+                        <span><strong>Protected Status Active!</strong> Subsidized billing applies. Base rates are locked at a maximum of Rs 13.01/unit.</span>
+                    `;
+                } else {
+                    billSub.innerText = "Projected from standard NEPRA rates.";
+                    limitAlert.className = "predict-alert alert-unprotected";
+                    limitAlert.style.opacity = "1";
+                    limitAlert.innerHTML = `
+                        <i class="fa fa-triangle-exclamation"></i>
+                        <span><strong>Protected Status Lost!</strong> Exceeding 200 units triggers a cumulative slab pricing increase of ~80% across all units.</span>
+                    `;
+                }
+            }
+        }
+
+        if (unitsSlider) {
+            unitsSlider.addEventListener('input', updatePlaygroundTariff);
+            updatePlaygroundTariff();
+        }
+
+        // CTA Click Handlers with Auth Checks & Redirection Cache
+        function handlePlaygroundCTA(targetPage) {
+            if (isUserLoggedIn) {
+                window.location.href = targetPage;
+            } else {
+                sessionStorage.setItem('redirectAfterLogin', targetPage);
+                window.location.href = 'login.html';
+            }
+        }
+
+        const playForecastBtn = document.getElementById('playForecastBtn');
+        if (playForecastBtn) {
+            playForecastBtn.addEventListener('click', () => {
+                handlePlaygroundCTA('prediction-hub.html');
+            });
+        }
+
+
+
+
