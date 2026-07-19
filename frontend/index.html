@@ -712,6 +712,7 @@
                     <a href="login.html">Log In</a>
                     <a href="signup.html">Sign Up</a>
                     <a href="setup-profile.html">Setup Profile</a>
+                    <a href="#" onclick="openTermsModal(event)">Terms & Conditions</a>
                 </div>
                 <div class="footer-col">
                     <h5>Project</h5>
@@ -727,6 +728,46 @@
         </footer>
     </div>
 
+    <!-- TERMS AND CONDITIONS MODAL -->
+    <div id="terms-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Terms & Conditions</h2>
+                <button class="modal-close-btn" onclick="closeTermsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3>1. Academic Project & Scope</h3>
+                <p>Smart Bill Optimizer AI is a Final Year Project developed at Sir Syed University of Engineering & Technology (SSUET) for 2026. This platform is designed strictly as an educational and simulation utility for residential energy consumers in Pakistan. It is not an official utility billing portal or public auditor.</p>
+                
+                <h3>2. Authentication & Profile Security</h3>
+                <p>We use <strong>Firebase Authentication</strong> to secure user access. Registration can be completed using standard email/password credentials or through Google OAuth. Users are responsible for maintaining the confidentiality of their login sessions.</p>
+                
+                <h3>3. Data Collection & Firebase Storage</h3>
+                <p>By registering, you authorize the storage of your billing profile parameters on <strong>Firebase Firestore</strong>, including:
+                    <ul>
+                        <li>Account connection type (Single-phase vs. Three-phase) and sanctioned load limit.</li>
+                        <li>Historical monthly utility bills (units consumed and billing amounts).</li>
+                        <li>Custom household appliance inventories selected in the What-If Simulator.</li>
+                    </ul>
+                This data is stored securely and is accessed solely to calibrate the forecasting algorithms.</p>
+                
+                <h3>4. Machine Learning & Forecasting Models</h3>
+                <p>The system runs predictive models on the backend:
+                    <ul>
+                        <li><strong>Random Forest Regressor</strong>: Processes historical billing logs to predict upcoming monthly unit consumption.</li>
+                        <li><strong>LSTM (Long Short-Term Memory) Network</strong>: Synthesizes hourly patterns to forecast load distributions.</li>
+                    </ul>
+                All predictions are mathematical models and do not guarantee exact utility meter readings.</p>
+                
+                <h3>5. Context-Aware AI Chatbot (Gemini API)</h3>
+                <p>Our interactive chatbot leverages the <strong>Google Gemini API</strong>. To provide custom insights, the chatbot retrieves your connection profiles and consumption history from Firestore and appends it to the LLM query context. Active conversation transcripts are cached locally on your device's browser (Local Storage) to enable context-aware discussions and are not saved on the database server. We do not use your logs for training public foundation models.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-ok-btn" onclick="closeTermsModal()">Done</button>
+            </div>
+        </div>
+    </div>
+
     <button class="scroll-top" id="scrollTopBtn" aria-label="Scroll to top"><i class="fa fa-arrow-up"></i></button>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -735,5 +776,4 @@
     <script src="js/index.js" defer></script>
     
 </body>
-
 </html>

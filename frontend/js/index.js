@@ -356,3 +356,31 @@
 
         // Initial run
         updateSandboxSavings();
+
+        // ─── TERMS AND CONDITIONS MODAL LOGIC ───
+        const termsModal = document.getElementById('terms-modal');
+        
+        window.openTermsModal = function(e) {
+            if (e) e.preventDefault();
+            if (termsModal) {
+                termsModal.style.display = 'flex';
+                document.body.style.overflow = 'hidden'; // Disable scroll
+            }
+        };
+
+        window.closeTermsModal = function() {
+            if (termsModal) {
+                termsModal.style.display = 'none';
+                document.body.style.overflow = 'auto'; // Enable scroll
+            }
+        };
+
+        // Close on click outside modal content
+        if (termsModal) {
+            termsModal.addEventListener('click', (e) => {
+                if (e.target === termsModal) {
+                    closeTermsModal();
+                }
+            });
+        }
+
