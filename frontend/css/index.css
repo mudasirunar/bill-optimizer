@@ -984,10 +984,22 @@
         }
 
         .tutorial-topbar span:not(.url) {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.08)
+            display: inline-block;
+        }
+
+        .tutorial-topbar span:nth-child(1) {
+            background-color: #ff5f56; /* Close (Red) */
+        }
+
+        .tutorial-topbar span:nth-child(2) {
+            background-color: #ffbd2e; /* Minimize (Yellow) */
+        }
+
+        .tutorial-topbar span:nth-child(3) {
+            background-color: #27c93f; /* Maximize (Green) */
         }
 
         .tutorial-topbar .url {
