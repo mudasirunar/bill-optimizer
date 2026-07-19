@@ -410,51 +410,111 @@
             <div class="tutorial-panel reveal">
                 <div class="tutorial-topbar">
                     <span></span><span></span><span></span>
-                    <span class="url mono">bill-optimizer.vercel.app/dashboard</span>
+                    <a id="tutTopbarUrl" href="dashboard.html" class="url mono" style="text-decoration: none; color: inherit; cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='var(--g3)'" onmouseout="this.style.color='inherit'">bill-optimizer.vercel.app/dashboard</a>
                 </div>
-                <div class="tutorial-body">
-                    <div>
-                        <div class="tut-mini-stat" style="margin-bottom:14px">
-                            <div class="l">Avg Monthly Units</div>
-                            <div class="v">318 <span
-                                    style="font-size:0.7rem;color:var(--text-dim);font-weight:500">kWh</span></div>
+                <!-- Tab Controls -->
+                <div class="tutorial-tabs" style="display: flex; gap: 8px; background: rgba(255,255,255,0.01); border-bottom: 1px solid var(--border); padding: 8px 16px;">
+                    <button class="tut-tab active-tab" id="tutTabMonthly" style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); color: var(--g3); font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 700; cursor: pointer; padding: 6px 12px; border-radius: 6px; transition: 0.2s;">
+                        <i class="fa fa-chart-column"></i> Monthly Consumption
+                    </button>
+                    <button class="tut-tab" id="tutTabHourly" style="background: none; border: 1px solid transparent; color: var(--text-dim); font-family: 'DM Sans', sans-serif; font-size: 0.72rem; font-weight: 700; cursor: pointer; padding: 6px 12px; border-radius: 6px; transition: 0.2s;">
+                        <i class="fa fa-wave-square"></i> Hourly Neural Forecast
+                    </button>
+                </div>
+
+                <!-- Tab 1 Body (Monthly Bar Chart Layout) -->
+                <div class="tutorial-body" id="tutBodyMonthly" style="display: grid; grid-template-columns: 1fr 2fr; gap: 24px; padding: 20px;">
+                    <div style="display: flex; flex-direction: column; gap: 14px;">
+                        <div class="tut-mini-stat" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); padding: 12px; border-radius: 10px;">
+                            <div class="l" style="font-size: 0.62rem; color: var(--text-dim); text-transform: uppercase;">Avg Monthly Units</div>
+                            <div class="v" style="font-size: 1.15rem; font-weight: 700; color: var(--text); margin-top: 2px;">318 <span style="font-size:0.7rem;color:var(--text-dim);font-weight:500">kWh</span></div>
                         </div>
-                        <div class="tut-mini-stat">
-                            <div class="l">Household</div>
-                            <div class="v">6 People · 120 Sq. Yd</div>
+                        <div class="tut-mini-stat" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); padding: 12px; border-radius: 10px;">
+                            <div class="l" style="font-size: 0.62rem; color: var(--text-dim); text-transform: uppercase;">Household size</div>
+                            <div class="v" style="font-size: 0.88rem; font-weight: 700; color: var(--text); margin-top: 2px;">6 People · 120 Sq Yd</div>
+                        </div>
+                        <div class="tut-mini-stat" style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); padding: 12px; border-radius: 10px;">
+                            <div class="l" style="font-size: 0.62rem; color: var(--text-dim); text-transform: uppercase;">Sanctioned load</div>
+                            <div class="v" style="font-size: 0.88rem; font-weight: 700; color: var(--g3); margin-top: 2px; display: flex; align-items: center; gap: 4px;">
+                                <span style="display: inline-block; width: 6px; height: 6px; background: var(--g3); border-radius: 50%;"></span> 5 kW
+                            </div>
                         </div>
                     </div>
                     <div>
-                        <div class="tut-bar-row"><span class="lbl">Jan</span>
+                        <div style="font-size: 0.68rem; color: var(--info); text-transform: uppercase; margin-bottom: 12px; font-weight: 600; text-align: left; letter-spacing: 0.05em;">Monthly Billing History</div>
+                        <div class="tut-bar-row" style="margin: 8px 0;"><span class="lbl">Jan</span>
                             <div class="tut-bar-track">
                                 <div class="tut-bar-fill reveal-bar" data-w="52%"></div>
                             </div>
                         </div>
-                        <div class="tut-bar-row"><span class="lbl">Feb</span>
+                        <div class="tut-bar-row" style="margin: 8px 0;"><span class="lbl">Feb</span>
                             <div class="tut-bar-track">
                                 <div class="tut-bar-fill reveal-bar" data-w="46%"></div>
                             </div>
                         </div>
-                        <div class="tut-bar-row"><span class="lbl">Mar</span>
+                        <div class="tut-bar-row" style="margin: 8px 0;"><span class="lbl">Mar</span>
                             <div class="tut-bar-track">
                                 <div class="tut-bar-fill reveal-bar" data-w="61%"></div>
                             </div>
                         </div>
-                        <div class="tut-bar-row"><span class="lbl">Apr</span>
+                        <div class="tut-bar-row" style="margin: 8px 0;"><span class="lbl">Apr</span>
                             <div class="tut-bar-track">
                                 <div class="tut-bar-fill reveal-bar" data-w="78%"></div>
                             </div>
                         </div>
-                        <div class="tut-bar-row"><span class="lbl">May</span>
+                        <div class="tut-bar-row" style="margin: 8px 0;"><span class="lbl">May</span>
                             <div class="tut-bar-track">
                                 <div class="tut-bar-fill reveal-bar" data-w="94%"></div>
                             </div>
                         </div>
-                        <div class="tut-bar-row"><span class="lbl">Jun</span>
+                        <div class="tut-bar-row" style="margin: 8px 0;"><span class="lbl">Jun</span>
                             <div class="tut-bar-track">
                                 <div class="tut-bar-fill reveal-bar" data-w="100%"></div>
                             </div>
                         </div>
+                        <div class="tut-bar-row" style="margin: 8px 0;"><span class="lbl">Jul</span>
+                            <div class="tut-bar-track">
+                                <div class="tut-bar-fill reveal-bar" data-w="92%"></div>
+                            </div>
+                        </div>
+                        <div class="tut-bar-row" style="margin: 8px 0;"><span class="lbl">Aug</span>
+                            <div class="tut-bar-track">
+                                <div class="tut-bar-fill reveal-bar" data-w="86%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Bottom chip for height balance -->
+                    <div style="grid-column: span 2; font-size: 0.78rem; color: var(--text-dim); background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 10px 14px; border-radius: 10px; display: flex; align-items: center; gap: 8px; justify-content: center; margin-top: 10px;">
+                        <i class="fa fa-circle-check" style="color: var(--g3);"></i> <span>Billing profile history parameters calibrated for model calculations.</span>
+                    </div>
+                </div>
+
+                <!-- Tab 2 Body (Hourly Forecast Layout) -->
+                <div class="tutorial-body" id="tutBodyHourly" style="display: none; flex-direction: column; gap: 15px; padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <div style="text-align: left;">
+                            <span class="eyebrow" style="font-size: 0.65rem; color: var(--info); text-transform: uppercase;">LSTM Model Output</span>
+                            <h4 style="margin: 2px 0 0 0; font-size: 0.95rem; font-family: 'Syne', sans-serif;">24-Hour Load Forecast Curve</h4>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="tutBtnNormal" style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: var(--g3); font-family: 'DM Sans', sans-serif; font-size: 0.7rem; font-weight: 600; cursor: pointer; padding: 6px 12px; border-radius: 6px; transition: 0.2s;">
+                                Normal Curve
+                            </button>
+                            <button id="tutBtnEco" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); color: var(--text-dim); font-family: 'DM Sans', sans-serif; font-size: 0.7rem; font-weight: 600; cursor: pointer; padding: 6px 12px; border-radius: 6px; transition: 0.2s;">
+                                Optimized Shift
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Chart wrapper -->
+                    <div style="position: relative; width: 100%; height: 180px;">
+                        <canvas id="tutForecastChart"></canvas>
+                    </div>
+
+                    <!-- Optimized Shift Alert Chip -->
+                    <div id="tutShiftChip" style="font-size: 0.78rem; color: #f87171; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.15); padding: 10px 14px; border-radius: 10px; display: flex; align-items: center; gap: 8px; justify-content: center; transition: all 0.3s ease;">
+                        <i class="fa fa-triangle-exclamation"></i> <span>Peak load detected between 6 PM and 10 PM. Peak rates are up to 25% higher.</span>
                     </div>
                 </div>
             </div>
@@ -788,6 +848,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="js/index.js" defer></script>
     
 </body>

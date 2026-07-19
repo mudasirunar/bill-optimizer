@@ -384,3 +384,170 @@
             });
         }
 
+        // ─── TUTORIAL PREVIEW TABS & FORECAST SIMULATION ───
+        const tutTabMonthly = document.getElementById('tutTabMonthly');
+        const tutTabHourly = document.getElementById('tutTabHourly');
+        const tutBodyMonthly = document.getElementById('tutBodyMonthly');
+        const tutBodyHourly = document.getElementById('tutBodyHourly');
+
+        let previewChart = null;
+
+        function initPreviewChart() {
+            const ctx = document.getElementById('tutForecastChart');
+            if (!ctx) return;
+
+            const normalData = [1.4, 1.1, 0.9, 1.2, 1.8, 2.4, 2.7, 2.9, 2.8, 4.9, 5.3, 3.6];
+            const hoursLabels = ["12 AM", "2 AM", "4 AM", "6 AM", "8 AM", "10 AM", "12 PM", "2 PM", "4 PM", "6 PM", "8 PM", "10 PM"];
+
+            previewChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: hoursLabels,
+                    datasets: [{
+                        label: 'Estimated Demand (kW)',
+                        data: normalData,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#10b981'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                            ticks: { color: '#64748b', font: { size: 9 } }
+                        },
+                        y: {
+                            min: 0,
+                            max: 6,
+                            grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                            ticks: { color: '#64748b', font: { size: 9 }, stepSize: 2 }
+                        }
+                    }
+                }
+            });
+        }
+
+        const tutTopbarUrl = document.getElementById('tutTopbarUrl');
+
+        function togglePreviewTabs(activeTab) {
+            if (activeTab === 'monthly') {
+                tutTabMonthly.classList.add('active-tab');
+                tutTabMonthly.style.background = 'rgba(16, 185, 129, 0.1)';
+                tutTabMonthly.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+                tutTabMonthly.style.color = 'var(--g3)';
+
+                tutTabHourly.classList.remove('active-tab');
+                tutTabHourly.style.background = 'none';
+                tutTabHourly.style.borderColor = 'transparent';
+                tutTabHourly.style.color = 'var(--text-dim)';
+
+                tutBodyMonthly.style.display = 'grid';
+                tutBodyHourly.style.display = 'none';
+
+                if (tutTopbarUrl) {
+                    tutTopbarUrl.textContent = 'bill-optimizer.vercel.app/dashboard';
+                    tutTopbarUrl.href = 'dashboard.html';
+                }
+
+                // Smoothly trigger bar chart animations
+                document.querySelectorAll('.tut-bar-fill').forEach(bar => {
+                    bar.style.width = '0';
+                    setTimeout(() => {
+                        bar.style.width = bar.dataset.w;
+                    }, 50);
+                });
+            } else {
+                tutTabHourly.classList.add('active-tab');
+                tutTabHourly.style.background = 'rgba(16, 185, 129, 0.1)';
+                tutTabHourly.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+                tutTabHourly.style.color = 'var(--g3)';
+
+                tutTabMonthly.classList.remove('active-tab');
+                tutTabMonthly.style.background = 'none';
+                tutTabMonthly.style.borderColor = 'transparent';
+                tutTabMonthly.style.color = 'var(--text-dim)';
+
+                tutBodyMonthly.style.display = 'none';
+                tutBodyHourly.style.display = 'flex';
+
+                if (tutTopbarUrl) {
+                    tutTopbarUrl.textContent = 'bill-optimizer.vercel.app/load-forecaster';
+                    tutTopbarUrl.href = 'load-forecaster.html';
+                }
+
+                if (!previewChart) {
+                    initPreviewChart();
+                }
+            }
+        }
+
+        if (tutTabMonthly && tutTabHourly) {
+            tutTabMonthly.addEventListener('click', () => togglePreviewTabs('monthly'));
+            tutTabHourly.addEventListener('click', () => togglePreviewTabs('hourly'));
+        }
+
+        const tutBtnNormal = document.getElementById('tutBtnNormal');
+        const tutBtnEco = document.getElementById('tutBtnEco');
+        const tutShiftChip = document.getElementById('tutShiftChip');
+
+        if (tutBtnNormal && tutBtnEco) {
+            tutBtnNormal.addEventListener('click', () => {
+                if (!previewChart) return;
+                
+                previewChart.data.datasets[0].data = [1.4, 1.1, 0.9, 1.2, 1.8, 2.4, 2.7, 2.9, 2.8, 4.9, 5.3, 3.6];
+                previewChart.data.datasets[0].borderColor = '#10b981';
+                previewChart.data.datasets[0].pointBackgroundColor = '#10b981';
+                previewChart.update();
+
+                tutBtnNormal.style.background = 'rgba(16, 185, 129, 0.15)';
+                tutBtnNormal.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                tutBtnNormal.style.color = 'var(--g3)';
+
+                tutBtnEco.style.background = 'rgba(255, 255, 255, 0.02)';
+                tutBtnEco.style.borderColor = 'var(--border)';
+                tutBtnEco.style.color = 'var(--text-dim)';
+
+                if (tutShiftChip) {
+                    tutShiftChip.innerHTML = '<i class="fa fa-triangle-exclamation"></i> <span>Peak load detected between 6 PM and 10 PM. Peak rates are up to 25% higher.</span>';
+                    tutShiftChip.style.color = '#f87171';
+                    tutShiftChip.style.background = 'rgba(239, 68, 68, 0.05)';
+                    tutShiftChip.style.borderColor = 'rgba(239, 68, 68, 0.15)';
+                }
+            });
+
+            tutBtnEco.addEventListener('click', () => {
+                if (!previewChart) return;
+                
+                previewChart.data.datasets[0].data = [1.4, 1.1, 0.9, 1.2, 1.8, 2.4, 2.7, 2.9, 2.8, 2.3, 2.5, 2.2];
+                previewChart.data.datasets[0].borderColor = '#06b6d4';
+                previewChart.data.datasets[0].pointBackgroundColor = '#06b6d4';
+                previewChart.update();
+
+                tutBtnEco.style.background = 'rgba(6, 182, 212, 0.15)';
+                tutBtnEco.style.borderColor = 'rgba(6, 182, 212, 0.3)';
+                tutBtnEco.style.color = '#22d3ee';
+
+                tutBtnNormal.style.background = 'rgba(255, 255, 255, 0.02)';
+                tutBtnNormal.style.borderColor = 'var(--border)';
+                tutBtnNormal.style.color = 'var(--text-dim)';
+
+                if (tutShiftChip) {
+                    tutShiftChip.innerHTML = '<i class="fa fa-circle-check"></i> <span>Shifted 4.2 kWh during peak hours (6 PM - 10 PM). Bill impact: -18%</span>';
+                    tutShiftChip.style.color = 'var(--g3)';
+                    tutShiftChip.style.background = 'rgba(52, 211, 153, 0.06)';
+                    tutShiftChip.style.borderColor = 'rgba(52, 211, 153, 0.15)';
+                }
+            });
+        }
+
+
