@@ -13,19 +13,18 @@ sys.modules['joblib'] = MagicMock()
 # Ensure the backend directory is in the path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Import targeted functions from app.py
-from app import (
+# Import targeted functions from core packages
+from core.physics import (
     safe_get,
     get_current_month,
     get_seasonal_ac_scale,
     get_seasonal_fan_scale,
     apply_seasonal_scaling,
     compute_true_baseload,
-    compute_recency_weighted_avg,
-    compute_usage_drift,
-    encode_cyclical,
-    get_blend_weights
+    encode_cyclical
 )
+from core.history import compute_recency_weighted_avg, compute_usage_drift
+from core.ml_predictor import get_blend_weights
 
 class TestPhysicsBaseload(unittest.TestCase):
 

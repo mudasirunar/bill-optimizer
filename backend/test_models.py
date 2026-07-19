@@ -12,8 +12,7 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 
 # Define Base Paths matching your backend structure
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODELS_DIR = os.path.join(BASE_DIR, "data", "processed", "models")
+from config import MODELS_DIR
 
 print("=" * 80)
 print(" 🚀 AUTOMATED EXPERT PRODUCTION TEST SUITE INITIALIZATION ")

@@ -198,7 +198,7 @@ class TestAPIEndpoints(unittest.TestCase):
         self.assertIn("monthly", data)
         self.assertEqual(len(data["monthly"]), 12) # Returns preview for 12 months
 
-    @patch("app.get_gemini_response")
+    @patch("routes.chat.get_gemini_response")
     def test_chat_route_success(self, mock_gemini):
         # Mock get_gemini_response response
         mock_gemini.return_value = "Hello! I am your assistant."
