@@ -248,6 +248,157 @@
             </div>
         </section>
 
+        <!-- INTERACTIVE APPLIANCE SANDBOX -->
+        <section class="section" id="appliance-sandbox" style="background: rgba(16, 185, 129, 0.02); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+            <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 5%;">
+                <div class="section-head reveal">
+                    <span class="eyebrow"><i class="fa fa-plug"></i> Interactive Sandbox</span>
+                    <h2>Virtual Inverter Swap Simulator</h2>
+                    <p>Select appliances, adjust their quantities and running hours, and toggle inverter upgrades to see standard vs. efficient energy consumption and estimated savings on your monthly bill.</p>
+                </div>
+                
+                <div class="sandbox-container reveal" style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: stretch; margin-top: 30px;">
+                    <!-- Left: Configure Appliances -->
+                    <div class="sandbox-left" style="background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 25px; display: flex; flex-direction: column; gap: 20px;">
+                        <h4 style="margin-bottom: 5px; color: var(--g3); font-size: 1.1rem; display: flex; align-items: center; gap: 8px; font-family: 'Syne', sans-serif;">
+                            <i class="fa fa-sliders"></i> Configure Appliances
+                        </h4>
+                        
+                        <!-- AC Control Card -->
+                        <div class="sandbox-app-card" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 16px; border-radius: 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <i class="fa fa-snowflake" style="color: var(--g3); font-size: 1.1rem;"></i>
+                                    <span style="font-weight: 700; font-size: 0.9rem;">Air Conditioner (1.5 Ton)</span>
+                                </div>
+                                <label class="switch" style="transform: scale(0.9);">
+                                    <input type="checkbox" id="sandAcToggle" checked>
+                                    <span class="slider-round"></span>
+                                </label>
+                            </div>
+                            <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 10px;">
+                                <div style="flex: 1;">
+                                    <label style="font-size: 0.65rem; color: var(--text-dim); display: block; margin-bottom: 4px; text-transform: uppercase;">Quantity</label>
+                                    <select id="sandAcQty" class="play-select" style="padding: 6px 10px; font-size: 0.75rem;">
+                                        <option value="0">0 (Disabled)</option>
+                                        <option value="1" selected>1 AC</option>
+                                        <option value="2">2 ACs</option>
+                                        <option value="3">3 ACs</option>
+                                    </select>
+                                </div>
+                                <div style="flex: 2;">
+                                    <label style="font-size: 0.65rem; color: var(--text-dim); display: flex; justify-content: space-between; margin-bottom: 4px; text-transform: uppercase;">
+                                        <span>Daily Runtime</span>
+                                        <span id="sandAcHoursVal" class="mono" style="color: var(--g3);">10 hrs</span>
+                                    </label>
+                                    <input type="range" id="sandAcHours" min="1" max="18" value="10" class="play-slider" style="margin-top: 5px;">
+                                </div>
+                            </div>
+                            <div style="font-size: 0.68rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                                <i class="fa fa-circle-info" style="color: var(--g3);"></i> <span>Toggle switch to upgrade standard AC (1.5kW) to Inverter (0.75kW).</span>
+                            </div>
+                        </div>
+
+                        <!-- Fan Control Card -->
+                        <div class="sandbox-app-card" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 16px; border-radius: 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <i class="fa fa-fan" style="color: var(--g3); font-size: 1.1rem;"></i>
+                                    <span style="font-weight: 700; font-size: 0.9rem;">Ceiling Fans</span>
+                                </div>
+                                <label class="switch" style="transform: scale(0.9);">
+                                    <input type="checkbox" id="sandFanToggle" checked>
+                                    <span class="slider-round"></span>
+                                </label>
+                            </div>
+                            <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 10px;">
+                                <div style="flex: 1;">
+                                    <label style="font-size: 0.65rem; color: var(--text-dim); display: block; margin-bottom: 4px; text-transform: uppercase;">Quantity</label>
+                                    <select id="sandFanQty" class="play-select" style="padding: 6px 10px; font-size: 0.75rem;">
+                                        <option value="0">0 (Disabled)</option>
+                                        <option value="2">2 Fans</option>
+                                        <option value="4" selected>4 Fans</option>
+                                        <option value="6">6 Fans</option>
+                                        <option value="8">8 Fans</option>
+                                    </select>
+                                </div>
+                                <div style="flex: 2;">
+                                    <label style="font-size: 0.65rem; color: var(--text-dim); display: flex; justify-content: space-between; margin-bottom: 4px; text-transform: uppercase;">
+                                        <span>Daily Runtime</span>
+                                        <span id="sandFanHoursVal" class="mono" style="color: var(--g3);">18 hrs</span>
+                                    </label>
+                                    <input type="range" id="sandFanHours" min="1" max="24" value="18" class="play-slider" style="margin-top: 5px;">
+                                </div>
+                            </div>
+                            <div style="font-size: 0.68rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                                <i class="fa fa-circle-info" style="color: var(--g3);"></i> <span>Toggle switch to upgrade standard fans (80W) to energy-saving BLDC fans (35W).</span>
+                            </div>
+                        </div>
+
+                        <!-- Refrigerator Control Card -->
+                        <div class="sandbox-app-card" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 16px; border-radius: 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <i class="fa fa-cube" style="color: var(--g3); font-size: 1.1rem;"></i>
+                                    <span style="font-weight: 700; font-size: 0.9rem;">Refrigerator (24/7 Run)</span>
+                                </div>
+                                <label class="switch" style="transform: scale(0.9);">
+                                    <input type="checkbox" id="sandFridgeToggle" checked>
+                                    <span class="slider-round"></span>
+                                </label>
+                            </div>
+                            <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 5px;">
+                                <div style="width: 100%;">
+                                    <label style="font-size: 0.65rem; color: var(--text-dim); display: block; margin-bottom: 4px; text-transform: uppercase;">Quantity</label>
+                                    <select id="sandFridgeQty" class="play-select" style="padding: 6px 10px; font-size: 0.75rem;">
+                                        <option value="0">0 (Disabled)</option>
+                                        <option value="1" selected>1 Refrigerator</option>
+                                        <option value="2">2 Refrigerators</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="font-size: 0.68rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-top: 10px;">
+                                <i class="fa fa-circle-info" style="color: var(--g3);"></i> <span>Toggle switch to upgrade double door standard fridge (48 kWh/mo) to Inverter (27 kWh/mo).</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right: Results Card with dynamic calculations -->
+                    <div class="sandbox-right" style="background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 35px; text-align: center; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <span class="eyebrow" style="color: var(--info); font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase;">Real-Time Simulation Report</span>
+                            <h3 style="margin-top: 8px; font-size: 1.3rem;">Monthly Savings Estimation</h3>
+                            <p style="color: var(--text-muted); font-size: 0.8rem; margin: 8px 0 20px;">PKR savings calculated by subtracting efficient load from standard load under NEPRA slabs.</p>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; text-align: left;">
+                                <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); padding: 15px; border-radius: 12px;">
+                                    <span style="font-size: 0.65rem; color: var(--text-dim); display: block; text-transform: uppercase;">Standard Load</span>
+                                    <span id="sandStandardUnits" class="mono" style="font-size: 1.2rem; font-weight: 700; color: var(--text); display: block; margin-top: 4px;">450 kWh</span>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--border); padding: 15px; border-radius: 12px;">
+                                    <span style="font-size: 0.65rem; color: var(--text-dim); display: block; text-transform: uppercase;">Optimized Load</span>
+                                    <span id="sandOptUnits" class="mono" style="font-size: 1.2rem; font-weight: 700; color: var(--g3); display: block; margin-top: 4px;">225 kWh</span>
+                                </div>
+                            </div>
+
+                            <div class="savings-display" style="margin: 25px 0;">
+                                <div id="sandSavingsVal" style="font-size: 2.8rem; font-weight: 800; color: var(--g3); font-family: 'JetBrains Mono', monospace; line-height: 1;">Rs. 2,140</div>
+                                <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.05em;">Estimated Savings / Month</div>
+                            </div>
+                            
+                            <div id="sandSavingsSub" style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.4; background: rgba(52,211,153,0.05); padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(52,211,153,0.1); margin-top: 15px;">
+                                Swapping 1 AC and 4 ceiling fans lowers energy demand by 225 units.
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-outline" id="sandSimulateBtn" style="width: 100%; margin-top: 30px; border-color: var(--g3); color: var(--g3); display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; font-weight: 600; border-radius: 12px;">
+                            <i class="fa fa-circle-play"></i> Run Full Physics Simulator
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- LIVE DASHBOARD PREVIEW -->
         <section class="section section-tight" id="preview">
             <div class="section-head reveal">
@@ -417,7 +568,7 @@
                     <p>Domestic tariffs in Pakistan aren't a flat rate — they're a maze of slabs, subsidies, and
                         adjustments. Our billing engine models the real structure so predictions match your actual
                         invoice.</p>
-                    <a class="btn btn-ghost" href="signup.html">Explore Tariff Hub <i class="fa fa-arrow-right"></i></a>
+                    <a class="btn btn-ghost" href="nepra-info.html">Explore Tariff Hub <i class="fa fa-arrow-right"></i></a>
                 </div>
                 <div class="nepra-right">
                     <div class="nepra-row"><span>Lifeline Consumers</span><b>&lt; 100 units / month</b></div>

@@ -253,6 +253,106 @@
             });
         }
 
+        // ─── INTERACTIVE APPLIANCE SANDBOX LOGIC ───
+        const sandAcToggle = document.getElementById('sandAcToggle');
+        const sandAcQty = document.getElementById('sandAcQty');
+        const sandAcHours = document.getElementById('sandAcHours');
+        const sandAcHoursVal = document.getElementById('sandAcHoursVal');
 
+        const sandFanToggle = document.getElementById('sandFanToggle');
+        const sandFanQty = document.getElementById('sandFanQty');
+        const sandFanHours = document.getElementById('sandFanHours');
+        const sandFanHoursVal = document.getElementById('sandFanHoursVal');
 
+        const sandFridgeToggle = document.getElementById('sandFridgeToggle');
+        const sandFridgeQty = document.getElementById('sandFridgeQty');
 
+        const sandStandardUnits = document.getElementById('sandStandardUnits');
+        const sandOptUnits = document.getElementById('sandOptUnits');
+        const sandSavingsVal = document.getElementById('sandSavingsVal');
+        const sandSavingsSub = document.getElementById('sandSavingsSub');
+        const sandSimulateBtn = document.getElementById('sandSimulateBtn');
+
+        function updateSandboxSavings() {
+            if (!sandAcToggle || !sandFanToggle || !sandFridgeToggle) return;
+
+            // Runtime values
+            const acHours = parseInt(sandAcHours.value);
+            const fanHours = parseInt(sandFanHours.value);
+            
+            if (sandAcHoursVal) sandAcHoursVal.innerText = `${acHours} hrs`;
+            if (sandFanHoursVal) sandFanHoursVal.innerText = `${fanHours} hrs`;
+
+            const acQty = parseInt(sandAcQty.value);
+            const fanQty = parseInt(sandFanQty.value);
+            const fridgeQty = parseInt(sandFridgeQty.value);
+
+            // Calculations in kWh / Month
+            // AC: kW * hrs * 30 days
+            const acStdKwh = acQty * 1.5 * acHours * 30;
+            const acOptKwh = acQty * (sandAcToggle.checked ? 0.75 : 1.5) * acHours * 30;
+
+            // Fan: kW * hrs * 30 days
+            const fanStdKwh = fanQty * 0.08 * fanHours * 30;
+            const fanOptKwh = fanQty * (sandFanToggle.checked ? 0.035 : 0.08) * fanHours * 30;
+
+            // Fridge: base kWh/month
+            const fridgeStdKwh = fridgeQty * 48;
+            const fridgeOptKwh = fridgeQty * (sandFridgeToggle.checked ? 27 : 48);
+
+            const totalStdKwh = acStdKwh + fanStdKwh + fridgeStdKwh;
+            const totalOptKwh = acOptKwh + fanOptKwh + fridgeOptKwh;
+            const unitsSaved = totalStdKwh - totalOptKwh;
+
+            if (sandStandardUnits) sandStandardUnits.innerText = `${Math.round(totalStdKwh)} kWh`;
+            if (sandOptUnits) sandOptUnits.innerText = `${Math.round(totalOptKwh)} kWh`;
+
+            // Rupee impact under NEPRA progressive billing
+            const billBase = calculateNepraBill(totalStdKwh).totalBill;
+            const billOpt = calculateNepraBill(totalOptKwh).totalBill;
+            const savingsRupees = Math.max(0, billBase - billOpt);
+
+            if (sandSavingsVal) {
+                sandSavingsVal.innerText = `Rs. ${savingsRupees.toLocaleString()}`;
+            }
+
+            if (sandSavingsSub) {
+                if (savingsRupees > 0) {
+                    let descriptions = [];
+                    if (acQty > 0 && sandAcToggle.checked) descriptions.push(`${acQty} Inverter AC`);
+                    if (fanQty > 0 && sandFanToggle.checked) descriptions.push(`${fanQty} BLDC Fan(s)`);
+                    if (fridgeQty > 0 && sandFridgeToggle.checked) descriptions.push(`${fridgeQty} Inverter Fridge`);
+
+                    if (descriptions.length > 0) {
+                        sandSavingsSub.innerHTML = `Upgrading to ${descriptions.join(", ")} reduces demand by ${Math.round(unitsSaved)} units, saving Rs. ${savingsRupees.toLocaleString()} per month.`;
+                    } else {
+                        sandSavingsSub.innerText = "Toggle switches to upgrade to energy-saving inverter alternatives.";
+                    }
+                } else {
+                    sandSavingsSub.innerText = "All appliances running on standard baseline mode. Upgrade toggles above to estimate savings.";
+                }
+            }
+        }
+
+        // Add listeners
+        const elementsToBind = [
+            sandAcToggle, sandAcQty, sandAcHours,
+            sandFanToggle, sandFanQty, sandFanHours,
+            sandFridgeToggle, sandFridgeQty
+        ];
+
+        elementsToBind.forEach(el => {
+            if (el) {
+                const eventType = el.tagName === 'SELECT' ? 'change' : 'input';
+                el.addEventListener(eventType, updateSandboxSavings);
+            }
+        });
+
+        if (sandSimulateBtn) {
+            sandSimulateBtn.addEventListener('click', () => {
+                handlePlaygroundCTA('appliance-simulator.html');
+            });
+        }
+
+        // Initial run
+        updateSandboxSavings();

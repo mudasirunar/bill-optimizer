@@ -1975,3 +1975,10 @@
             flex-shrink: 0;
         }
 
+        @media (max-width: 768px) {
+            .sandbox-container {
+                grid-template-columns: 1fr !important;
+                gap: 24px !important;
+            }
+        }
+
