@@ -5,8 +5,8 @@
 /* 1. Launcher Bubble Trigger */
 .chat-launcher {
     position: fixed;
-    bottom: 28px;
-    right: 28px;
+    bottom: 35px;
+    right: 30px;
     z-index: 1500;
     width: 52px;
     height: 52px;
@@ -427,8 +427,8 @@
         max-height: calc(100vh - 100px);
     }
     .chat-launcher {
-        bottom: 15px;
-        right: 15px;
+        bottom: 25px;
+        right: 20px;
     }
 }
 
