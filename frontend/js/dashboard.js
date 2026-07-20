@@ -1,3 +1,24 @@
+const CACHE_TTL = 3600000; // 1 hour
+
+function getCached(key) {
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (Date.now() - parsed.ts > CACHE_TTL) {
+            localStorage.removeItem(key);
+            return null;
+        }
+        return parsed.data;
+    } catch { return null; }
+}
+
+function setCache(key, data) {
+    try {
+        localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }));
+    } catch { /* quota exceeded — silently fail */ }
+}
+
 function formatMonth(monthStr) {
             if (!monthStr || !monthStr.includes('-')) return monthStr || '—';
             const [year, month] = monthStr.split('-');
@@ -432,6 +453,509 @@ function formatMonth(monthStr) {
         }
 
         /* ════════════════════════════════════════
+           API ORCHESTRATION & RENDERING
+        ════════════════════════════════════════ */
+        function loadDashboardAPIs(uid, userData) {
+            const profilePct = calcProfileCompletion(userData);
+            if (profilePct < 40) {
+                renderForecastLocked();
+                renderPeakSplitLocked();
+                renderSeasonalLocked();
+                return;
+            }
+
+            const forecastCache = getCached(`dash_forecast_${uid}`);
+            const peakCache = getCached(`dash_peak_split_${uid}`);
+            const seasonalCache = getCached(`dash_seasonal_${uid}`);
+
+            if (forecastCache) renderForecastCard(forecastCache);
+            if (peakCache) renderPeakSplit(peakCache);
+            if (seasonalCache) renderSeasonalHorizon(seasonalCache);
+
+            const nextMonth = ((new Date().getMonth() + 1) % 12) + 1;
+
+            Promise.allSettled([
+                fetch(`${API_BASE_URL}/api/predict_bill`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid, month: nextMonth })
+                }).then(r => {
+                    if (!r.ok) throw new Error('API failed');
+                    return r.json();
+                }),
+
+                fetch(`${API_BASE_URL}/api/forecast_24h`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid, month: new Date().getMonth() + 1 })
+                }).then(r => {
+                    if (!r.ok) throw new Error('API failed');
+                    return r.json();
+                }),
+
+                fetch(`${API_BASE_URL}/api/seasonal_preview`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid })
+                }).then(r => {
+                    if (!r.ok) throw new Error('API failed');
+                    return r.json();
+                })
+            ]).then(([forecastRes, peakRes, seasonalRes]) => {
+                if (forecastRes.status === 'fulfilled' && forecastRes.value.status === 'success') {
+                    setCache(`dash_forecast_${uid}`, forecastRes.value);
+                    renderForecastCard(forecastRes.value);
+                } else if (!forecastCache) {
+                    renderForecastError();
+                }
+
+                if (peakRes.status === 'fulfilled' && peakRes.value.status === 'success') {
+                    setCache(`dash_peak_split_${uid}`, peakRes.value);
+                    renderPeakSplit(peakRes.value);
+                } else if (!peakCache) {
+                    renderPeakSplitError();
+                }
+
+                if (seasonalRes.status === 'fulfilled' && seasonalRes.value.status === 'success') {
+                    setCache(`dash_seasonal_${uid}`, seasonalRes.value);
+                    renderSeasonalHorizon(seasonalRes.value);
+                } else if (!seasonalCache) {
+                    renderSeasonalError();
+                }
+            });
+        }
+
+        // Retry Functions
+        function retryForecast() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+            const uid = user.uid;
+            
+            document.getElementById('forecastError').style.display = 'none';
+            document.getElementById('forecastSkeleton').style.display = 'block';
+            
+            const nextMonth = ((new Date().getMonth() + 1) % 12) + 1;
+            fetch(`${API_BASE_URL}/api/predict_bill`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid, month: nextMonth })
+            })
+            .then(r => {
+                if (!r.ok) throw new Error();
+                return r.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    setCache(`dash_forecast_${uid}`, data);
+                    renderForecastCard(data);
+                } else { renderForecastError(); }
+            })
+            .catch(() => renderForecastError());
+        }
+
+        function retryPeakSplit() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+            const uid = user.uid;
+
+            document.getElementById('peakError').style.display = 'none';
+            document.getElementById('peakSkeleton').style.display = 'block';
+
+            fetch(`${API_BASE_URL}/api/forecast_24h`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid, month: new Date().getMonth() + 1 })
+            })
+            .then(r => {
+                if (!r.ok) throw new Error();
+                return r.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    setCache(`dash_peak_split_${uid}`, data);
+                    renderPeakSplit(data);
+                } else { renderPeakSplitError(); }
+            })
+            .catch(() => renderPeakSplitError());
+        }
+
+        function retryHorizon() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+            const uid = user.uid;
+
+            document.getElementById('horizonError').style.display = 'none';
+            document.getElementById('horizonSkeleton').style.display = 'flex';
+
+            fetch(`${API_BASE_URL}/api/seasonal_preview`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid })
+            })
+            .then(r => {
+                if (!r.ok) throw new Error();
+                return r.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    setCache(`dash_seasonal_${uid}`, data);
+                    renderSeasonalHorizon(data);
+                } else { renderSeasonalError(); }
+            })
+            .catch(() => renderSeasonalError());
+        }
+
+        // Feature 1: Forecast Card Rendering
+        function renderForecastCard(data) {
+            const skeleton = document.getElementById('forecastSkeleton');
+            const loaded = document.getElementById('forecastLoaded');
+            const locked = document.getElementById('forecastLocked');
+            const error = document.getElementById('forecastError');
+
+            if (skeleton) skeleton.style.display = 'none';
+            if (locked) locked.style.display = 'none';
+            if (error) error.style.display = 'none';
+            if (loaded) loaded.style.display = 'flex';
+
+            localStorage.setItem('lastPredictionRun', Date.now().toString());
+
+            const nextMonth = ((new Date().getMonth() + 1) % 12) + 1;
+            const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June',
+                                 'July', 'August', 'September', 'October', 'November', 'December'];
+            const year = nextMonth === 1 ? new Date().getFullYear() + 1 : new Date().getFullYear();
+            const monthEl = document.getElementById('forecastMonth');
+            if (monthEl) monthEl.textContent = `${monthNames[nextMonth]} ${year}`;
+
+            const totalBill = data.bill?.total_bill || 0;
+            const kwh = data.kwh || 0;
+            const amountEl = document.getElementById('forecastAmount');
+            const unitsEl = document.getElementById('forecastUnits');
+            if (amountEl) amountEl.textContent = `Rs. ${Math.round(totalBill).toLocaleString()}`;
+            if (unitsEl) unitsEl.textContent = `≈ ${Math.round(kwh)} kWh`;
+
+            const trendEl = document.getElementById('forecastTrend');
+            if (trendEl) {
+                const lastBill = (window._dashUserData?.bill_history || [])
+                    .filter(b => b.units > 5 && b.amount > 0)
+                    .sort((a, b) => (a.month || '').localeCompare(b.month || ''));
+                
+                if (lastBill.length > 0) {
+                    const lastAmt = lastBill[lastBill.length - 1].amount;
+                    const lastMonth = lastBill[lastBill.length - 1].month;
+                    const pctChange = ((totalBill - lastAmt) / lastAmt * 100).toFixed(1);
+                    const lastMonthName = formatMonth(lastMonth);
+
+                    if (pctChange > 5) {
+                        trendEl.className = 'forecast-trend up';
+                        trendEl.innerHTML = `<i class="fa fa-arrow-up"></i> +${pctChange}% vs ${lastMonthName}`;
+                        trendEl.style.display = 'block';
+                    } else if (pctChange < -5) {
+                        trendEl.className = 'forecast-trend down';
+                        trendEl.innerHTML = `<i class="fa fa-arrow-down"></i> ${pctChange}% vs ${lastMonthName}`;
+                        trendEl.style.display = 'block';
+                    } else {
+                        trendEl.className = 'forecast-trend stable';
+                        trendEl.innerHTML = `<i class="fa fa-minus"></i> Stable vs ${lastMonthName}`;
+                        trendEl.style.display = 'block';
+                    }
+                } else {
+                    trendEl.style.display = 'none';
+                }
+            }
+        }
+
+        function renderForecastLocked() {
+            if (document.getElementById('forecastSkeleton')) document.getElementById('forecastSkeleton').style.display = 'none';
+            if (document.getElementById('forecastLoaded')) document.getElementById('forecastLoaded').style.display = 'none';
+            if (document.getElementById('forecastLocked')) document.getElementById('forecastLocked').style.display = 'flex';
+        }
+
+        // Retry helper to expose updateTime logic cleanly
+        function renderForecastError() {
+            if (document.getElementById('forecastSkeleton')) document.getElementById('forecastSkeleton').style.display = 'none';
+            if (document.getElementById('forecastLoaded')) document.getElementById('forecastLoaded').style.display = 'none';
+            if (document.getElementById('forecastError')) document.getElementById('forecastError').style.display = 'flex';
+        }
+
+        // Feature 2: Peak vs Off-Peak split
+        function renderPeakSplit(data) {
+            const skeleton = document.getElementById('peakSkeleton');
+            const loaded = document.getElementById('peakLoaded');
+            const locked = document.getElementById('peakLocked');
+            const error = document.getElementById('peakError');
+
+            if (skeleton) skeleton.style.display = 'none';
+            if (locked) locked.style.display = 'none';
+            if (error) error.style.display = 'none';
+            if (loaded) loaded.style.display = 'block';
+
+            const forecast = data.forecast || [];
+            const totalKw = forecast.reduce((s, v) => s + v, 0);
+            
+            const peakKw = forecast.slice(18, 22).reduce((s, v) => s + v, 0);
+            const offpeakKw = totalKw - peakKw;
+            
+            const peakPctVal = totalKw > 0 ? Math.round((peakKw / totalKw) * 100) : 0;
+            const offpeakPctVal = 100 - peakPctVal;
+
+            setTimeout(() => {
+                const offPeakBar = document.getElementById('peakBarOffpeak');
+                const peakBar = document.getElementById('peakBarPeak');
+                if (offPeakBar) offPeakBar.style.width = offpeakPctVal + '%';
+                if (peakBar) peakBar.style.width = peakPctVal + '%';
+            }, 100);
+
+            const offpeakPctEl = document.getElementById('offpeakPct');
+            const peakPctEl = document.getElementById('peakPct');
+            const offpeakKwEl = document.getElementById('offpeakKw');
+            const peakKwEl = document.getElementById('peakKw');
+
+            if (offpeakPctEl) offpeakPctEl.textContent = offpeakPctVal + '%';
+            if (peakPctEl) peakPctEl.textContent = peakPctVal + '%';
+            if (offpeakKwEl) offpeakKwEl.textContent = offpeakKw.toFixed(1) + ' kW';
+            if (peakKwEl) peakKwEl.textContent = peakKw.toFixed(1) + ' kW';
+
+            const effectiveRate = data.finance?.effective_rate || 35;
+            const dailySaving = peakKw * 0.25 * effectiveRate;
+            const monthlySaving = Math.round(dailySaving * 30);
+            
+            const insightEl = document.getElementById('peakInsight');
+            if (insightEl) {
+                insightEl.innerHTML = 
+                    `<i class="fa fa-lightbulb" style="color: #f59e0b;"></i> ` +
+                    `Shifting <strong>${peakKw.toFixed(1)} kW</strong> from peak hours saves ` +
+                    `<strong>~Rs. ${monthlySaving.toLocaleString()}/mo</strong>`;
+            }
+        }
+
+        function renderPeakSplitLocked() {
+            if (document.getElementById('peakSkeleton')) document.getElementById('peakSkeleton').style.display = 'none';
+            if (document.getElementById('peakLoaded')) document.getElementById('peakLoaded').style.display = 'none';
+            if (document.getElementById('peakLocked')) document.getElementById('peakLocked').style.display = 'flex';
+        }
+
+        function renderPeakSplitError() {
+            if (document.getElementById('peakSkeleton')) document.getElementById('peakSkeleton').style.display = 'none';
+            if (document.getElementById('peakLoaded')) document.getElementById('peakLoaded').style.display = 'none';
+            if (document.getElementById('peakError')) document.getElementById('peakError').style.display = 'flex';
+        }
+
+        // Feature 3: 12-Month Bill Horizon Heatmap
+        function renderSeasonalHorizon(data) {
+            const skeleton = document.getElementById('horizonSkeleton');
+            const grid = document.getElementById('horizonGrid');
+            const summary = document.getElementById('horizonSummary');
+            const locked = document.getElementById('horizonLocked');
+            const error = document.getElementById('horizonError');
+
+            if (skeleton) skeleton.style.display = 'none';
+            if (locked) locked.style.display = 'none';
+            if (error) error.style.display = 'none';
+            if (grid) grid.style.display = 'flex';
+            if (summary) summary.style.display = 'flex';
+
+            const months = data.monthly || [];
+            if (months.length === 0) return;
+
+            const bills = months.map(m => m.bill_pkr);
+            const minBill = Math.min(...bills);
+            const maxBill = Math.max(...bills);
+            const range = maxBill - minBill || 1;
+
+            const currentMonth = new Date().getMonth() + 1;
+            const shortNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+            let html = '';
+            let lowestMonth = months[0], highestMonth = months[0];
+
+            months.forEach(m => {
+                if (m.bill_pkr < lowestMonth.bill_pkr) lowestMonth = m;
+                if (m.bill_pkr > highestMonth.bill_pkr) highestMonth = m;
+
+                const intensity = (m.bill_pkr - minBill) / range;
+
+                let bgColor;
+                if (intensity < 0.33) {
+                    bgColor = `rgba(16, 185, 129, ${0.15 + intensity * 0.5})`;
+                } else if (intensity < 0.66) {
+                    bgColor = `rgba(251, 191, 36, ${0.15 + (intensity - 0.33) * 0.8})`;
+                } else {
+                    bgColor = `rgba(239, 68, 68, ${0.15 + (intensity - 0.66) * 0.7})`;
+                }
+
+                const isCurrent = m.month === currentMonth;
+                const formatted = `Rs. ${Math.round(m.bill_pkr).toLocaleString()}`;
+
+                html += `
+                    <div class="horizon-block ${isCurrent ? 'current' : ''}"
+                         style="background: ${bgColor};"
+                         title="${m.month_name}: ${formatted}">
+                        <div class="horizon-tooltip">
+                            <strong>${m.month_name}</strong><br>
+                            ${formatted} · ${m.kwh} kWh
+                        </div>
+                        <span class="horizon-month-label">${shortNames[m.month]}</span>
+                        <span class="horizon-pkr-label">${Math.round(m.bill_pkr / 1000)}k</span>
+                    </div>`;
+            });
+
+            if (grid) grid.innerHTML = html;
+
+            const horizonLowEl = document.getElementById('horizonLow');
+            const horizonHighEl = document.getElementById('horizonHigh');
+            if (horizonLowEl) horizonLowEl.textContent = `${lowestMonth.month_name}: Rs. ${Math.round(lowestMonth.bill_pkr).toLocaleString()}`;
+            if (horizonHighEl) horizonHighEl.textContent = `${highestMonth.month_name}: Rs. ${Math.round(highestMonth.bill_pkr).toLocaleString()}`;
+        }
+
+        function renderSeasonalLocked() {
+            if (document.getElementById('horizonSkeleton')) document.getElementById('horizonSkeleton').style.display = 'none';
+            if (document.getElementById('horizonGrid')) document.getElementById('horizonGrid').style.display = 'none';
+            if (document.getElementById('horizonSummary')) document.getElementById('horizonSummary').style.display = 'none';
+            if (document.getElementById('horizonLocked')) document.getElementById('horizonLocked').style.display = 'flex';
+        }
+
+        function renderSeasonalError() {
+            if (document.getElementById('horizonSkeleton')) document.getElementById('horizonSkeleton').style.display = 'none';
+            if (document.getElementById('horizonGrid')) document.getElementById('horizonGrid').style.display = 'none';
+            if (document.getElementById('horizonSummary')) document.getElementById('horizonSummary').style.display = 'none';
+            if (document.getElementById('horizonError')) document.getElementById('horizonError').style.display = 'flex';
+        }
+
+        // Feature 4: Top Energy Consumer Spotlight
+        function getACHours() {
+            const m = new Date().getMonth() + 1;
+            const map = {1:0,2:0,3:2,4:6,5:10,6:12,7:12,8:10,9:6,10:2,11:0,12:0};
+            return map[m] || 0;
+        }
+
+        function getFanHours() {
+            const m = new Date().getMonth() + 1;
+            const map = {1:6,2:8,3:12,4:16,5:20,6:22,7:22,8:20,9:16,10:12,11:8,12:6};
+            return map[m] || 12;
+        }
+
+        function renderApplianceSpotlight(userData) {
+            const d = userData;
+            const consumers = [];
+
+            const stdAC = d.ac_std_qty || 0;
+            const invAC = d.ac_inv_qty || 0;
+            const oldFridge = (d.f_type === 'old') ? (d.f_qty || 0) : 0;
+            const invFridge = (d.f_type === 'inverter') ? (d.f_qty || 0) : 0;
+            const acFans = d.fan_ac_qty || 0;
+            const dcFans = d.fan_dc_qty || 0;
+            const wm = d.wm_qty || 0;
+            const wp = d.wp_qty || 0;
+            const ups = d.u_qty || 0;
+            const iron = d.iron_qty || 0;
+
+            function addConsumer(name, icon, qty, watt, hrs) {
+                if (qty <= 0) return;
+                const monthly = Math.round((qty * watt * hrs * 30) / 1000);
+                if (monthly > 0) {
+                    consumers.push({ name, icon, qty, monthly, watt });
+                }
+            }
+
+            addConsumer('Air Conditioner (Standard)', 'fa-snowflake', stdAC, 1500, getACHours());
+            addConsumer('Air Conditioner (Inverter)', 'fa-snowflake', invAC, 900, getACHours());
+            addConsumer('Refrigerator (Standard)', 'fa-temperature-low', oldFridge, 150, 24);
+            addConsumer('Refrigerator (Inverter)', 'fa-temperature-low', invFridge, 80, 24);
+            addConsumer('Ceiling Fan (Standard)', 'fa-fan', acFans, 80, getFanHours());
+            addConsumer('Ceiling Fan (DC Inverter)', 'fa-fan', dcFans, 35, getFanHours());
+            addConsumer('Washing Machine', 'fa-shirt', wm, 500, 1);
+            addConsumer('Water Pump', 'fa-faucet-drip', wp, 750, 2);
+            addConsumer('UPS System', 'fa-battery-half', ups, 100, 8);
+            addConsumer('Electric Iron', 'fa-fire', iron, 1200, 0.5);
+
+            const card = document.getElementById('consumerSpotlight');
+            if (!card) return;
+
+            if (consumers.length === 0) {
+                card.style.display = 'none';
+                return;
+            }
+
+            consumers.sort((a, b) => b.monthly - a.monthly);
+            const top3 = consumers.slice(0, 3);
+            const maxKwh = top3[0].monthly;
+
+            const medals = ['🏆', '🥈', '🥉'];
+            const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June',
+                                 'July', 'August', 'September', 'October', 'November', 'December'];
+
+            const seasonEl = document.getElementById('spotlightSeason');
+            if (seasonEl) {
+                seasonEl.textContent = `${monthNames[new Date().getMonth() + 1]} Profile`;
+            }
+
+            let html = '';
+            top3.forEach((c, i) => {
+                const barPct = Math.round((c.monthly / maxKwh) * 100);
+                const qtyLabel = c.qty > 1 ? ` × ${c.qty}` : '';
+                html += `
+                    <div class="consumer-row">
+                        <span class="consumer-rank">${medals[i]}</span>
+                        <div class="consumer-icon"><i class="fa ${c.icon}"></i></div>
+                        <div class="consumer-info">
+                            <div class="consumer-name">${c.name}${qtyLabel}</div>
+                            <div class="consumer-detail">${c.watt}W × ${c.qty} unit${c.qty > 1 ? 's' : ''}</div>
+                        </div>
+                        <div class="consumer-bar-wrap">
+                            <div class="consumer-bar-fill" style="width: 0%;" data-w="${barPct}%"></div>
+                        </div>
+                        <div class="consumer-kwh">~${c.monthly} kWh</div>
+                    </div>`;
+            });
+
+            document.getElementById('consumerList').innerHTML = html;
+            card.style.display = 'block';
+
+            setTimeout(() => {
+                card.querySelectorAll('.consumer-bar-fill').forEach(bar => {
+                    bar.style.width = bar.dataset.w;
+                });
+            }, 200);
+        }
+
+        // Feature 5: Last Activity Footer
+        function renderActivityFooter(firestoreDoc, userData) {
+            const profileEl = document.getElementById('actProfileAge');
+            if (profileEl) {
+                if (firestoreDoc && firestoreDoc.exists) {
+                    const pct = calcProfileCompletion(userData);
+                    profileEl.textContent = `Profile completion: ${pct}%`;
+                } else {
+                    profileEl.textContent = 'Profile: Not yet created';
+                }
+            }
+
+            const predEl = document.getElementById('actLastPrediction');
+            if (predEl) {
+                const lastPred = localStorage.getItem('lastPredictionRun');
+                if (lastPred) {
+                    const predDate = new Date(parseInt(lastPred));
+                    const isToday = predDate.toDateString() === new Date().toDateString();
+                    if (isToday) {
+                        predEl.textContent = `Last forecast: Today, ${predDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+                    } else {
+                        const days = Math.floor((Date.now() - predDate.getTime()) / 86400000);
+                        predEl.textContent = `Last forecast: ${days} day${days > 1 ? 's' : ''} ago`;
+                    }
+                } else {
+                    predEl.textContent = 'Last forecast: Never';
+                }
+            }
+
+            const histEl = document.getElementById('actHistoryCount');
+            if (histEl) {
+                const validBills = (userData.bill_history || []).filter(b => b.units > 5).length;
+                histEl.textContent = `Bill history: ${validBills} month${validBills !== 1 ? 's' : ''} loaded`;
+            }
+        }
+
+        /* ════════════════════════════════════════
            AUTH + MAIN DATA LOAD
         ════════════════════════════════════════ */
         firebase.auth().onAuthStateChanged(user => {
@@ -464,6 +988,12 @@ function formatMonth(monthStr) {
                 renderStats(d);
                 renderBillTimeline(d.bill_history || []);
                 buildInsights(d);
+
+                // Dashboard enhancements
+                window._dashUserData = d;
+                loadDashboardAPIs(user.uid, d);
+                renderApplianceSpotlight(d);
+                renderActivityFooter(doc, d);
 
                 // Dynamic hero subtext
                 const heroSub = document.getElementById('hero-sub');

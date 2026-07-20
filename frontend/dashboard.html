@@ -181,6 +181,110 @@
             </div>
         </div>
 
+        <!-- NEXT MONTH FORECAST CARD -->
+        <div class="forecast-teaser" id="forecastTeaser">
+            <!-- Skeleton state (shown by default) -->
+            <div class="forecast-skeleton" id="forecastSkeleton">
+                <div class="skel-block" style="width: 120px; height: 14px;"></div>
+                <div class="skel-block" style="width: 180px; height: 32px; margin-top: 8px;"></div>
+                <div class="skel-block" style="width: 100px; height: 14px; margin-top: 6px;"></div>
+            </div>
+
+            <!-- Loaded state (hidden by default) -->
+            <div class="forecast-loaded" id="forecastLoaded" style="display: none;">
+                <div class="forecast-left">
+                    <div class="forecast-eyebrow">
+                        <i class="fa fa-chart-line"></i> NEXT MONTH FORECAST
+                    </div>
+                    <div class="forecast-month" id="forecastMonth">August 2026</div>
+                </div>
+                <div class="forecast-center">
+                    <div class="forecast-amount" id="forecastAmount">Rs. --</div>
+                    <div class="forecast-units" id="forecastUnits">≈ -- kWh</div>
+                </div>
+                <div class="forecast-right">
+                    <div class="forecast-trend" id="forecastTrend">
+                        <!-- Dynamically: ↑ +12% vs Jul  OR  ↓ -8% vs Jul  OR  ≈ Stable -->
+                    </div>
+                    <a href="prediction-hub.html" class="forecast-cta">
+                        Full Breakdown <i class="fa fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Locked state (profile < 40%) -->
+            <div class="forecast-locked" id="forecastLocked" style="display: none;">
+                <i class="fa fa-lock"></i>
+                <span>Complete your profile to unlock next month's bill forecast</span>
+                <a href="setup-profile.html" class="forecast-cta">Setup <i class="fa fa-arrow-right"></i></a>
+            </div>
+
+            <!-- Error state (API failed, no cache) -->
+            <div class="forecast-error" id="forecastError" style="display: none;">
+                <i class="fa fa-server"></i>
+                <span>Forecast service offline</span>
+                <button onclick="retryForecast()" class="forecast-retry">
+                    <i class="fa fa-sync"></i> Retry
+                </button>
+            </div>
+        </div>
+
+        <!-- PEAK vs OFF-PEAK SPLIT -->
+        <div class="peak-split-card" id="peakSplitCard">
+            <!-- Skeleton -->
+            <div class="peak-skeleton" id="peakSkeleton">
+                <div class="skel-block" style="width: 100%; height: 8px; border-radius: 4px;"></div>
+                <div style="display:flex; justify-content:space-between; margin-top: 8px;">
+                    <div class="skel-block" style="width: 80px; height: 12px;"></div>
+                    <div class="skel-block" style="width: 80px; height: 12px;"></div>
+                </div>
+            </div>
+
+            <!-- Loaded state -->
+            <div class="peak-loaded" id="peakLoaded" style="display: none;">
+                <div class="peak-header">
+                    <span class="peak-label"><i class="fa fa-clock"></i> Daily Load Distribution</span>
+                </div>
+                <div class="peak-bar-container">
+                    <div class="peak-bar-offpeak" id="peakBarOffpeak" style="width: 0%;">
+                        <span class="peak-bar-text" id="offpeakPct">--</span>
+                    </div>
+                    <div class="peak-bar-peak" id="peakBarPeak" style="width: 0%;">
+                        <span class="peak-bar-text" id="peakPct">--</span>
+                    </div>
+                </div>
+                <div class="peak-legend">
+                    <span class="peak-legend-item">
+                        <span class="peak-dot offpeak"></span> Off-Peak
+                        <span class="peak-legend-val" id="offpeakKw">-- kW</span>
+                    </span>
+                    <span class="peak-legend-item">
+                        <span class="peak-dot peak"></span> Peak (6–10 PM)
+                        <span class="peak-legend-val" id="peakKw">-- kW</span>
+                    </span>
+                </div>
+                <div class="peak-insight" id="peakInsight">
+                    <!-- "Shifting 1.2 kW from peak saves ~Rs. 480/mo" -->
+                </div>
+            </div>
+
+            <!-- Locked state -->
+            <div class="peak-locked" id="peakLocked" style="display: none; align-items: center; gap: 12px; color: var(--text-dim); font-size: 0.78rem;">
+                <i class="fa fa-lock" style="opacity: 0.5; font-size: 1rem;"></i>
+                <span>Complete your profile to unlock daily load distribution</span>
+                <a href="setup-profile.html" class="forecast-cta" style="margin-left: auto;">Setup <i class="fa fa-arrow-right"></i></a>
+            </div>
+
+            <!-- Error state -->
+            <div class="peak-error" id="peakError" style="display: none; align-items: center; gap: 12px; color: var(--text-dim); font-size: 0.78rem;">
+                <i class="fa fa-server" style="opacity: 0.5; font-size: 1rem;"></i>
+                <span>Load service offline</span>
+                <button onclick="retryPeakSplit()" class="forecast-retry" style="margin-left: auto;">
+                    <i class="fa fa-sync"></i> Retry
+                </button>
+            </div>
+        </div>
+
         <!-- SEASONAL ALERT -->
         <div class="seasonal-alert" id="seasonalAlert" style="display:none">
             <div class="alert-icon"><i id="alertIcon" class="fa fa-sun"></i></div>
@@ -222,6 +326,70 @@
                 <h3>Optimization Simulator</h3>
                 <p>Simulate individual appliances and find hidden savings in your daily usage.</p>
                 <div class="card-action">Try Simulator <i class="fa fa-arrow-right"></i></div>
+            </div>
+        </div>
+
+        <!-- 12-MONTH BILL HORIZON -->
+        <div class="horizon-card" id="horizonCard">
+            <div class="horizon-header">
+                <div>
+                    <span class="horizon-eyebrow"><i class="fa fa-calendar-days"></i> 12-MONTH BILL HORIZON</span>
+                </div>
+                <a href="prediction-hub.html" class="horizon-link">
+                    Detailed Forecast <i class="fa fa-arrow-up-right-from-square"></i>
+                </a>
+            </div>
+
+            <!-- Skeleton -->
+            <div class="horizon-skeleton" id="horizonSkeleton">
+                <div style="display: flex; gap: 6px;">
+                    <!-- 12 skeleton blocks -->
+                    <div class="skel-block" style="flex:1; height:50px; border-radius:8px;" ></div>
+                    <div class="skel-block" style="flex:1; height:50px; border-radius:8px;"></div>
+                    <div class="skel-block" style="flex:1; height:50px; border-radius:8px;"></div>
+                    <div class="skel-block" style="flex:1; height:50px; border-radius:8px;"></div>
+                    <div class="skel-block" style="flex:1; height:50px; border-radius:8px;"></div>
+                    <div class="skel-block" style="flex:1; height:50px; border-radius:8px;"></div>
+                    <div class="skel-block" style="flex:1; height:50px; border-radius:8px;"></div>
+                    <div class="skel-block" style="flex:1; height:50px; border-radius:8px;"></div>
+                    <div class="skel-block" style="flex:1; height:50px; border-radius:8px;"></div>
+                    <div class="skel-block" style="flex:1; height:50px; border-radius:8px;"></div>
+                    <div class="skel-block" style="flex:1; height:50px; border-radius:8px;"></div>
+                    <div class="skel-block" style="flex:1; height:50px; border-radius:8px;"></div>
+                </div>
+            </div>
+
+            <!-- Loaded state -->
+            <div class="horizon-grid" id="horizonGrid" style="display: none;">
+                <!-- Populated by JS: 12 .horizon-block elements -->
+            </div>
+
+            <!-- Summary line -->
+            <div class="horizon-summary" id="horizonSummary" style="display: none;">
+                <span class="horizon-stat low">
+                    <i class="fa fa-arrow-down"></i>
+                    Lowest: <strong id="horizonLow">--</strong>
+                </span>
+                <span class="horizon-stat high">
+                    <i class="fa fa-arrow-up"></i>
+                    Highest: <strong id="horizonHigh">--</strong>
+                </span>
+            </div>
+
+            <!-- Locked state -->
+            <div class="horizon-locked" id="horizonLocked" style="display: none; align-items: center; gap: 12px; color: var(--text-dim); font-size: 0.78rem;">
+                <i class="fa fa-lock" style="opacity: 0.5; font-size: 1.2rem;"></i>
+                <span>Complete your profile to unlock 12-month billing horizon heatmap</span>
+                <a href="setup-profile.html" class="forecast-cta" style="margin-left: auto;">Setup <i class="fa fa-arrow-right"></i></a>
+            </div>
+
+            <!-- Error state -->
+            <div class="horizon-error" id="horizonError" style="display: none; align-items: center; gap: 12px; color: var(--text-dim); font-size: 0.78rem;">
+                <i class="fa fa-server" style="opacity: 0.5; font-size: 1.2rem;"></i>
+                <span>Seasonal forecast service offline</span>
+                <button onclick="retryHorizon()" class="forecast-retry" style="margin-left: auto;">
+                    <i class="fa fa-sync"></i> Retry
+                </button>
             </div>
         </div>
 
@@ -307,6 +475,17 @@
             </div>
         </div>
 
+        <!-- TOP ENERGY CONSUMERS -->
+        <div class="consumer-spotlight" id="consumerSpotlight" style="display: none;">
+            <div class="spotlight-header">
+                <span class="spotlight-eyebrow"><i class="fa fa-ranking-star"></i> YOUR TOP ENERGY CONSUMERS</span>
+                <span class="spotlight-season" id="spotlightSeason">July Profile</span>
+            </div>
+            <div class="consumer-list" id="consumerList">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
         <!-- ROTATING TIP CARD -->
         <div class="static-card" id="tip-card">
             <div class="tip-icon" id="tip-icon"><i class="fa fa-brain"></i></div>
@@ -317,6 +496,24 @@
                     <div class="tip-text" id="tip-text">Loading your personalised energy insights...</div>
                     <div class="tip-dots" id="tip-dots"></div>
                 </div>
+            </div>
+        </div>
+
+        <!-- LAST ACTIVITY FOOTER -->
+        <div class="activity-footer" id="activityFooter">
+            <div class="activity-item">
+                <i class="fa fa-user-pen"></i>
+                <span id="actProfileAge">Profile completion: --</span>
+            </div>
+            <div class="activity-divider"></div>
+            <div class="activity-item">
+                <i class="fa fa-brain"></i>
+                <span id="actLastPrediction">Last forecast: --</span>
+            </div>
+            <div class="activity-divider"></div>
+            <div class="activity-item">
+                <i class="fa fa-database"></i>
+                <span id="actHistoryCount">Bill history: --</span>
             </div>
         </div>
 
