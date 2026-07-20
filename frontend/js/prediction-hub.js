@@ -271,6 +271,10 @@ const db = firebase.firestore();
                 // Still update sidebar with what we HAVE, even if locked
                 document.getElementById('st-load').innerText = (d.sanctioned_load || "--") + " kW";
                 document.getElementById('st-disco').innerText = d.disco || "Not Set";
+
+                const loadingLine = document.getElementById('top-loading-line');
+                if (loadingLine) loadingLine.style.display = 'none';
+
                 return;
             }
 
