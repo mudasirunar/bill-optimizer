@@ -364,6 +364,7 @@ function initDynamicBreadcrumb(currentPageTitle) {
         'appliance-simulator.html': 'Appliance Simulator',
         'ai-memory.html': 'AI Memory',
         'setup-profile.html': 'Setup Profile',
+        'profile.html': 'Profile Settings',
         'nepra-info.html': 'NEPRA Info',
         'about-us.html': 'About Us'
     };
@@ -388,7 +389,8 @@ function initDynamicBreadcrumb(currentPageTitle) {
     }
 
 
-    if (lastPageFile && !ref.includes('dashboard.html') && !currentPath.includes(lastPageFile)) {
+    const currentFile = currentPath.split('/').pop();
+    if (lastPageFile && !ref.includes('dashboard.html') && currentFile !== lastPageFile) {
         navHTML += ` <i class="fa fa-chevron-right" style="font-size:0.5rem; margin:0 8px"></i> 
                      <a href="${lastPageFile}">${lastPageTitle}</a>`;
     }
