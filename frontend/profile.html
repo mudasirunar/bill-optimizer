@@ -197,7 +197,7 @@
                             <h4>Reset Profile Data</h4>
                             <p>Clear all customized home appliances, structural specifications, and bill forecasts from this account. Your login credentials will remain intact.</p>
                         </div>
-                        <button class="btn-destructive" onclick="openConfirmModal('clear')">
+                        <button class="btn-destructive" id="resetDataBtn" onclick="openConfirmModal('clear')" disabled style="opacity: 0.4; cursor: not-allowed;">
                             <i class="fa fa-eraser"></i> Reset Data
                         </button>
                     </div>
@@ -218,7 +218,7 @@
     </main>
 
     <!-- DOUBLE CONFIRMATION MODALS -->
-
+ 
     <!-- Reset Profile Data Modal -->
     <div id="clearDataModal" class="modal-overlay">
         <div class="modal-card">
@@ -226,14 +226,14 @@
                 <i class="fa fa-eraser"></i>
             </div>
             <h3>Reset Profile Data?</h3>
-            <p>This will erase your home configuration details, appliance parameters, and prediction cache. Your credentials will remain active, and you will be redirected to complete the profile setup again.</p>
+            <p>This will erase your home configuration details, appliance parameters, and prediction cache. Your credentials will remain active, and the page will reload with empty defaults.</p>
             <div class="modal-btn-row">
-                <button class="modal-btn-cancel" onclick="closeConfirmModal('clear')">Cancel</button>
-                <button class="modal-btn-confirm" onclick="executeClearProfileData()">Yes, Clear Data</button>
+                <button class="modal-btn-cancel" id="clearDataCancelBtn" onclick="closeConfirmModal('clear')">Cancel</button>
+                <button class="modal-btn-confirm" id="clearDataConfirmBtn" onclick="executeClearProfileData()">Yes, Clear Data</button>
             </div>
         </div>
     </div>
-
+ 
     <!-- Delete Account Modal -->
     <div id="deleteAccountModal" class="modal-overlay">
         <div class="modal-card">
@@ -241,28 +241,30 @@
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
             <h3>Delete Account Permanently?</h3>
-            <p>Warning: This action is irreversible. All of your optimization profiles, savings plans, history audits, and credentials will be deleted from our cloud servers. You will be logged out immediately.</p>
+            <p style="margin-bottom: 15px;">Warning: This action is irreversible. All of your optimization profiles, savings plans, history audits, and credentials will be deleted from our cloud servers. You will be logged out immediately.</p>
+            
+            <div style="text-align: left; width: 100%; margin-bottom: 12px;">
+                <label style="font-size: 0.76rem; color: var(--text-dim); margin-bottom: 5px; display: block;">To confirm, type "<strong>delete my account</strong>" below:</label>
+                <input type="text" id="deletePhraseInput" class="form-input-premium" placeholder="delete my account" autocomplete="off" style="font-size: 0.82rem; padding: 10px 14px; margin-bottom: 12px; width: 100%; border: 1.5px solid var(--border);">
+                
+                <div id="deletePasswordContainer">
+                    <label style="font-size: 0.76rem; color: var(--text-dim); margin-bottom: 5px; display: block;">Enter your password to verify:</label>
+                    <input type="password" id="deletePasswordInput" class="form-input-premium" placeholder="Password" autocomplete="new-password" style="font-size: 0.82rem; padding: 10px 14px; width: 100%; border: 1.5px solid var(--border);">
+                </div>
+                
+                <div id="deleteGoogleWarning" style="display: none; font-size: 0.78rem; color: var(--text-dim); padding: 10px 14px; background: rgba(52, 211, 153, 0.05); border: 1px solid rgba(52, 211, 153, 0.15); border-radius: 8px;">
+                    <i class="fa-brands fa-google" style="color: var(--g3); margin-right: 6px;"></i> You're signed in with Google. You'll be asked to verify your identity via a Google popup — please select the same account.
+                </div>
+            </div>
+
             <div class="modal-btn-row">
-                <button class="modal-btn-cancel" onclick="closeConfirmModal('delete')">Cancel</button>
-                <button class="modal-btn-confirm" onclick="executeDeleteAccount()">Delete Permanently</button>
+                <button class="modal-btn-cancel" id="deleteAccountCancelBtn" onclick="closeConfirmModal('delete')">Cancel</button>
+                <button class="modal-btn-confirm" id="deleteAccountConfirmBtn" onclick="executeDeleteAccount()">Delete Permanently</button>
             </div>
         </div>
     </div>
 
-    <!-- Re-auth Warning Modal (when user session is stale) -->
-    <div id="reauthModal" class="modal-overlay">
-        <div class="modal-card" style="border-color: var(--warn); box-shadow: 0 0 25px rgba(251, 191, 36, 0.25);">
-            <div class="modal-icon-warning" style="background: rgba(251, 191, 36, 0.1); color: var(--warn);">
-                <i class="fa fa-key"></i>
-            </div>
-            <h3>Security Verification Required</h3>
-            <p>For your security, deleting your account requires a recent login session. Please log out, log back in, and return to this page to complete the request.</p>
-            <div class="modal-btn-row">
-                <button class="modal-btn-cancel" onclick="closeConfirmModal('reauth')">Close</button>
-                <button class="modal-btn-confirm" style="background: var(--warn); color: #000; box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);" onclick="executeReauthRedirect()">Log Out Now</button>
-            </div>
-        </div>
-    </div>
+
 
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div id="toastNotification" class="toast-msg">

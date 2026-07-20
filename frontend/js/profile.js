@@ -114,6 +114,19 @@ firebase.auth().onAuthStateChanged(user => {
         if (diagAvgUnits) {
             diagAvgUnits.innerText = d.historical_avg_units ? `${Math.round(d.historical_avg_units)} kWh` : "0 kWh";
         }
+
+        // Enable Reset button only if meaningful profile data exists
+        const resetBtn = document.getElementById('resetDataBtn');
+        if (resetBtn) {
+            if (pct > 0) {
+                resetBtn.disabled = false;
+                resetBtn.style.opacity = '1';
+                resetBtn.style.cursor = 'pointer';
+                resetBtn.title = '';
+            } else {
+                resetBtn.title = 'No profile data to reset';
+            }
+        }
     }).catch(err => {
         console.error("Error loading user profile indicators:", err);
     });
@@ -175,6 +188,17 @@ async function saveProfileSettings() {
 async function executeClearProfileData() {
     if (!currentUser) return;
 
+    const confirmBtn = document.getElementById('clearDataConfirmBtn');
+    const cancelBtn = document.getElementById('clearDataCancelBtn');
+
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = `<i class="fa fa-spinner fa-spin"></i> Resetting...`;
+    }
+    if (cancelBtn) {
+        cancelBtn.disabled = true;
+    }
+
     try {
         // Delete Firestore document (this resets their setup profile status entirely)
         await db.collection('users').doc(currentUser.uid).delete();
@@ -183,7 +207,7 @@ async function executeClearProfileData() {
         localStorage.removeItem('lastPredictionRun');
         for (let i = localStorage.length - 1; i >= 0; i--) {
             const k = localStorage.key(i);
-            if (k.startsWith('forecast_') || k.startsWith('predict_') || k.startsWith('split_') || k.startsWith('seasonal_')) {
+            if (k && (k.startsWith('forecast_') || k.startsWith('predict_') || k.startsWith('split_') || k.startsWith('seasonal_') || k.startsWith('dash_'))) {
                 localStorage.removeItem(k);
             }
         }
@@ -192,11 +216,18 @@ async function executeClearProfileData() {
         showToast("Profile data cleared successfully.", "fa-circle-check", "var(--g3)");
         
         setTimeout(() => {
-            window.location.href = "setup-profile.html";
+            window.location.reload();
         }, 1500);
 
     } catch (err) {
         console.error("Error clearing data:", err);
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = "Yes, Clear Data";
+        }
+        if (cancelBtn) {
+            cancelBtn.disabled = false;
+        }
         showToast("Error clearing profile: " + err.message, "fa-circle-xmark", "#ef4444");
     }
 }
@@ -205,7 +236,46 @@ async function executeClearProfileData() {
 async function executeDeleteAccount() {
     if (!currentUser) return;
 
+    const phraseInput = document.getElementById('deletePhraseInput');
+    const passwordInput = document.getElementById('deletePasswordInput');
+    const confirmBtn = document.getElementById('deleteAccountConfirmBtn');
+    const cancelBtn = document.getElementById('deleteAccountCancelBtn');
+
+    const phrase = phraseInput ? phraseInput.value.trim() : "";
+    if (phrase !== "delete my account") {
+        showToast("Please type 'delete my account' exactly to confirm.", "fa-circle-xmark", "#ef4444");
+        return;
+    }
+
+    const isGoogleUser = currentUser.providerData.some(p => p.providerId === 'google.com');
+    let credential = null;
+
+    if (!isGoogleUser) {
+        const password = passwordInput ? passwordInput.value : "";
+        if (!password) {
+            showToast("Please enter your account password to verify deletion.", "fa-circle-xmark", "#ef4444");
+            return;
+        }
+        credential = firebase.auth.EmailAuthProvider.credential(currentUser.email, password);
+    }
+
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = `<i class="fa fa-spinner fa-spin"></i> Deleting...`;
+    }
+    if (cancelBtn) {
+        cancelBtn.disabled = true;
+    }
+
     try {
+        // Re-authenticate user
+        if (isGoogleUser) {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            await currentUser.reauthenticateWithPopup(provider);
+        } else {
+            await currentUser.reauthenticateWithCredential(credential);
+        }
+
         // 1. Delete user doc from Firestore
         await db.collection('users').doc(currentUser.uid).delete();
 
@@ -216,39 +286,67 @@ async function executeDeleteAccount() {
         localStorage.clear();
 
         closeConfirmModal('delete');
-        window.location.href = "signup.html";
+        showToast("Account deleted successfully.", "fa-circle-check", "var(--g3)");
+        
+        setTimeout(() => {
+            window.location.href = "signup.html";
+        }, 1500);
 
     } catch (err) {
         console.error("Account deletion error:", err);
-        if (err.code === 'auth/requires-recent-login') {
-            closeConfirmModal('delete');
-            openConfirmModal('reauth');
-        } else {
-            showToast("Failed to delete account: " + err.message, "fa-circle-xmark", "#ef4444");
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = "Delete Permanently";
         }
+        if (cancelBtn) {
+            cancelBtn.disabled = false;
+        }
+
+        let errorMsg = "Failed to verify credentials. Please try again.";
+        if (err.code === 'auth/user-mismatch') {
+            errorMsg = "The selected Google account doesn't match your signed-in account. Please select the correct account.";
+        } else if (err.code === 'auth/wrong-password') {
+            errorMsg = "Incorrect password. Please try again.";
+        } else if (err.code === 'auth/popup-closed-by-user') {
+            errorMsg = "Verification cancelled. The Google popup was closed.";
+        } else if (err.code === 'auth/too-many-requests') {
+            errorMsg = "Too many failed attempts. Please wait a moment and try again.";
+        }
+        showToast(errorMsg, "fa-circle-xmark", "#ef4444");
     }
 }
 
-// ─── 5. REAUTH REDIRECT FLOW ───
-function executeReauthRedirect() {
-    firebase.auth().signOut().then(() => {
-        localStorage.clear();
-        window.location.href = "login.html?reauth=true";
-    });
-}
-
-// ─── 6. INTERACTIVE DIALOG MODALS ───
+// ─── 5. INTERACTIVE DIALOG MODALS ───
 function openConfirmModal(type) {
-    const modalId = type === 'clear' ? 'clearDataModal' : (type === 'delete' ? 'deleteAccountModal' : 'reauthModal');
+    const modalId = type === 'clear' ? 'clearDataModal' : 'deleteAccountModal';
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden'; // Lock background scroll
+        
+        if (type === 'delete' && currentUser) {
+            const isGoogleUser = currentUser.providerData.some(p => p.providerId === 'google.com');
+            const passContainer = document.getElementById('deletePasswordContainer');
+            const googleWarning = document.getElementById('deleteGoogleWarning');
+            const phraseInput = document.getElementById('deletePhraseInput');
+            const passwordInput = document.getElementById('deletePasswordInput');
+
+            if (phraseInput) phraseInput.value = '';
+            if (passwordInput) passwordInput.value = '';
+
+            if (isGoogleUser) {
+                if (passContainer) passContainer.style.display = 'none';
+                if (googleWarning) googleWarning.style.display = 'block';
+            } else {
+                if (passContainer) passContainer.style.display = 'block';
+                if (googleWarning) googleWarning.style.display = 'none';
+            }
+        }
     }
 }
 
 function closeConfirmModal(type) {
-    const modalId = type === 'clear' ? 'clearDataModal' : (type === 'delete' ? 'deleteAccountModal' : 'reauthModal');
+    const modalId = type === 'clear' ? 'clearDataModal' : 'deleteAccountModal';
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.style.display = 'none';
