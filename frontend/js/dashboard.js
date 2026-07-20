@@ -472,7 +472,13 @@ function formatMonth(monthStr) {
             if (peakCache) renderPeakSplit(peakCache);
             if (seasonalCache) renderSeasonalHorizon(seasonalCache);
 
-            const nextMonth = ((new Date().getMonth() + 1) % 12) + 1;
+            // Determine target month matching prediction hub logic
+            let nextMonth = new Date().getMonth() + 1; // Default
+            if (userData && userData.bill_history && userData.bill_history.length > 0) {
+                const sorted = [...userData.bill_history].sort((a, b) => b.month.localeCompare(a.month));
+                const [year, month] = sorted[0].month.split('-').map(Number);
+                nextMonth = (month % 12) + 1;
+            }
 
             Promise.allSettled([
                 fetch(`${API_BASE_URL}/api/predict_bill`, {
@@ -534,7 +540,13 @@ function formatMonth(monthStr) {
             document.getElementById('forecastError').style.display = 'none';
             document.getElementById('forecastSkeleton').style.display = 'block';
             
-            const nextMonth = ((new Date().getMonth() + 1) % 12) + 1;
+            let nextMonth = new Date().getMonth() + 1; // Default
+            const u = window._dashUserData;
+            if (u && u.bill_history && u.bill_history.length > 0) {
+                const sorted = [...u.bill_history].sort((a, b) => b.month.localeCompare(a.month));
+                const [year, month] = sorted[0].month.split('-').map(Number);
+                nextMonth = (month % 12) + 1;
+            }
             fetch(`${API_BASE_URL}/api/predict_bill`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -619,10 +631,21 @@ function formatMonth(monthStr) {
 
             localStorage.setItem('lastPredictionRun', Date.now().toString());
 
-            const nextMonth = ((new Date().getMonth() + 1) % 12) + 1;
+            // Determine target month and year matching prediction hub logic
+            let nextMonth = new Date().getMonth() + 1; // Default
+            let year = new Date().getFullYear();
+            const userData = window._dashUserData;
+            if (userData && userData.bill_history && userData.bill_history.length > 0) {
+                const sorted = [...userData.bill_history].sort((a, b) => b.month.localeCompare(a.month));
+                const [latestYear, latestMonth] = sorted[0].month.split('-').map(Number);
+                nextMonth = (latestMonth % 12) + 1;
+                year = latestMonth === 12 ? latestYear + 1 : latestYear;
+            } else {
+                year = nextMonth === 1 ? new Date().getFullYear() + 1 : new Date().getFullYear();
+            }
+
             const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June',
                                  'July', 'August', 'September', 'October', 'November', 'December'];
-            const year = nextMonth === 1 ? new Date().getFullYear() + 1 : new Date().getFullYear();
             const monthEl = document.getElementById('forecastMonth');
             if (monthEl) monthEl.textContent = `${monthNames[nextMonth]} ${year}`;
 
