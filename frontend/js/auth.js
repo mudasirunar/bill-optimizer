@@ -179,6 +179,12 @@ async function handleSignUp(firstName, lastName, email, password, confirmPasswor
         const fullName = `${firstName.trim()} ${lastName.trim()}`;
         await result.user.updateProfile({ displayName: fullName });
 
+        // Assign random avatar color for initials-based profile icon
+        const avatarColor = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
+        const db = firebase.firestore();
+        await db.collection('users').doc(result.user.uid).set({ avatarColor }, { merge: true });
+        localStorage.setItem('avatarColor', avatarColor);
+
         logDetailedEvent('signup_success');
 
         // One-time Setup Redirect for New Users
@@ -209,6 +215,70 @@ async function handleSignUp(firstName, lastName, email, password, confirmPasswor
 
 const titleCase = (str) => str ? str.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : "";
 
+// ─── AVATAR SYSTEM (WhatsApp-Style Initials) ───
+
+const AVATAR_COLORS = [
+    '#E17076', '#ED8F5A', '#FAB84D', '#7BC862', '#6EC9CB',
+    '#65AADD', '#A695E7', '#EE7AAE', '#E57373', '#F0A04B',
+    '#81C784', '#4DB6AC', '#4FC3F7', '#7986CB', '#BA68C8',
+    '#F48FB1', '#FF8A65', '#FFD54F', '#AED581', '#4DD0E1',
+    '#9575CD', '#F06292', '#FFB74D', '#A1887F', '#90A4AE',
+    '#DCE775', '#26A69A', '#42A5F5', '#EC407A', '#AB47BC'
+];
+
+function getInitials(name) {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/).filter(p => p.length > 0);
+    if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return parts[0][0].toUpperCase();
+}
+
+function generateInitialsAvatar(name, bgColor, size = 200) {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    // Background circle
+    ctx.fillStyle = bgColor || '#65AADD';
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Text initials
+    const initials = getInitials(name);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `bold ${size * 0.42}px 'Syne', 'Inter', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(initials, size / 2, size / 2 + (size * 0.02));
+
+    return canvas.toDataURL('image/png');
+}
+
+function getAvatarColorFromUID(uid) {
+    // Deterministic hash for legacy users without stored color
+    let hash = 0;
+    for (let i = 0; i < uid.length; i++) {
+        hash = uid.charCodeAt(i) + ((hash << 5) - hash);
+        hash = hash & hash; // Convert to 32-bit int
+    }
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function isGoogleProvider(user) {
+    return user.providerData && user.providerData.some(p => p.providerId === 'google.com');
+}
+
+function applyAvatarToElements(dataURI, elementIds) {
+    elementIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.src = dataURI;
+    });
+}
+
 // 8. Global Session Watcher (Stays intact for refresh)
 auth.onAuthStateChanged((user) => {
     if (user) {
@@ -235,32 +305,45 @@ auth.onAuthStateChanged((user) => {
             greetingDisplay.innerText = `Welcome back, ${firstName}`;
         }
 
-        // --- 2. PFP LOGIC (Broken Link Protection) ---
-        if (pfpDisplay) {
-            const photo = user.photoURL;
-            // If it's a real URL (starts with http), use it. Otherwise, use a standard icon.
-            if (photo && (photo.startsWith('http') || photo.startsWith('https'))) {
-                pfpDisplay.src = photo;
-            } else {
-                // Fallback to a standard professional user icon
-                pfpDisplay.src = `https://cdn-icons-png.flaticon.com/512/3135/3135715.png`;
-            }
-        }
-
-        // --- 2b. DROPDOWN HEADER LOGIC ---
+        // --- 2. PFP LOGIC (Avatar System) ---
         const dropdownName = document.getElementById('dropdown-user-name');
         const dropdownEmail = document.getElementById('dropdown-user-email');
         const dropdownPfp = document.getElementById('dropdown-user-pfp');
 
         if (dropdownName) dropdownName.innerText = cleanName;
         if (dropdownEmail) dropdownEmail.innerText = user.email;
-        if (dropdownPfp) {
+
+        if (isGoogleProvider(user)) {
+            // Google users: use their Google profile photo
             const photo = user.photoURL;
             if (photo && (photo.startsWith('http') || photo.startsWith('https'))) {
-                dropdownPfp.src = photo;
-            } else {
-                dropdownPfp.src = `https://cdn-icons-png.flaticon.com/512/3135/3135715.png`;
+                if (pfpDisplay) pfpDisplay.src = photo;
+                if (dropdownPfp) dropdownPfp.src = photo;
             }
+            localStorage.setItem('userPhotoURL', photo || '');
+            localStorage.removeItem('avatarColor');
+        } else {
+            // Email/Password users: generate initials avatar
+            localStorage.setItem('userPhotoURL', '');
+            const db = firebase.firestore();
+            db.collection('users').doc(user.uid).get().then(doc => {
+                let avatarColor = doc.exists && doc.data().avatarColor ? doc.data().avatarColor : null;
+
+                if (!avatarColor) {
+                    // Legacy user fallback: deterministic color from UID
+                    avatarColor = getAvatarColorFromUID(user.uid);
+                    db.collection('users').doc(user.uid).set({ avatarColor }, { merge: true }).catch(() => {});
+                }
+
+                localStorage.setItem('avatarColor', avatarColor);
+                const avatarURI = generateInitialsAvatar(cleanName, avatarColor);
+                applyAvatarToElements(avatarURI, ['user-pfp', 'dropdown-user-pfp', 'profile-card-pfp']);
+            }).catch(() => {
+                // Final fallback: use UID-based color even if Firestore fails
+                const fallbackColor = getAvatarColorFromUID(user.uid);
+                const avatarURI = generateInitialsAvatar(cleanName, fallbackColor);
+                applyAvatarToElements(avatarURI, ['user-pfp', 'dropdown-user-pfp', 'profile-card-pfp']);
+            });
         }
 
         // --- GLOBAL REDIRECT LOGIC ---
