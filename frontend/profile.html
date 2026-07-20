@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Settings - Bill Optimizer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+
+    <!-- Firebase Compat SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/profile.css">
+</head>
+
+<body>
+    <!-- TOP PROGRESS LINE LOADER -->
+    <div id="top-loading-line" style="display: none; position: fixed; top: 0; left: 0; right: 0; height: 3px; background: rgba(16, 185, 129, 0.05); z-index: 10000; overflow: hidden; pointer-events: none;">
+        <div style="position: absolute; top: 0; bottom: 0; left: -50%; width: 50%; background: linear-gradient(90deg, transparent, var(--g3), transparent); animation: loadingLineMove 0.8s infinite linear;"></div>
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="nav-logo" onclick="window.location.href='dashboard.html'">
+            <i class="fa fa-leaf"></i> Bill Optimizer <span class="ai-tag">AI</span>
+        </div>
+        <div class="nav-user-area">
+            <div class="user-info">
+                <span id="user-name-display">User</span>
+                <small>Account Center</small>
+            </div>
+            <div class="profile-dropdown">
+                <img id="user-pfp" class="user-avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile">
+                <div class="dropdown-menu">
+                    <!-- Dynamic Profile Header -->
+                    <a href="profile.html" class="dropdown-profile-header" style="display: flex !important; align-items: center; gap: 12px; padding: 12px; border-radius: 9px; transition: background 0.18s; text-decoration: none;">
+                        <img id="dropdown-user-pfp" class="user-avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style="width: 32px; height: 32px; flex-shrink: 0; border: 1.5px solid var(--border);" alt="Profile">
+                        <div style="display: flex; flex-direction: column; text-align: left; line-height: 1.2;">
+                            <span id="dropdown-user-name" style="font-weight: 700; font-size: 0.82rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;">User</span>
+                            <small id="dropdown-user-email" style="font-size: 0.68rem; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;">user@email.com</small>
+                        </div>
+                    </a>
+                    <hr style="border: none; border-top: 1px solid var(--border); margin: 6px 0;">
+                    
+                    <a href="dashboard.html"><i class="fa fa-home"></i> Dashboard</a>
+                    <a href="prediction-hub.html"><i class="fa fa-bolt-lightning"></i> Prediction Hub</a>
+                    <a href="load-forecaster.html"><i class="fa fa-chart-line"></i> Load Forecaster</a>
+                    <a href="appliance-simulator.html"><i class="fa fa-plug"></i> Appliance Simulator</a>
+                    <a href="setup-profile.html"><i class="fa fa-cog"></i> Setup Profile</a>
+                    <a href="ai-memory.html"><i class="fa fa-brain"></i> AI Memory</a>
+                    <a href="nepra-info.html"><i class="fa fa-landmark"></i> NEPRA Info</a>
+                    <a href="about-us.html"><i class="fa fa-info-circle"></i> About Us</a>
+                    <hr>
+                    <a href="#" onclick="logout()" class="logout-link"><i class="fa fa-sign-out-alt"></i> Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+        <div id="dynamic-breadcrumb" class="breadcrumb">
+            <a href="dashboard.html">Dashboard</a> <i class="fa fa-chevron-right"></i> <span>Profile Settings</span>
+        </div>
+        <div class="page-title-row"
+            style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px;">
+            <div style="flex: 1; min-width: 300px;">
+                <h1>Profile <span class="highlight">Settings</span></h1>
+                <p style="color:var(--text-dim); margin-top:8px; max-width: 520px;">
+                    Manage your account settings, preferences, and data privacy options.
+                </p>
+            </div>
+
+            <div style="margin-bottom: 5px;">
+                <span class="model-badge">
+                    <i class="fa fa-user-gear"></i> Account Center
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <main class="main-container">
+        <div class="profile-main">
+            <!-- Left Side: Profile Summary Card -->
+            <div class="profile-card-left">
+                <img id="profile-card-pfp" class="profile-avatar-large" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile avatar">
+                <h3 id="profile-card-name" class="profile-name-title">---</h3>
+                <p id="profile-card-email" class="profile-email-sub">---</p>
+
+                <div class="profile-metadata-list">
+                    <div class="profile-meta-item">
+                        <span>Profile Status</span>
+                        <strong id="meta-profile-pct" style="color:var(--g3)">0% Complete</strong>
+                    </div>
+                    <div class="profile-meta-item">
+                        <span>Distribution Provider</span>
+                        <strong id="meta-disco">---</strong>
+                    </div>
+                    <div class="profile-meta-item">
+                        <span>User Category</span>
+                        <strong id="meta-category" style="text-transform: uppercase;">---</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Configuration Forms -->
+            <div class="profile-panel-right">
+                <!-- Card 1: Account Information -->
+                <div class="section-card">
+                    <h3 style="font-family:'Syne'; margin-bottom: 20px;"><i class="fa-regular fa-user" style="color:var(--g3); margin-right: 8px;"></i> Account Details</h3>
+                    
+                    <div class="form-group">
+                        <label for="displayNameInput">Display Name / Full Name</label>
+                        <input type="text" id="displayNameInput" class="form-input-premium" placeholder="Enter your full name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="emailDisplayOnly">Email Address (Read-Only)</label>
+                        <input type="text" id="emailDisplayOnly" class="form-input-premium" disabled>
+                    </div>
+
+                    <div style="margin-top: 25px;">
+                        <button class="btn-save-settings" id="saveProfileBtn" onclick="saveProfileSettings()">
+                            <i class="fa-regular fa-floppy-disk"></i> Save Details
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Card 2: Danger Zone (Destructive Settings) -->
+                <div class="section-card danger-panel">
+                    <h3 style="font-family:'Syne'; color: #f87171; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa fa-triangle-exclamation"></i> Danger Zone
+                    </h3>
+                    
+                    <!-- Caution Banner -->
+                    <div class="danger-warning-banner">
+                        <i class="fa fa-circle-exclamation"></i>
+                        <div>
+                            <h4>System Operations Irreversible</h4>
+                            <p>Be extremely careful when initiating these tasks. Once executed, your data will be permanently purged.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Action 1: Reset profile data -->
+                    <div class="danger-action-card">
+                        <div class="danger-action-desc">
+                            <h4>Reset Profile Data</h4>
+                            <p>Clear all customized home appliances, structural specifications, and bill forecasts from this account. Your login credentials will remain intact.</p>
+                        </div>
+                        <button class="btn-destructive" onclick="openConfirmModal('clear')">
+                            <i class="fa fa-eraser"></i> Reset Data
+                        </button>
+                    </div>
+
+                    <!-- Action 2: Delete Account -->
+                    <div class="danger-action-card" style="margin-bottom: 0;">
+                        <div class="danger-action-desc">
+                            <h4>Delete Account Permanently</h4>
+                            <p>Permanently remove your account, bill histories, saved profiles, and optimization preferences. This action is irreversible.</p>
+                        </div>
+                        <button class="btn-destructive" onclick="openConfirmModal('delete')">
+                            <i class="fa fa-trash-can"></i> Delete Account
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- DOUBLE CONFIRMATION MODALS -->
+
+    <!-- Reset Profile Data Modal -->
+    <div id="clearDataModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-icon-warning">
+                <i class="fa fa-eraser"></i>
+            </div>
+            <h3>Reset Profile Data?</h3>
+            <p>This will erase your home configuration details, appliance parameters, and prediction cache. Your credentials will remain active, and you will be redirected to complete the profile setup again.</p>
+            <div class="modal-btn-row">
+                <button class="modal-btn-cancel" onclick="closeConfirmModal('clear')">Cancel</button>
+                <button class="modal-btn-confirm" onclick="executeClearProfileData()">Yes, Clear Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Account Modal -->
+    <div id="deleteAccountModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-icon-warning">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3>Delete Account Permanently?</h3>
+            <p>Warning: This action is irreversible. All of your optimization profiles, savings plans, history audits, and credentials will be deleted from our cloud servers. You will be logged out immediately.</p>
+            <div class="modal-btn-row">
+                <button class="modal-btn-cancel" onclick="closeConfirmModal('delete')">Cancel</button>
+                <button class="modal-btn-confirm" onclick="executeDeleteAccount()">Delete Permanently</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Re-auth Warning Modal (when user session is stale) -->
+    <div id="reauthModal" class="modal-overlay">
+        <div class="modal-card" style="border-color: var(--warn); box-shadow: 0 0 25px rgba(251, 191, 36, 0.25);">
+            <div class="modal-icon-warning" style="background: rgba(251, 191, 36, 0.1); color: var(--warn);">
+                <i class="fa fa-key"></i>
+            </div>
+            <h3>Security Verification Required</h3>
+            <p>For your security, deleting your account requires a recent login session. Please log out, log back in, and return to this page to complete the request.</p>
+            <div class="modal-btn-row">
+                <button class="modal-btn-cancel" onclick="closeConfirmModal('reauth')">Close</button>
+                <button class="modal-btn-confirm" style="background: var(--warn); color: #000; box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);" onclick="executeReauthRedirect()">Log Out Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastNotification" class="toast-msg">
+        <i id="toastIcon" class="fa fa-info-circle"></i>
+        <span id="toastText">Success!</span>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-brand">
+            <i class="fa fa-graduation-cap"></i> Sir Syed University of Engineering and Technology
+        </div>
+        <p class="footer-sub"><i class="fa fa-map-marker-alt"></i> Gulshan-e-Iqbal, Karachi, Pakistan</p>
+        <div class="footer-tag">FYP 2026 · Smart Energy Management System</div>
+    </footer>
+
+    <!-- SCRIPTS -->
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/profile.js" defer></script>
+</body>
+
+</html>

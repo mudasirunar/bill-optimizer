@@ -40,6 +40,14 @@
             <div class="profile-dropdown">
                 <img id="user-pfp" class="user-avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
                 <div class="dropdown-menu">
+                    <a href="profile.html" class="dropdown-profile-header" style="display: flex !important; align-items: center; gap: 12px; padding: 12px; border-radius: 9px; transition: background 0.18s; text-decoration: none;">
+                        <img id="dropdown-user-pfp" class="user-avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" style="width: 32px; height: 32px; flex-shrink: 0; border: 1.5px solid var(--border);" alt="Profile">
+                        <div style="display: flex; flex-direction: column; text-align: left; line-height: 1.2;">
+                            <span id="dropdown-user-name" style="font-weight: 700; font-size: 0.82rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;">User</span>
+                            <small id="dropdown-user-email" style="font-size: 0.68rem; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;">user@email.com</small>
+                        </div>
+                    </a>
+                    <hr style="border: none; border-top: 1px solid var(--border); margin: 6px 0;">
                     <a href="dashboard.html"><i class="fa fa-home"></i> Dashboard</a>
                     <a href="prediction-hub.html"><i class="fa fa-bolt-lightning"></i> Prediction Hub</a>
                     <a href="appliance-simulator.html"><i class="fa fa-plug"></i> Appliance Simulator</a>

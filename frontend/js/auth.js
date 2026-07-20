@@ -247,6 +247,22 @@ auth.onAuthStateChanged((user) => {
             }
         }
 
+        // --- 2b. DROPDOWN HEADER LOGIC ---
+        const dropdownName = document.getElementById('dropdown-user-name');
+        const dropdownEmail = document.getElementById('dropdown-user-email');
+        const dropdownPfp = document.getElementById('dropdown-user-pfp');
+
+        if (dropdownName) dropdownName.innerText = cleanName;
+        if (dropdownEmail) dropdownEmail.innerText = user.email;
+        if (dropdownPfp) {
+            const photo = user.photoURL;
+            if (photo && (photo.startsWith('http') || photo.startsWith('https'))) {
+                dropdownPfp.src = photo;
+            } else {
+                dropdownPfp.src = `https://cdn-icons-png.flaticon.com/512/3135/3135715.png`;
+            }
+        }
+
         // --- GLOBAL REDIRECT LOGIC ---
         const path = window.location.pathname;
         const filename = path.substring(path.lastIndexOf('/') + 1);
@@ -319,6 +335,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Immediately add auth-verified class to body to prevent layout fade-in delay
         document.body.classList.add('auth-verified');
+    }
+
+    // Check if redirecting for reauth
+    if (window.location.search.includes('reauth=true')) {
+        setTimeout(() => {
+            showErrorMessage("Security check: Please log in again to delete your account.");
+        }, 500);
     }
 });
 
