@@ -257,3 +257,14 @@ window.addEventListener('click', (e) => {
         document.body.style.overflow = 'auto';
     }
 });
+
+// Logout utility matching other app pages
+function logout() {
+    if (typeof logDetailedEvent === 'function') {
+        logDetailedEvent('logout');
+    }
+    firebase.auth().signOut().then(() => {
+        localStorage.clear();
+        window.location.href = 'login.html';
+    });
+}
