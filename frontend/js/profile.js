@@ -68,6 +68,9 @@ firebase.auth().onAuthStateChanged(user => {
     db.collection('users').doc(user.uid).get().then(doc => {
         const d = doc.exists ? doc.data() : {};
         
+        // Cache profile data for export
+        window.userProfileData = d;
+        
         // Completion Pct
         const pct = calcProfileCompletion(d);
         const metaPct = document.getElementById('meta-profile-pct');
@@ -87,6 +90,29 @@ firebase.auth().onAuthStateChanged(user => {
         if (metaCategory) {
             const catMap = { 'lifeline': 'Lifeline', 'protected': 'Protected', 'non_protected': 'Unprotected' };
             metaCategory.innerText = catMap[d.user_category] || d.user_category || "Not Setup";
+        }
+
+        // Populate Diagnostics
+        const diagAppliances = document.getElementById('diag-appliances');
+        if (diagAppliances) {
+            const appQty = (d.ac_qty || 0) + (d.f_qty || 0) + (d.wm_qty || 0) + (d.wp_qty || 0) + (d.k_qty || 0) + (d.u_qty || 0) + (d.iron_qty || 0) + (d.fan_qty || 0);
+            diagAppliances.innerText = appQty > 0 ? `${appQty} Active` : "0 Devices";
+        }
+
+        const diagLoad = document.getElementById('diag-load');
+        if (diagLoad) {
+            diagLoad.innerText = d.sanctioned_load ? `${parseFloat(d.sanctioned_load).toFixed(2)} kW` : "Not Setup";
+        }
+
+        const diagBaseload = document.getElementById('diag-baseload');
+        if (diagBaseload) {
+            const baseloadWatts = d.mean_hourly ? Math.round(d.mean_hourly * 1000) : null;
+            diagBaseload.innerText = baseloadWatts ? `${baseloadWatts} W` : "--";
+        }
+
+        const diagAvgUnits = document.getElementById('diag-avg-units');
+        if (diagAvgUnits) {
+            diagAvgUnits.innerText = d.historical_avg_units ? `${Math.round(d.historical_avg_units)} kWh` : "0 kWh";
         }
     }).catch(err => {
         console.error("Error loading user profile indicators:", err);
@@ -267,4 +293,95 @@ function logout() {
         localStorage.clear();
         window.location.href = 'login.html';
     });
+}
+
+// ─── 7. EXPORT BILLING DATA (CSV) ───
+function exportBillingData() {
+    if (!currentUser || !window.userProfileData) {
+        showToast("No profile data loaded yet.", "fa-circle-xmark", "#ef4444");
+        return;
+    }
+
+    const d = window.userProfileData;
+    const history = d.bill_history || [];
+
+    // 1. Build CSV content string
+    let csv = [];
+    
+    // Metadata Header
+    csv.push(`"Smart Energy Management System - Billing & Configuration Export"`);
+    csv.push(`"Generated On:","${new Date().toLocaleString()}"`);
+    csv.push(`"User Name:","${currentUser.displayName || "N/A"}"`);
+    csv.push(`"User Email:","${currentUser.email || "N/A"}"`);
+    csv.push(`"Distribution Provider (DISCO):","${d.disco || "N/A"}"`);
+    const catMap = { 'lifeline': 'Lifeline', 'protected': 'Protected', 'non_protected': 'Unprotected' };
+    csv.push(`"Tariff Category:","${catMap[d.user_category] || d.user_category || "N/A"}"`);
+    csv.push(`"Sanctioned Load:","${d.sanctioned_load ? d.sanctioned_load + ' kW' : 'N/A'}"`);
+    csv.push(`"Property Area:","${d.property_area ? d.property_area + ' Sq Ft' : 'N/A'}"`);
+    csv.push(`"Occupants:","${d.person_count || 'N/A'}"`);
+    csv.push(`"Floors Count:","${d.floors || 'N/A'}"`);
+    csv.push(`"User Routine:","${d.user_routine || 'N/A'}"`);
+    csv.push(""); // Empty line separator
+    
+    // SECTION A: APPLIANCE INVENTORY
+    csv.push(`"SECTION A: HOUSEHOLD APPLIANCE INVENTORY"`);
+    csv.push(`"Appliance Type","Quantity (Units)","Avg. Daily Usage (Hours)","Weekly Frequency (Days)"`);
+    
+    const appliances = [
+        { name: "Standard AC (Non-Inverter)", qty: d.ac_std_qty, hours: d.ac_std_val, freq: d.ac_std_freq },
+        { name: "Inverter AC", qty: d.ac_inv_qty, hours: d.ac_inv_val, freq: d.ac_inv_freq },
+        { name: "Refrigerator", qty: d.f_qty, hours: d.f_val, freq: d.f_freq },
+        { name: "Washing Machine", qty: d.wm_qty, hours: d.wm_val, freq: d.wm_freq },
+        { name: "Water Pump", qty: d.wp_qty, hours: d.wp_val, freq: d.wp_freq },
+        { name: "Kitchen Appliances", qty: d.k_qty, hours: d.k_val, freq: d.k_freq },
+        { name: "UPS Backup Unit", qty: d.u_qty, hours: d.u_val, freq: d.u_freq },
+        { name: "Electric Iron", qty: d.iron_qty, hours: d.iron_val, freq: d.iron_freq },
+        { name: "AC Fans", qty: d.fan_ac_qty, hours: 12, freq: 7 },
+        { name: "DC Fans", qty: d.fan_dc_qty, hours: 12, freq: 7 }
+    ];
+
+    appliances.forEach(app => {
+        const qty = app.qty !== undefined && app.qty !== null ? app.qty : 0;
+        if (qty > 0) {
+            csv.push(`"${app.name}","${qty}","${app.hours || 0}","${app.freq || 0}"`);
+        }
+    });
+
+    csv.push(""); // Separator
+    
+    // SECTION B: HISTORICAL BILLING SUMMARY
+    csv.push(`"SECTION B: HISTORICAL BILLING SUMMARY"`);
+    csv.push(`"Month","Units Consumed (kWh)","Bill Amount (PKR)","Avg Unit Cost (PKR/kWh)"`);
+    
+    if (history.length > 0) {
+        history.forEach(row => {
+            const month = row.month || "";
+            const units = row.units !== undefined ? row.units : "";
+            const amount = row.amount !== undefined ? row.amount : "";
+            const avgCost = (units > 0 && amount > 0) ? (amount / units).toFixed(2) : "0.00";
+            csv.push(`"${month}","${units}","${amount}","${avgCost}"`);
+        });
+    } else {
+        csv.push(`"No historical billing records loaded."`);
+    }
+
+    const csvContent = csv.join("\n");
+    
+    // 2. Trigger native browser file download
+    try {
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Energy_Profile_Report_${currentUser.uid.substring(0, 8)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showToast("Billing & configuration exported successfully!", "fa-circle-check", "var(--g3)");
+    } catch (err) {
+        console.error("CSV Export error:", err);
+        showToast("Export failed: " + err.message, "fa-circle-xmark", "#ef4444");
+    }
 }

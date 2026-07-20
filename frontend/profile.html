@@ -89,24 +89,51 @@
     <!-- MAIN CONTAINER -->
     <main class="main-container">
         <div class="profile-main">
-            <!-- Left Side: Profile Summary Card -->
-            <div class="profile-card-left">
-                <img id="profile-card-pfp" class="profile-avatar-large" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile avatar">
-                <h3 id="profile-card-name" class="profile-name-title">---</h3>
-                <p id="profile-card-email" class="profile-email-sub">---</p>
+            <!-- Left Side: Profile Summary & Diagnostics -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div class="profile-card-left">
+                    <img id="profile-card-pfp" class="profile-avatar-large" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile avatar">
+                    <h3 id="profile-card-name" class="profile-name-title">---</h3>
+                    <p id="profile-card-email" class="profile-email-sub">---</p>
 
-                <div class="profile-metadata-list">
-                    <div class="profile-meta-item">
-                        <span>Profile Status</span>
-                        <strong id="meta-profile-pct" style="color:var(--g3)">0% Complete</strong>
+                    <div class="profile-metadata-list">
+                        <div class="profile-meta-item">
+                            <span>Profile Status</span>
+                            <strong id="meta-profile-pct" style="color:var(--g3)">0% Complete</strong>
+                        </div>
+                        <div class="profile-meta-item">
+                            <span>Distribution Provider</span>
+                            <strong id="meta-disco">---</strong>
+                        </div>
+                        <div class="profile-meta-item">
+                            <span>User Category</span>
+                            <strong id="meta-category" style="text-transform: uppercase;">---</strong>
+                        </div>
                     </div>
-                    <div class="profile-meta-item">
-                        <span>Distribution Provider</span>
-                        <strong id="meta-disco">---</strong>
-                    </div>
-                    <div class="profile-meta-item">
-                        <span>User Category</span>
-                        <strong id="meta-category" style="text-transform: uppercase;">---</strong>
+                </div>
+
+                <!-- Card 1b: Diagnostic Summary -->
+                <div class="profile-diagnostic-card">
+                    <h4 class="diagnostic-title">
+                        <i class="fa fa-calculator"></i> Energy Diagnostics
+                    </h4>
+                    <div class="diagnostic-grid">
+                        <div class="diagnostic-item">
+                            <span class="diagnostic-label">Active Appliances</span>
+                            <strong class="diagnostic-value" id="diag-appliances">--</strong>
+                        </div>
+                        <div class="diagnostic-item">
+                            <span class="diagnostic-label">Connected Load</span>
+                            <strong class="diagnostic-value" id="diag-load">-- kW</strong>
+                        </div>
+                        <div class="diagnostic-item">
+                            <span class="diagnostic-label">Baseload Estimate</span>
+                            <strong class="diagnostic-value" id="diag-baseload">-- W</strong>
+                        </div>
+                        <div class="diagnostic-item">
+                            <span class="diagnostic-label">Avg. Monthly Units</span>
+                            <strong class="diagnostic-value" id="diag-avg-units">-- kWh</strong>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -130,6 +157,21 @@
                     <div style="margin-top: 25px;">
                         <button class="btn-save-settings" id="saveProfileBtn" onclick="saveProfileSettings()">
                             <i class="fa-regular fa-floppy-disk"></i> Save Details
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Card 1.5: Data Export Options -->
+                <div class="section-card">
+                    <h3 style="font-family:'Syne'; margin-bottom: 20px;"><i class="fa fa-download" style="color:var(--g3); margin-right: 8px;"></i> Data Export</h3>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; text-align: left;">
+                        <div style="flex: 1; min-width: 250px;">
+                            <h4 style="font-family:'Syne'; font-size: 0.95rem; margin-bottom: 4px; color: var(--text); font-weight: 700;">Export Billing History</h4>
+                            <p style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.4;">Download a spreadsheet document containing your 16-month loaded utility bills, fuel adjustment surcharges, and average unit costs.</p>
+                        </div>
+                        <button class="btn-save-settings" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--g3); padding: 10px 18px; border-radius: 10px;" onclick="exportBillingData()">
+                            <i class="fa fa-file-csv"></i> Export CSV
                         </button>
                     </div>
                 </div>
